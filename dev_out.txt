@@ -1,0 +1,93 @@
+
+> sigorta-cuzdani@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.2 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://10.7.1.64:3000
+- Environments: .env.local
+✓ Ready in 398ms
+
+[browser] A tree hydrated but some attributes of the server rendered HTML didn't match the client properties. This won't be patched up. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <HotReload globalError={[...]} webSocket={WebSocket} staticIndicatorState={{pathname:null, ...}}>
+      <AppDevOverlayErrorBoundary globalError={[...]}>
+        <ReplaySsrOnlyErrors>
+        <DevRootHTTPAccessFallbackBoundary>
+          <HTTPAccessFallbackBoundary notFound={<NotAllowedRootHTTPFallbackError>}>
+            <HTTPAccessFallbackErrorBoundary pathname="/dashboard..." notFound={<NotAllowedRootHTTPFallbackError>} ...>
+              <RedirectBoundary>
+                <RedirectErrorBoundary router={{...}}>
+                  <Head>
+                  <__next_root_layout_boundary__>
+                    <SegmentViewNode type="layout" pagePath="layout.tsx">
+                      <SegmentTrieNode>
+                      <link>
+                      <script>
+                      <script>
+                      <RootLayout>
+                        <html
+                          lang="tr"
+-                         data-jetski-tab-id="1740747750"
+                        >
+                  ...
+ 
+[browser] ./src/app/api/policies/upload/route.ts:6:66
+Expected ',', got 'ident'
+  4 | ...
+  5 | ...
+> 6 | ...Upload] Route c...
+    |         ^^^^^
+  7 | ...
+  8 | ...
+  9 | ...
+
+Parsing ecmascript source code failed 
+[browser] ./src/app/api/policies/upload/route.ts:6:66
+Expected ',', got 'ident'
+  4 | ...
+  5 | ...
+> 6 | ...Upload] Route c...
+    |         ^^^^^
+  7 | ...
+  8 | ...
+  9 | ...
+
+Parsing ecmascript source code failed 
+ GET /dashboard/policies 200 in 294ms (next.js: 138ms, application-code: 156ms)
+⨯ Error: ENOENT: no such file or directory, open 'C:\Users\Acer\.gemini\antigravity\scratch\sigorta-cuzdani\test\data\05-versions-space.pdf'
+    at module evaluation (src\lib\ai\bedrock.ts:2:1)
+    at module evaluation (src\app\api\policies\upload\route.ts:2:1)
+    at Object.<anonymous> (C:\Users\Acer\.gemini\antigravity\scratch\sigorta-cuzdani\.next\dev\server\app\api\policies\upload\route.js:19:3)
+  1 | import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+> 2 | import pdfParse from "pdf-parse";
+    | ^
+  3 |
+  4 | const bedrock = new BedrockRuntimeClient({
+  5 |   region: process.env.AWS_REGION ?? "us-east-1", {
+  errno: -4058,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: 'C:\\Users\\Acer\\.gemini\\antigravity\\scratch\\sigorta-cuzdani\\test\\data\\05-versions-space.pdf',
+  page: '/api/policies/upload'
+}
+ POST /api/policies/upload 500 in 510ms (next.js: 416ms, application-code: 94ms)
+ GET /dashboard/policies 200 in 230ms (next.js: 73ms, application-code: 157ms)
+ GET /dashboard/policies 200 in 118ms (next.js: 5ms, application-code: 114ms)
+ GET /dashboard/policies 200 in 103ms (next.js: 4ms, application-code: 99ms)
+ GET /dashboard/policies 200 in 103ms (next.js: 22ms, application-code: 81ms)
+ GET /dashboard/policies 200 in 103ms (next.js: 39ms, application-code: 64ms)
+ GET /dashboard/policies 200 in 103ms (next.js: 57ms, application-code: 46ms)
+ GET /dashboard/policies 200 in 45ms (next.js: 4ms, application-code: 41ms)
+ GET /dashboard/policies 200 in 24ms (next.js: 5ms, application-code: 19ms)
