@@ -5,6 +5,8 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { Policy } from "@/types/policy";
 import { formatDateShort, getRelativeTime, daysUntil } from "@/lib/utils/date";
+import { useDemo } from "@/lib/context/DemoContext";
+import { MOCK_POLICIES } from "@/lib/mockData";
 
 export interface Alert {
   id: string;
@@ -33,8 +35,9 @@ const TYPE_LABELS = {
 
 export default function AlertsPage() {
   const { appUser, loading: authLoading } = useAuth();
-  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
+  const { isDemoMode } = useDemo();
 
   // Filters State
   const [filterSev, setFilterSev] = useState<string>("all");
@@ -67,10 +70,17 @@ export default function AlertsPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!appUser) return;
+      if (isDemoMode) {
+        setLoading(false);
+        return;
+      }
+      if (!appUser) {
+        setLoading(false);
+        return;
+      }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setPolicies(data as Policy[]);
+        setDbPolicies(data as Policy[]);
       } catch (err) {
         console.error("Failed to load policies", err);
       } finally {
@@ -81,7 +91,9 @@ export default function AlertsPage() {
     if (!authLoading) {
       loadData();
     }
-  }, [appUser, authLoading]);
+  }, [appUser, authLoading, isDemoMode]);
+
+  const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
 
   // Generate dynamic alerts from policies
   const alerts = useMemo(() => {

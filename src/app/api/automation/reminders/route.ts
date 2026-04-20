@@ -17,7 +17,7 @@ export async function GET() {
   
   try {
     // 1. Fetch all active policies
-    const policies = await getAllPolicies();
+    const policies = await getAllPolicies() as any[];
     const activePolicies = policies.filter(p => p.status === "active");
     
     let sentCount = 0;

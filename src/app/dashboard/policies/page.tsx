@@ -3,16 +3,16 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getPoliciesByTenant, deletePolicy } from "@/lib/firebase/firestore";
-import { Policy } from "@/types/policy";
-import { formatCurrency } from "@/lib/utils/currency";
-import { formatDateShort, daysUntil, getRelativeTime } from "@/lib/utils/date";
 import {
+  Policy,
+  PolicyType,
+  PolicyStatus,
   POLICY_TYPE_LABELS,
   POLICY_TYPE_ICONS,
   POLICY_STATUS_LABELS,
-  PolicyType,
-  PolicyStatus,
 } from "@/types/policy";
+import { formatCurrency } from "@/lib/utils/currency";
+import { formatDateShort, daysUntil, getRelativeTime } from "@/lib/utils/date";
 import Link from "next/link";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
@@ -345,7 +345,7 @@ export default function PoliciesPage() {
                           color: "var(--text-tertiary)",
                         }}
                       >
-                        {policy.premium.installmentCount} taksit
+                        {policy.premium.installmentCount || 0} taksit
                       </div>
                     )}
                   </td>
@@ -381,9 +381,9 @@ export default function PoliciesPage() {
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
-                      {policy.aiExtraction.documentUrl && (
+                      {policy.documents?.originalPdf && (
                         <a 
-                          href={policy.aiExtraction.documentUrl} 
+                          href={policy.documents.originalPdf} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="btn btn-ghost btn-icon btn-sm"

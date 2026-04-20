@@ -31,7 +31,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!appUser) return;
+      if (!appUser) {
+        setLoading(false);
+        return;
+      }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
         setDbPolicies(data as Policy[]);
@@ -41,7 +44,7 @@ export default function DashboardPage() {
         setLoading(false);
       }
     }
-    
+
     if (!authLoading) {
       loadData();
     }
@@ -60,16 +63,16 @@ export default function DashboardPage() {
 
     const upcomingPayments: any[] = [];
     activePolicies.forEach(p => {
-       if (p.premium.paymentType === "installment" && p.premium.installments) {
-          p.premium.installments.forEach(inst => {
-            if (inst.status === "pending") {
-              upcomingPayments.push({ ...inst, policyName: p.policyType, company: p.insuranceCompany });
-            }
-          });
-       }
+      if (p.premium.paymentType === "installment" && p.premium.installments) {
+        p.premium.installments.forEach(inst => {
+          if (inst.status === "pending") {
+            upcomingPayments.push({ ...inst, policyName: p.policyType, company: p.insuranceCompany });
+          }
+        });
+      }
     });
 
-    const sortedPayments = upcomingPayments.sort((a,b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    const sortedPayments = upcomingPayments.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
     const typeCounts: Record<string, number> = {};
     activePolicies.forEach((p) => {
@@ -133,7 +136,7 @@ export default function DashboardPage() {
       {isDemoMode && (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", background: "var(--warning-50)", border: "1px solid var(--warning-200)", borderRadius: "var(--radius-md)", marginBottom: "var(--space-6)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--warning-800)", fontWeight: 600 }}>
-             👀 Şu an örnek (mock) şirket verilerini inceliyorsunuz. Sistemin size sağlayacağı değeri bu veriler üzerinden test edebilirsiniz.
+            👀 Şu an örnek (mock) şirket verilerini inceliyorsunuz. Sistemin size sağlayacağı değeri bu veriler üzerinden test edebilirsiniz.
           </div>
           <button onClick={() => { setIsDemoMode(false); }} className="btn btn-ghost btn-sm" style={{ color: "var(--warning-800)" }}>
             Kapat ve Sisteme Dön ✖
@@ -148,15 +151,15 @@ export default function DashboardPage() {
         </div>
         <div>
           {policies.length > 0 && (
-             <div style={{ animation: "pulse 2s infinite" }}>
-                <Link 
-                  href="/dashboard/ai-analysis"
-                  className="btn btn-primary" 
-                  style={{ display: "flex", gap: "8px", alignItems: "center", background: "linear-gradient(135deg, #6200ea 0%, #aa00ff 100%)", borderColor: "transparent", fontSize: "1.05rem", padding: "10px 20px", textDecoration: "none" }}
-                >
-                  ✨ Yapay Zeka ile Analiz Et
-                </Link>
-             </div>
+            <div style={{ animation: "pulse 2s infinite" }}>
+              <Link
+                href="/dashboard/ai-analysis"
+                className="btn btn-primary"
+                style={{ display: "flex", gap: "8px", alignItems: "center", background: "linear-gradient(135deg, #6200ea 0%, #aa00ff 100%)", borderColor: "transparent", fontSize: "1.05rem", padding: "10px 20px", textDecoration: "none" }}
+              >
+                ✨ Yapay Zeka ile Analiz Et
+              </Link>
+            </div>
           )}
         </div>
       </div>
@@ -204,11 +207,17 @@ export default function DashboardPage() {
                     width: '100%',
                     height: '100%',
                     borderRadius: '50%',
-                    background: `conic-gradient(
-                      var(--primary-500) 0% ${Math.round((Object.values(stats.typeCounts)[0] / stats.activePolicies) * 100)}%,
-                      var(--accent-500) ${Math.round((Object.values(stats.typeCounts)[0] / stats.activePolicies) * 100)}% ${Math.round(((Object.values(stats.typeCounts)[0] + (Object.values(stats.typeCounts)[1] || 0)) / stats.activePolicies) * 100)}%,
-                      var(--success-500) ${Math.round(((Object.values(stats.typeCounts)[0] + (Object.values(stats.typeCounts)[1] || 0)) / stats.activePolicies) * 100)}% 100%
-                    )`,
+                    background: (() => {
+                      const entries = Object.values(stats.typeCounts);
+                      const colors = ['var(--primary-500)', 'var(--accent-500)', 'var(--success-500)', 'var(--warning-500)', 'var(--info-500)', 'var(--danger-500)', '#8b5cf6', '#06b6d4'];
+                      let cumPct = 0;
+                      const segments = entries.map((count, idx) => {
+                        const start = cumPct;
+                        cumPct += (count / stats.activePolicies) * 100;
+                        return `${colors[idx % colors.length]} ${Math.round(start)}% ${Math.round(cumPct)}%`;
+                      });
+                      return `conic-gradient(${segments.join(', ')})`;
+                    })(),
                     boxShadow: 'inset 0 0 0 25px white',
                     display: 'flex',
                     alignItems: 'center',
@@ -220,10 +229,10 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   {Object.entries(stats.typeCounts).map(([type, count], idx) => {
-                    const colors = ["var(--primary-500)", "var(--accent-500)", "var(--success-500)", "var(--warning-500)", "var(--info-500)"];
+                    const colors = ["var(--primary-500)", "var(--accent-500)", "var(--success-500)", "var(--warning-500)", "var(--info-500)", "var(--danger-500)", "#8b5cf6", "#06b6d4"];
                     const percentage = Math.round((count / stats.activePolicies) * 100);
                     const policyType = type as keyof typeof POLICY_TYPE_LABELS;
                     return (
@@ -251,34 +260,34 @@ export default function DashboardPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {/* Blend renewals and payments to show actionability */}
             {stats.expiringPolicies.length === 0 && sortedPayments.length === 0 ? (
-               <div style={{ padding: "var(--space-4)", textAlign: "center", color: "var(--text-tertiary)" }}>
-                 Şu an için yaklaşan bir işlem bulunmuyor.
-               </div>
+              <div style={{ padding: "var(--space-4)", textAlign: "center", color: "var(--text-tertiary)" }}>
+                Şu an için yaklaşan bir işlem bulunmuyor.
+              </div>
             ) : (
-               <>
-                 {stats.expiringPolicies.slice(0, 2).map((p) => (
-                    <div key={`exp-${p.id}`} style={{ padding: "12px", border: "1px solid var(--danger-200)", borderRadius: "8px", background: "var(--danger-50)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontSize: "0.85rem", color: "var(--danger-700)", fontWeight: 700, marginBottom: "2px" }}>Yenileme Yaklaşıyor ({daysUntil(p.endDate)} gün)</div>
-                        <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{p.insuranceCompany} {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS] || p.policyType}</div>
-                      </div>
-                      <div style={{ fontSize: "0.9rem", color: "var(--text-tertiary)" }}>{formatDateShort(p.endDate)}</div>
+              <>
+                {stats.expiringPolicies.slice(0, 2).map((p) => (
+                  <div key={`exp-${p.id}`} style={{ padding: "12px", border: "1px solid var(--danger-200)", borderRadius: "8px", background: "var(--danger-50)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--danger-700)", fontWeight: 700, marginBottom: "2px" }}>Yenileme Yaklaşıyor ({daysUntil(p.endDate)} gün)</div>
+                      <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{p.insuranceCompany} {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS] || p.policyType}</div>
                     </div>
-                 ))}
-                 
-                 {sortedPayments.slice(0, 3).map((pay) => (
-                    <div key={`pay-${pay.id}`} style={{ padding: "12px", border: "1px solid var(--neutral-200)", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <div style={{ fontSize: "0.85rem", color: "var(--primary-700)", fontWeight: 700, marginBottom: "2px" }}>Taksit Ödemesi</div>
-                        <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{pay.company} {POLICY_TYPE_LABELS[pay.policyName as keyof typeof POLICY_TYPE_LABELS] || pay.policyName}</div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: "1rem", color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(pay.amount)}</div>
-                        <div style={{ fontSize: "0.8rem", color: "var(--text-tertiary)" }}>{formatDateShort(pay.dueDate)}</div>
-                      </div>
+                    <div style={{ fontSize: "0.9rem", color: "var(--text-tertiary)" }}>{formatDateShort(p.endDate)}</div>
+                  </div>
+                ))}
+
+                {sortedPayments.slice(0, 3).map((pay) => (
+                  <div key={`pay-${pay.id}`} style={{ padding: "12px", border: "1px solid var(--neutral-200)", borderRadius: "8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--primary-700)", fontWeight: 700, marginBottom: "2px" }}>Taksit Ödemesi</div>
+                      <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{pay.company} {POLICY_TYPE_LABELS[pay.policyName as keyof typeof POLICY_TYPE_LABELS] || pay.policyName}</div>
                     </div>
-                 ))}
-               </>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: "1rem", color: "var(--text-primary)", fontWeight: 700 }}>{formatCurrency(pay.amount)}</div>
+                      <div style={{ fontSize: "0.8rem", color: "var(--text-tertiary)" }}>{formatDateShort(pay.dueDate)}</div>
+                    </div>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         </div>

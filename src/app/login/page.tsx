@@ -61,7 +61,21 @@ export default function LoginPage() {
             </div>
           </div>
         )}
-
+        <button 
+          type="button"
+          onClick={() => {
+            setEmail("demo@sigortacuzdani.net");
+            setPassword("123456");
+            setTimeout(() => {
+                const form = document.querySelector('form');
+                if (form) form.requestSubmit();
+            }, 100);
+          }}
+          className="btn btn-secondary w-full"
+          style={{ marginBottom: "var(--space-4)", background: "var(--primary-50)", color: "var(--primary-700)", border: "1px dashed var(--primary-300)" }}
+        >
+          👁️ Demo Girişi (Hızlı)
+        </button>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div>
             <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: "var(--space-2)" }}>

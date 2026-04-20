@@ -38,7 +38,9 @@ export async function getPoliciesByTenant(tenantId: string) {
   // Sort on client side to avoid requiring a composite index in Firestore
   const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
   return docs.sort((a: any, b: any) => {
-    return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    const aDate = a.createdAt?.toDate?.() ?? new Date(a.createdAt || 0);
+    const bDate = b.createdAt?.toDate?.() ?? new Date(b.createdAt || 0);
+    return bDate.getTime() - aDate.getTime();
   });
 }
 

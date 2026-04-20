@@ -90,6 +90,7 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = async (uid: string) => {
+    if (!appUser) return;
     if (uid === appUser.uid) {
       alert("Kendi hesabınızı silemezsiniz.");
       return;
@@ -236,7 +237,7 @@ export default function UsersPage() {
                   ))}
                   {users.length === 0 && (
                     <tr>
-                      <td colSpan={3} style={{ textAlign: "center", color: "var(--text-tertiary)" }}>Kayıtlı veri yok.</td>
+                      <td colSpan={5} style={{ textAlign: "center", color: "var(--text-tertiary)" }}>Kayıtlı veri yok.</td>
                     </tr>
                   )}
                 </tbody>

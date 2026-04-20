@@ -101,9 +101,18 @@ export default function UploadPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      // We wait for both network calls
+      // We wait for both network calls. If Storage upload fails (due to rules/CORS), gracefully handle it.
+      const isDemoUser = appUser?.email?.startsWith("demo@");
+      const uploadPromise = (appUser && !isDemoUser) 
+        ? uploadPolicyPDF(file, appUser.tenantId).catch(err => {
+            console.warn("Storage upload failed (CORS or Rules issue). Skipping PDF storage:", err);
+            return { downloadUrl: "", storagePath: "" };
+          })
+        : Promise.resolve({ downloadUrl: "", storagePath: "" });
+
+
       const [uploadResult, bedrockRes] = await Promise.all([
-         appUser ? uploadPolicyPDF(file, appUser.tenantId) : Promise.resolve({ downloadUrl: "", storagePath: "" }),
+         uploadPromise,
          fetch("/api/policies/upload", { method: "POST", body: formData })
       ]);
 
@@ -129,7 +138,7 @@ export default function UploadPage() {
       setError("Hata: " + msg);
       setStage("upload");
     }
-  }, []);
+  }, [appUser]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -197,9 +206,9 @@ export default function UploadPage() {
             <div className="card-title" style={{ marginBottom: "var(--space-3)" }}> İpuçları</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "var(--space-4)" }}>
               {[
-                { icon: "", title: "Dijital PDF tercih edin", desc: "Sigorta şirketinden gelen orijinal dijital PDF en iyi sonucu verir." },
-                { icon: "", title: "Taranmış belgeler de olur", desc: "Fotoğraf/tarama PDF'lerini de AI ile okuyabiliyoruz." },
-                { icon: "", title: "Verileriniz güvende", desc: "256-bit şifreleme ile Firebase EU sunucularında saklanır (KVKK uyumlu)." },
+                { icon: "📄", title: "Dijital PDF tercih edin", desc: "Sigorta şirketinden gelen orijinal dijital PDF en iyi sonucu verir." },
+                { icon: "📸", title: "Taranmış belgeler de olur", desc: "Fotoğraf/tarama PDF'lerini de AI ile okuyabiliyoruz." },
+                { icon: "🔒", title: "Verileriniz güvende", desc: "256-bit şifreleme ile Firebase EU sunucularında saklanır (KVKK uyumlu)." },
               ].map((tip) => (
                 <div key={tip.title} style={{ display: "flex", gap: "var(--space-3)", alignItems: "flex-start" }}>
                   <span style={{ fontSize: 24 }}>{tip.icon}</span>

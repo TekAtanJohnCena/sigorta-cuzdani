@@ -40,6 +40,7 @@ const NAV_ITEMS: NavSection[] = [
   {
     section: "Sistem",
     items: [
+      { href: "/dashboard/users", icon: "👥", label: "Personel Yönetimi" },
       { href: "/dashboard/settings", icon: "⚙️", label: "Ayarlar" },
     ],
   },
@@ -80,6 +81,13 @@ export default function DashboardLayout({
   };
   
   const navItems = useMemo(() => {
+    // Filter out admin-only pages for non-admin users
+    if (appUser?.role !== 'admin') {
+      return NAV_ITEMS.map(section => ({
+        ...section,
+        items: section.items.filter(item => item.href !== '/dashboard/users')
+      }));
+    }
     return NAV_ITEMS;
   }, [appUser]);
 
@@ -155,11 +163,8 @@ export default function DashboardLayout({
             <div className="main-header-left">
               {/* Mobile hamburger */}
               <button
-                className="btn btn-ghost btn-icon"
+                className="btn btn-ghost btn-icon mobile-menu-btn"
                 onClick={() => setMobileOpen(!mobileOpen)}
-                style={{
-                  display: "none",
-                }}
                 id="mobile-menu-btn"
               >
                 ☰
@@ -190,13 +195,6 @@ export default function DashboardLayout({
           <main className="main-body">{children}</main>
         </div>
 
-        <style jsx>{`
-          @media (max-width: 768px) {
-            #mobile-menu-btn {
-              display: flex !important;
-            }
-          }
-        `}</style>
       </div>
     </DemoProvider>
   );

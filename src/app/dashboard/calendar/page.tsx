@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { Policy } from "@/types/policy";
-import { CalendarEvent, EventType } from "@/types/finance";
+import { CalendarEvent } from "@/types/finance";
 import { getMonthName, getDaysInMonth, getFirstDayOfMonth, formatDateShort } from "@/lib/utils/date";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useDemo } from "@/lib/context/DemoContext";
@@ -31,7 +31,14 @@ export default function CalendarPage() {
 
   useEffect(() => {
     async function loadData() {
-      if (!appUser) return;
+      if (isDemoMode) {
+        setLoading(false);
+        return;
+      }
+      if (!appUser) {
+        setLoading(false);
+        return;
+      }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
         setPolicies(data as Policy[]);
@@ -45,7 +52,7 @@ export default function CalendarPage() {
     if (!authLoading) {
       loadData();
     }
-  }, [appUser, authLoading]);
+  }, [appUser, authLoading, isDemoMode]);
 
   const effectivePolicies = isDemoMode ? MOCK_POLICIES : policies;
 
