@@ -1,0 +1,92 @@
+// ============================================
+// Firestore Security Rules
+// DEPLOY: npx firebase deploy --only firestore:rules
+// ============================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Yardımcı Fonksiyonlar ────────────────────────────
+
+    // Kullanıcı giriş yapmış mı?
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Tenant izolasyonu: sadece kendi verisine erişebilir
+    function isTenantOwner(tenantId) {
+      return isAuthenticated() && request.auth.uid == tenantId;
+    }
+
+    // Tenant'ın belgeye sahip olup olmadığını kontrol et
+    function ownsTenantData() {
+      return isAuthenticated() &&
+        request.auth.uid == resource.data.tenantId;
+    }
+
+    // Yeni belgede tenantId doğru set edilmiş mi?
+    function setsCorrectTenantId() {
+      return request.resource.data.tenantId == request.auth.uid;
+    }
+
+    // ─── Kullanıcı Profilleri ─────────────────────────────
+    match /users/{userId} {
+      // Kullanıcı sadece kendi profilini okuyabilir/yazabilir
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ─── Poliçeler ────────────────────────────────────────
+    match /policies/{policyId} {
+      // Sadece tenantId sahibi okuyabilir
+      allow read: if ownsTenantData();
+
+      // Oluştururken doğru tenantId set edilmeli
+      allow create: if isAuthenticated() && setsCorrectTenantId();
+
+      // Güncellerken tenantId değiştirilememeli
+      allow update: if ownsTenantData() &&
+        request.resource.data.tenantId == resource.data.tenantId;
+
+      // Silme — sadece kendi verisi
+      allow delete: if ownsTenantData();
+    }
+
+    // ─── Hasar Dosyaları ──────────────────────────────────
+    match /claims/{claimId} {
+      allow read: if ownsTenantData();
+      allow create: if isAuthenticated() && setsCorrectTenantId();
+      allow update: if ownsTenantData() &&
+        request.resource.data.tenantId == resource.data.tenantId;
+      allow delete: if ownsTenantData();
+    }
+
+    // ─── Personel ─────────────────────────────────────────
+    match /employees/{employeeId} {
+      allow read: if ownsTenantData();
+      allow create: if isAuthenticated() && setsCorrectTenantId();
+      allow update: if ownsTenantData() &&
+        request.resource.data.tenantId == resource.data.tenantId;
+      allow delete: if ownsTenantData();
+    }
+
+    // ─── AI Analiz Sonuçları ──────────────────────────────
+    match /analyses/{analysisId} {
+      allow read: if ownsTenantData();
+      allow write: if false; // Sadece server-side (Admin SDK) yazabilir
+    }
+
+    // ─── Tenant Kayıtları ─────────────────────────────────
+    // Tenant kayıtları sadece Admin SDK üzerinden okunur/yazılır
+    match /tenants/{tenantId} {
+      allow read: if false;  // Client erişimi kapalı
+      allow write: if false; // Sadece Admin SDK
+    }
+
+    // ─── Varsayılan: Tümünü reddet ────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

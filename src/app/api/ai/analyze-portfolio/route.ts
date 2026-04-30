@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { getPoliciesByTenant, saveAnalysisResults } from "@/lib/firebase/firestore";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { PORTFOLIO_ANALYSIS_SYSTEM_PROMPT } from "@/lib/ai/analysisPrompts";
@@ -13,40 +14,34 @@ const bedrock = new BedrockRuntimeClient({
 
 const MODEL_ID = process.env.BEDROCK_MODEL_ID ?? "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
-export const maxDuration = 60; // Set to max for long AI analyses
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const tenantId = body.tenantId;
 
-    if (!tenantId) {
-      return NextResponse.json({ error: "Oturum bilgisi bulunamadı." }, { status: 401 });
+    if (!tenantId || typeof tenantId !== "string" || tenantId.length > 128) {
+      return NextResponse.json({ error: "Geçersiz oturum bilgisi." }, { status: 401 });
     }
 
-    console.log(`[API /api/ai/analyze-portfolio] Fetching policies for tenant: ${tenantId}`);
-    
-    // 1. Fetch policies from Firestore
+    logger.info("Portfolio analysis started", "api/ai/analyze-portfolio", { tenantId });
+
     const policies = await getPoliciesByTenant(tenantId);
-    
-    // Check if enough policies to analyze
+
     if (!policies || policies.length === 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: "Analiz edilecek poliçe bulunamadı.",
-        data: null 
+        data: null,
       });
     }
 
-    // 2. Prepare payload for Haiku
     const simplifiedPolicies = policies.map((p: any) => ({
       tipi: p.policyType,
       sirket: p.insuranceCompany,
       tarihler: { baslangic: p.startDate, bitis: p.endDate },
       prim: p.premium,
-      teminatlar: p.coverages?.map((c: any) => ({
-        ad: c.name,
-        tutar: c.amount,
-      })),
+      teminatlar: p.coverages?.map((c: any) => ({ ad: c.name, tutar: c.amount })),
       kapsam: p.notes,
     }));
 
@@ -64,7 +59,6 @@ export async function POST(req: NextRequest) {
       ],
     };
 
-    console.log(`[API /api/ai/analyze-portfolio] Invoking Claude Haiku...`);
     const command = new InvokeModelCommand({
       modelId: MODEL_ID,
       contentType: "application/json",
@@ -76,7 +70,6 @@ export async function POST(req: NextRequest) {
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
     const rawText = responseBody.content?.[0]?.text ?? "";
 
-    // 3. Clean up and Parse Response
     const cleanJson = rawText
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
@@ -86,29 +79,32 @@ export async function POST(req: NextRequest) {
     let analysisResult;
     try {
       analysisResult = JSON.parse(cleanJson);
-    } catch (e) {
-      console.error("[API /api/ai/analyze-portfolio] Failed to parse JSON:", cleanJson.substring(0, 200));
-      return NextResponse.json({ error: "AI geçersiz bir yanıt döndürdü." }, { status: 500 });
+    } catch {
+      logger.error("AI response parse failed", "api/ai/analyze-portfolio", {
+        tenantId,
+        preview: cleanJson.substring(0, 100),
+      });
+      return NextResponse.json({ error: "AI analiz sonucu işlenemedi." }, { status: 500 });
     }
 
-    // 4. Save results to Firestore for persistence
     try {
       await saveAnalysisResults(tenantId, analysisResult);
     } catch (saveErr) {
-      console.warn("[API /api/ai/analyze-portfolio] Failed to persist analysis results:", saveErr);
-      // We don't fail the whole request if save fails, but we log it
+      logger.warn("Failed to persist analysis", "api/ai/analyze-portfolio", {
+        error: (saveErr as Error).message,
+      });
     }
 
-    console.log(`[API /api/ai/analyze-portfolio] Analysis complete.`);
-    return NextResponse.json({
-      success: true,
-      data: analysisResult
-    });
+    logger.info("Portfolio analysis complete", "api/ai/analyze-portfolio", { tenantId });
 
-  } catch (error: any) {
-    console.error(`[API /api/ai/analyze-portfolio] Error:`, error);
+    return NextResponse.json({ success: true, data: analysisResult });
+  } catch (error) {
+    logger.error("Portfolio analysis error", "api/ai/analyze-portfolio", {
+      error: (error as Error).message,
+    });
+    // İç hata detaylarını gizle
     return NextResponse.json(
-      { error: "Poliçeler analiz edilirken hata oluştu.", details: error.message },
+      { error: "Portföy analizi sırasında bir hata oluştu." },
       { status: 500 }
     );
   }

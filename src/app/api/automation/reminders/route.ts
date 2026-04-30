@@ -1,72 +1,132 @@
 import { NextResponse } from "next/server";
+import { createHmac, timingSafeEqual } from "crypto";
 import { getAllPolicies, getUsersByTenant } from "@/lib/firebase/firestore";
 import { daysUntil, formatDateShort } from "@/lib/utils/date";
 import { sendEmail } from "@/lib/mail/mailer";
 import { getVadeReminderTemplate } from "@/lib/mail/templates";
 import { POLICY_TYPE_LABELS } from "@/types/policy";
 import { AppUser } from "@/types/user";
+import { logger } from "@/lib/logger";
 
 /**
  * DAILY REMINDER AUTOMATION
- * This route should be triggered daily via a Cron Job (e.g. Vercel Cron)
- * Trigger URL: /api/automation/reminders
+ * Vercel Cron veya harici cron ile tetiklenir.
+ * Koruma: CRON_SECRET header doğrulaması — korumasız erişim engellendi.
+ *
+ * Vercel cron.json örneği:
+ * { "crons": [{ "path": "/api/automation/reminders", "schedule": "0 8 * * *" }] }
  */
 
-export async function GET() {
-  console.log("[AUTOMATION] Starting daily policy reminders task...");
-  
+function verifyCronSecret(authHeader: string | null): boolean {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    // Secret ayarlanmamışsa prod'da engelle
+    if (process.env.NODE_ENV === "production") {
+      logger.warn("CRON_SECRET not configured in production", "automation/reminders");
+      return false;
+    }
+    // Dev'de geç
+    return true;
+  }
+
+  if (!authHeader?.startsWith("Bearer ")) return false;
+  const provided = authHeader.slice(7);
+
+  // Timing-safe karşılaştırma
   try {
-    // 1. Fetch all active policies
+    const providedBuf = Buffer.from(provided);
+    const secretBuf = Buffer.from(cronSecret);
+    if (providedBuf.length !== secretBuf.length) return false;
+    return timingSafeEqual(providedBuf, secretBuf);
+  } catch {
+    return false;
+  }
+}
+
+export async function GET(req: Request) {
+  // ─── Güvenlik Kontrolü ─────────────────────────────────
+  const authHeader = req.headers ? (req as any).headers?.get?.("authorization") : null;
+  if (!verifyCronSecret(authHeader)) {
+    logger.warn("Unauthorized cron access attempt", "automation/reminders");
+    return NextResponse.json(
+      { error: "Yetkisiz erişim." },
+      { status: 401 }
+    );
+  }
+
+  logger.info("Daily reminder task started", "automation/reminders");
+
+  try {
     const policies = await getAllPolicies() as any[];
-    const activePolicies = policies.filter(p => p.status === "active");
-    
+    const activePolicies = policies.filter((p) => p.status === "active");
+
     let sentCount = 0;
-    
-    // 2. Scan policies for deadlines
+    let skippedCount = 0;
+
     for (const policy of activePolicies) {
       const daysLeft = daysUntil(policy.endDate);
-      
-      // We send reminders at 30, 15, and 7 days marks
+
       if ([30, 15, 7].includes(daysLeft)) {
-        console.log(`[AUTOMATION] Policy ${policy.policyNumber} is expiring in ${daysLeft} days. Triggering emails...`);
-        
-        // 3. Find target users (employees of this tenant)
+        logger.info("Policy reminder triggered", "automation/reminders", {
+          policyNumber: policy.policyNumber,
+          daysLeft,
+        });
+
         const tenantUsers = await getUsersByTenant(policy.tenantId) as AppUser[];
-        const targetUsers = tenantUsers.filter(u => u.emailNotifications !== false); // Default to true if undefined
-        
+        const targetUsers = tenantUsers.filter((u) => u.emailNotifications !== false);
+
         for (const user of targetUsers) {
           try {
-             const html = getVadeReminderTemplate({
-               userName: user.name,
-               policyType: POLICY_TYPE_LABELS[policy.policyType as keyof typeof POLICY_TYPE_LABELS] || policy.policyType,
-               company: policy.insuranceCompany,
-               daysLeft,
-               endDate: formatDateShort(policy.endDate),
-               dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/dashboard/policies/${policy.id}`
-             });
+            const html = getVadeReminderTemplate({
+              userName: user.name,
+              policyType:
+                POLICY_TYPE_LABELS[policy.policyType as keyof typeof POLICY_TYPE_LABELS] ||
+                policy.policyType,
+              company: policy.insuranceCompany,
+              daysLeft,
+              endDate: formatDateShort(policy.endDate),
+              dashboardUrl: `${
+                process.env.NEXT_PUBLIC_APP_URL || "https://app.sigortacuzdani.com"
+              }/dashboard/policies/${policy.id}`,
+            });
 
-             await sendEmail({
-               to: user.email,
-               subject: `🚨 Poliçe Vade Hatırlatması: ${daysLeft} Gün Kaldı! (${policy.insuranceCompany})`,
-               html
-             });
-             
-             sentCount++;
+            await sendEmail({
+              to: user.email,
+              subject: `🚨 Poliçe Vade Hatırlatması: ${daysLeft} Gün Kaldı! (${policy.insuranceCompany})`,
+              html,
+            });
+
+            sentCount++;
           } catch (mailErr) {
-            console.error(`[AUTOMATION] Failed to send email to ${user.email}`, mailErr);
+            logger.error("Email send failed", "automation/reminders", {
+              email: user.email,
+              error: (mailErr as Error).message,
+            });
+            skippedCount++;
           }
         }
       }
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      message: `${sentCount} adet hatırlatma e-postası kuyruğa alındı.`,
-      timestamp: new Date().toISOString()
+    logger.info("Reminder task completed", "automation/reminders", {
+      sent: sentCount,
+      skipped: skippedCount,
+      totalPolicies: activePolicies.length,
     });
 
-  } catch (error: any) {
-    console.error("[AUTOMATION] Fatal error in reminders task:", error);
-    return NextResponse.json({ error: "Otomasyon işlemi sırasında hata oluştu.", details: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      message: `${sentCount} adet hatırlatma e-postası gönderildi.`,
+      skipped: skippedCount,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error("Reminder task fatal error", "automation/reminders", {
+      error: (error as Error).message,
+    });
+    return NextResponse.json(
+      { error: "Otomasyon işlemi başarısız oldu." },
+      { status: 500 }
+    );
   }
 }

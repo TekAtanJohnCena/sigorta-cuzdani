@@ -68,7 +68,7 @@ export default function RenewalsPage() {
       <div className="card" style={{ marginBottom: "var(--space-8)" }}>
         <div className="card-header">
           <div className="card-title">⏰ 90 Gün İçinde Vadesini Dolduracak Poliçeler</div>
-          <span style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", background: "var(--danger-50)", color: "var(--danger-700)", padding: "2px 10px", borderRadius: 99, fontWeight: 700 }}>
+          <span style={{ fontSize: "var(--text-xs)", background: "var(--danger-50)", color: "var(--danger-700)", padding: "2px 10px", borderRadius: 99, fontWeight: 700 }}>
             {renewalPolicies.length} poliçe
           </span>
         </div>

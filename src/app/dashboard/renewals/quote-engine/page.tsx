@@ -9,7 +9,7 @@ import { getQuotesForPolicy, SEARCH_STEPS, MockQuote } from "@/lib/mockQuoteData
 
 function QuoteEngineContent() {
   const searchParams = useSearchParams();
-  const policyType = (searchParams.get("policyType") || "kasko") as any;
+  const policyType = (searchParams.get("policyType") || "kasko") as import("@/types/policy").PolicyType;
   const currentPremium = parseFloat(searchParams.get("currentPremium") || "0");
   const company = searchParams.get("company") || "Mevcut Şirket";
 
