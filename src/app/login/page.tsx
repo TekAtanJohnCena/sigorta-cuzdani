@@ -110,7 +110,7 @@ export default function LoginPage() {
         </form>
 
         <div style={{ marginTop: "var(--space-6)", textAlign: "center", fontSize: "var(--text-sm)" }}>
-          Hesabınız yok mu? <a href="mailto:demo@sigortacuzdani.net?subject=Demo Talebi" style={{ color: "var(--primary-600)", fontWeight: 600, textDecoration: "none" }}>Demo Talep Edin</a>
+          Hesabınız yok mu? <Link href="/demo/request" style={{ color: "var(--primary-600)", fontWeight: 600, textDecoration: "none" }}>Demo Talep Edin</Link>
         </div>
 
         <div style={{ marginTop: "var(--space-6)", textAlign: "center", fontSize: "var(--text-sm)" }}>
