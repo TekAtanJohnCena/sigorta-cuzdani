@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 // /dashboard, /emre ve /api/* route'larını korur
 // ============================================
 
-const ADMIN_PATHS = ["/emre", "/api/admin"];
+const ADMIN_PATHS = ["/api/admin"];
 
 function isAdminPath(pathname: string): boolean {
   return ADMIN_PATHS.some((p) => pathname.startsWith(p)) &&
