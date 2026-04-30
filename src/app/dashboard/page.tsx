@@ -9,6 +9,7 @@ import { useDemo } from "@/lib/context/DemoContext";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { MOCK_POLICIES } from "@/lib/mockData";
+import { calculatePortfolioScore } from "@/lib/engines/portfolioScoreEngine";
 
 interface DashboardStats {
   activePolicies: number;
@@ -84,15 +85,17 @@ export default function DashboardPage() {
       companyCounts[p.insuranceCompany] = (companyCounts[p.insuranceCompany] || 0) + 1;
     });
 
-    // Score calculation
-    const calculatedScore = policies.length > 0 ? Math.round(100 - (expiringPolicies.length / policies.length) * 30) : 100;
+    // Score via engine — deterministic, based on real policy data
+    const portfolioScore = calculatePortfolioScore(policies);
 
     return {
       stats: {
         activePolicies: activePolicies.length,
         expiringCount: expiringPolicies.length,
         totalPremium,
-        riskScore: calculatedScore,
+        riskScore: portfolioScore.overall,
+        riskGrade: portfolioScore.grade,
+        riskLabel: portfolioScore.label,
         expiringPolicies,
         upcomingPayments,
         typeCounts,
@@ -185,15 +188,18 @@ export default function DashboardPage() {
           <div className="stats-label">Yıllık Toplam Prim</div>
         </Link>
 
-        <Link href="/dashboard/ai-analysis" className="stats-card" data-color={stats.riskScore < 70 ? "red" : (stats.riskScore < 90 ? "amber" : "green")} style={{ textDecoration: 'none' }}>
+        <Link href="/dashboard/ai-analysis" className="stats-card" data-color={stats.riskScore < 55 ? "red" : (stats.riskScore < 75 ? "amber" : "green")} style={{ textDecoration: 'none' }}>
           <div className="stats-icon">🛡️</div>
           <div className="stats-value">{stats.riskScore}<span style={{ fontSize: "var(--text-base)", fontWeight: 500 }}>/100</span></div>
           <div className="stats-label">Portföy Güvenlik Skoru</div>
+          <div className="stats-change" style={{ background: 'transparent', padding: 0, marginTop: 4, fontSize: 11, fontWeight: 600, color: stats.riskScore >= 75 ? 'var(--success-600)' : stats.riskScore >= 55 ? 'var(--warning-600)' : 'var(--danger-600)' }}>
+            {(stats as any).riskGrade} Sınıfı — {(stats as any).riskLabel}
+          </div>
         </Link>
       </div>
 
       {/* Charts & Summaries (Insight Layer) */}
-      <div className="grid-2" style={{ marginBottom: "var(--space-8)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "var(--space-6)", marginBottom: "var(--space-8)" }}>
         <div className="card">
           <div className="card-header">
             <div className="card-title">Portföy Dağılımı</div>
@@ -289,6 +295,40 @@ export default function DashboardPage() {
                 ))}
               </>
             )}
+          </div>
+        </div>
+
+        <div className="card" style={{ background: "linear-gradient(135deg, var(--primary-50), var(--primary-100))", border: "1px solid var(--primary-200)" }}>
+          <div className="card-header">
+            <div className="card-title" style={{ color: "var(--primary-900)" }}>🚀 Aksiyon Merkezi</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ padding: "16px", background: "white", borderRadius: "8px", boxShadow: "var(--shadow-sm)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                <div style={{ fontSize: "1.2rem" }}>🔄</div>
+                {stats.expiringCount > 0 && <span className="badge badge-red">{stats.expiringCount} Poliçe Bekliyor</span>}
+              </div>
+              <div style={{ fontWeight: 700, marginBottom: "4px" }}>Yenileme Fırsatı</div>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "12px", lineHeight: 1.5 }}>
+                {stats.expiringCount > 0 
+                  ? "Vadesi yaklaşan poliçeleriniz için piyasadaki en iyi teklifleri karşılaştırdık." 
+                  : "Şu an yaklaşan bir yenilemeniz bulunmuyor."}
+              </div>
+              <Link href="/dashboard/renewals" className="btn btn-primary" style={{ width: "100%", textAlign: "center", textDecoration: "none" }}>
+                Yenileme Merkezine Git →
+              </Link>
+            </div>
+            
+            <div style={{ padding: "16px", background: "white", borderRadius: "8px", boxShadow: "var(--shadow-sm)", marginTop: "4px" }}>
+              <div style={{ fontSize: "1.2rem", marginBottom: "8px" }}>🤖</div>
+              <div style={{ fontWeight: 700, marginBottom: "4px" }}>AI Analiz Raporu</div>
+              <div style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "12px", lineHeight: 1.5 }}>
+                Portföyünüzdeki tüm poliçelerin detayları ve olası risk açıkları analiz edildi.
+              </div>
+              <Link href="/dashboard/ai-analysis" className="btn btn-secondary" style={{ width: "100%", textAlign: "center", textDecoration: "none" }}>
+                Raporu Görüntüle →
+              </Link>
+            </div>
           </div>
         </div>
       </div>

@@ -15,6 +15,7 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort, daysUntil, getRelativeTime } from "@/lib/utils/date";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { calculatePolicyQualityScore } from "@/lib/engines/portfolioScoreEngine";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "badge-green badge-dot",
@@ -33,7 +34,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showPdf, setShowPdf] = useState(true);
+  const [showPdf, setShowPdf] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -114,7 +115,12 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
   const days = daysUntil(policy.endDate);
   const isExpiring = days >= 0 && days <= 30;
-  const pdfUrl = policy.documents?.originalPdf;
+  // Only show real PDF URLs (not mock paths)
+  const rawPdfUrl = policy.documents?.originalPdf;
+  const pdfUrl = rawPdfUrl && !rawPdfUrl.startsWith('/mock') ? rawPdfUrl : null;
+
+  // Poliçe kalite skoru — engine'den deterministik hesaplama
+  const qualityScore = calculatePolicyQualityScore(policy);
 
   return (
     <div>
@@ -170,7 +176,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Two-panel layout: data left, PDF right */}
-      <div style={{ display: "grid", gridTemplateColumns: showPdf && pdfUrl ? "1fr 1fr" : "1fr", gap: "var(--space-6)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: showPdf && pdfUrl ? "minmax(0,1fr) minmax(0,1fr)" : "1fr", gap: "var(--space-6)" }}>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-6)" }}>
 
@@ -189,10 +195,11 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                 {getRelativeTime(policy.endDate)}
               </div>
             </div>
-            <div className="stats-card" data-color={policy.aiExtraction.confidenceScore >= 85 ? "green" : policy.aiExtraction.confidenceScore >= 60 ? "amber" : "red"}>
-              <div className="stats-icon">🤖</div>
-              <div className="stats-value">{policy.aiExtraction.confidenceScore}<span style={{ fontSize: "var(--text-base)", fontWeight: 500 }}>/100</span></div>
-              <div className="stats-label">AI Güven Skoru</div>
+            <div className="stats-card" data-color={qualityScore.score >= 75 ? "green" : qualityScore.score >= 55 ? "blue" : "amber"}>
+              <div className="stats-icon">🏆</div>
+              <div className="stats-value">{qualityScore.score}<span style={{ fontSize: "var(--text-base)", fontWeight: 500 }}>/100</span></div>
+              <div className="stats-label">Poliçe Kalite Skoru</div>
+              <div className="stats-change" style={{ color: qualityScore.color, background: 'transparent', padding: '0', marginTop: '4px', fontSize: '11px', fontWeight: 600, whiteSpace: 'normal' }}>{qualityScore.label}</div>
             </div>
           </div>
 
@@ -319,36 +326,32 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
             </div>
           )}
 
-          {/* AI Metadata */}
+          {/* System Metadata */}
           <div className="card" style={{ padding: "var(--space-5)", background: "var(--neutral-50)" }}>
-            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, marginBottom: "var(--space-4)" }}>🤖 Sistem Bilgileri</h3>
+            <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, marginBottom: "var(--space-4)" }}>📂 Sistem Bilgileri</h3>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", fontSize: "var(--text-sm)" }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-tertiary)" }}>Kayıt Tarihi</span>
                 <span style={{ fontWeight: 500 }}>{formatDateShort(policy.createdAt)}</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>AI Analiz Skoru</span>
-                <div className="confidence-bar" style={{ minWidth: 100, margin: 0 }}>
-                  <div className="confidence-bar-track">
-                    <div className={`confidence-bar-fill ${policy.aiExtraction.confidenceScore >= 80 ? "high" : "medium"}`} style={{ width: `${policy.aiExtraction.confidenceScore}%` }}></div>
+                <span style={{ color: "var(--text-tertiary)" }}>Poliçe Kalite Skoru</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 80, height: 6, background: 'var(--neutral-200)', borderRadius: 99, overflow: 'hidden' }}>
+                    <div style={{ width: `${qualityScore.score}%`, height: '100%', background: qualityScore.score >= 75 ? 'var(--success-500)' : qualityScore.score >= 55 ? 'var(--primary-500)' : 'var(--warning-500)', borderRadius: 99, transition: 'width 0.5s' }} />
                   </div>
-                  <span className="confidence-label">{policy.aiExtraction.confidenceScore}</span>
+                  <span style={{ fontWeight: 700 }}>{qualityScore.score}/100</span>
                 </div>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "var(--text-tertiary)" }}>AI Model</span>
-                <span style={{ fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "180px", whiteSpace: "nowrap" }} title={policy.aiExtraction.model}>
-                  {policy.aiExtraction.model}
-                </span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--text-tertiary)" }}>Manuel İnceleme</span>
-                <span style={{ fontWeight: 500 }}>{policy.aiExtraction.manuallyReviewed ? "✓ İncelendi" : "Bekliyor"}</span>
+                <span style={{ fontWeight: 500, color: policy.aiExtraction.manuallyReviewed ? 'var(--success-600)' : 'var(--warning-600)' }}>
+                  {policy.aiExtraction.manuallyReviewed ? "✓ İncelendi" : "⏳ Bekliyor"}
+                </span>
               </div>
               {policy.documents && (
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ color: "var(--text-tertiary)" }}>Dosya</span>
+                  <span style={{ color: "var(--text-tertiary)" }}>Belge</span>
                   <span style={{ fontWeight: 500 }}>{policy.documents.fileName} ({(policy.documents.fileSize / 1024 / 1024).toFixed(1)} MB)</span>
                 </div>
               )}
@@ -364,6 +367,13 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
               style={{ width: "100%", height: "700px", border: "none" }}
               title="Poliçe Belgesi"
             />
+          </div>
+        )}
+        {showPdf && !pdfUrl && (
+          <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 300, gap: 12, color: 'var(--text-tertiary)', background: 'var(--neutral-50)' }}>
+            <div style={{ fontSize: 48 }}>📄</div>
+            <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>Belge Henüz Yüklenmedi</div>
+            <div style={{ fontSize: 'var(--text-xs)', textAlign: 'center', maxWidth: 200 }}>PDF dosyası sisteme aktarılmadı. Belge yükle sekmesinden ekleyebilirsiniz.</div>
           </div>
         )}
       </div>

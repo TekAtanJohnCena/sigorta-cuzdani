@@ -410,6 +410,10 @@ export default function UploadPage() {
               )}
             </div>
 
+            <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", textAlign: "center", marginTop: "var(--space-6)", marginBottom: "var(--space-4)" }}>
+              * Yapay zeka poliçe analizi sırasında bazı verileri eksik veya hatalı okumuş olabilir. Lütfen onaylamadan önce verileri hızlıca kontrol ediniz.
+            </div>
+
             <div className="review-actions">
               <button className="btn btn-ghost" onClick={reset} disabled={isSaving}> İptal</button>
               <button className="btn btn-secondary" onClick={reset} disabled={isSaving}> Yeni PDF Yükle</button>

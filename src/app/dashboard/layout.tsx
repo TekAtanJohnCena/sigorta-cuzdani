@@ -32,15 +32,18 @@ const NAV_ITEMS: NavSection[] = [
     section: "Analiz & Operasyon",
     items: [
       { href: "/dashboard/ai-analysis", icon: "🤖", label: "AI Analizi", highlight: true },
+      { href: "/dashboard/risk-gaps", icon: "🎯", label: "Risk Açıkları" },
+      { href: "/dashboard/renewals", icon: "🔄", label: "Yenileme Merkezi" },
+      { href: "/dashboard/claims", icon: "🚨", label: "Hasar Merkezi" },
       { href: "/dashboard/calendar", icon: "📅", label: "Vade Takvimi" },
       { href: "/dashboard/finance", icon: "💰", label: "Finansal Analiz" },
       { href: "/dashboard/alerts", icon: "🔔", label: "Uyarılar" },
     ],
   },
   {
-    section: "Sistem",
+    section: "Yönetim",
     items: [
-      { href: "/dashboard/users", icon: "👥", label: "Personel Yönetimi" },
+      { href: "/dashboard/hr", icon: "👥", label: "İK & Personel" },
       { href: "/dashboard/settings", icon: "⚙️", label: "Ayarlar" },
     ],
   },
@@ -81,13 +84,6 @@ export default function DashboardLayout({
   };
   
   const navItems = useMemo(() => {
-    // Filter out admin-only pages for non-admin users
-    if (appUser?.role !== 'admin') {
-      return NAV_ITEMS.map(section => ({
-        ...section,
-        items: section.items.filter(item => item.href !== '/dashboard/users')
-      }));
-    }
     return NAV_ITEMS;
   }, [appUser]);
 

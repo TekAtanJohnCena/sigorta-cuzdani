@@ -101,3 +101,66 @@ export async function getLastAnalysisByTenant(tenantId: string) {
   if (!snap.exists()) return null;
   return snap.data();
 }
+
+// ============================================
+// Tenant Management (for Super Admin /emre)
+// ============================================
+const TENANTS_COLLECTION = "tenants";
+
+export async function getAllTenants() {
+  const snap = await getDocs(collection(db, TENANTS_COLLECTION));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function getTenantById(tenantId: string) {
+  const snap = await getDoc(doc(db, TENANTS_COLLECTION, tenantId));
+  if (!snap.exists()) return null;
+  return { id: snap.id, ...snap.data() };
+}
+
+export async function createTenant(data: {
+  companyName: string;
+  email: string;
+  packageType: 'demo' | 'monthly' | 'yearly';
+  durationDays: number;
+  notes?: string;
+}) {
+  const startDate = new Date();
+  const endDate = new Date();
+  endDate.setDate(endDate.getDate() + data.durationDays);
+
+  const docRef = await addDoc(collection(db, TENANTS_COLLECTION), {
+    ...data,
+    startDate: startDate.toISOString(),
+    endDate: endDate.toISOString(),
+    isActive: true,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+  return docRef.id;
+}
+
+export async function updateTenant(id: string, data: Record<string, unknown>) {
+  await updateDoc(doc(db, TENANTS_COLLECTION, id), {
+    ...data,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function deleteTenant(id: string) {
+  await deleteDoc(doc(db, TENANTS_COLLECTION, id));
+}
+
+export async function checkTenantExpiry(tenantId: string): Promise<{ expired: boolean; endDate?: string }> {
+  try {
+    const snap = await getDoc(doc(db, TENANTS_COLLECTION, tenantId));
+    if (!snap.exists()) return { expired: false }; // No record = old/admin user, allow access
+    const data = snap.data();
+    if (!data.endDate) return { expired: false };
+    const endDate = new Date(data.endDate);
+    const now = new Date();
+    return { expired: now > endDate, endDate: data.endDate };
+  } catch {
+    return { expired: false }; // Fail open — don't block on error
+  }
+}

@@ -5,6 +5,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/firebase/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { expiredMessage } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +56,12 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {expiredMessage && (
+          <div style={{ background: "#450a0a", border: "1px solid #991b1b", borderRadius: 8, padding: "0.875rem 1rem", color: "#fca5a5", fontSize: "0.875rem", marginBottom: "var(--space-4)", lineHeight: 1.5 }}>
+            🔒 <strong>Abonelik Sona Erdi</strong><br />{expiredMessage}
+          </div>
+        )}
+
         {error && (
           <div className="toast toast-error" style={{ position: "relative", marginBottom: "var(--space-4)", right: 'auto', bottom: 'auto', maxWidth: '100%' }}>
             <div className="toast-message">
@@ -61,21 +69,9 @@ export default function LoginPage() {
             </div>
           </div>
         )}
-        <button 
-          type="button"
-          onClick={() => {
-            setEmail("demo@sigortacuzdani.net");
-            setPassword("123456");
-            setTimeout(() => {
-                const form = document.querySelector('form');
-                if (form) form.requestSubmit();
-            }, 100);
-          }}
-          className="btn btn-secondary w-full"
-          style={{ marginBottom: "var(--space-4)", background: "var(--primary-50)", color: "var(--primary-700)", border: "1px dashed var(--primary-300)" }}
-        >
-          👁️ Demo Girişi (Hızlı)
-        </button>
+
+
+
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
           <div>
             <label style={{ display: "block", fontSize: "var(--text-sm)", fontWeight: 600, marginBottom: "var(--space-2)" }}>
