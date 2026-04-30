@@ -7,56 +7,11 @@ import { getClaimsByTenant, createClaim } from "@/lib/firebase/claims";
 import { Policy, POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
 import { Claim, ClaimStatus, CLAIM_STATUS_LABELS, CLAIM_STATUS_COLORS, CLAIM_STATUS_ICONS, CLAIM_STATUS_ORDER } from "@/types/claim";
 import { useDemo } from "@/lib/context/DemoContext";
-import { MOCK_POLICIES } from "@/lib/mockData";
+import { MOCK_POLICIES, MOCK_CLAIMS } from "@/lib/mockData";
 import { CLAIM_REQUIREMENTS, DEFAULT_CLAIM_INFO } from "@/lib/data/claimRequirements";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort } from "@/lib/utils/date";
 
-const MOCK_CLAIMS: Claim[] = [
-  {
-    id: "clm-001",
-    tenantId: "tenant-001",
-    policyId: "pol-001",
-    policyNumber: "KSK-2025-48521",
-    policyType: "kasko",
-    insuranceCompany: "Allianz Sigorta",
-    claimDate: "2025-03-22",
-    incidentDate: "2025-03-21",
-    description: "Park halindeki araca arkadan çarptı, bagaj hasarı oluştu",
-    estimatedAmount: 45000,
-    approvedAmount: 38500,
-    status: "approved",
-    statusHistory: [
-      { status: "submitted", timestamp: "2025-03-22T09:00:00Z" },
-      { status: "expert_assigned", timestamp: "2025-03-24T11:00:00Z" },
-      { status: "under_review", timestamp: "2025-03-27T14:00:00Z" },
-      { status: "approved", timestamp: "2025-04-02T10:00:00Z", note: "Tamir bedeli onaylandı" },
-    ],
-    documents: [],
-    createdAt: "2025-03-22T09:00:00Z",
-    updatedAt: "2025-04-02T10:00:00Z",
-  },
-  {
-    id: "clm-002",
-    tenantId: "tenant-001",
-    policyId: "pol-007",
-    policyNumber: "NKL-2025-21003",
-    policyType: "nakliyat",
-    insuranceCompany: "Mapfre Sigorta",
-    claimDate: "2025-04-10",
-    incidentDate: "2025-04-09",
-    description: "İstanbul-Ankara arası taşınan elektronik ürünlerde nem hasarı tespit edildi",
-    estimatedAmount: 120000,
-    status: "expert_assigned",
-    statusHistory: [
-      { status: "submitted", timestamp: "2025-04-10T10:00:00Z" },
-      { status: "expert_assigned", timestamp: "2025-04-12T09:00:00Z", note: "Ahmet Yılmaz eksper olarak atandı" },
-    ],
-    documents: [],
-    createdAt: "2025-04-10T10:00:00Z",
-    updatedAt: "2025-04-12T09:00:00Z",
-  },
-];
 
 export default function ClaimsPage() {
   const { appUser, loading: authLoading } = useAuth();

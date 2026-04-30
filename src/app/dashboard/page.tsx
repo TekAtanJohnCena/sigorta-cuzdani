@@ -1,15 +1,24 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { POLICY_TYPE_ICONS, POLICY_TYPE_LABELS, Policy } from "@/types/policy";
 import { daysUntil, getRelativeTime, formatDateShort } from "@/lib/utils/date";
 import Link from "next/link";
 import { useDemo } from "@/lib/context/DemoContext";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { MOCK_POLICIES } from "@/lib/mockData";
+
+interface UpcomingPayment {
+  id?: string;
+  amount: number;
+  dueDate: string;
+  status: string;
+  policyName: string;
+  company: string;
+}
 import { calculatePortfolioScore } from "@/lib/engines/portfolioScoreEngine";
+import { usePolicies } from "@/lib/hooks/usePolicies";
 
 interface DashboardStats {
   activePolicies: number;
@@ -17,41 +26,22 @@ interface DashboardStats {
   totalPremium: number;
   riskScore: number;
   expiringPolicies: Policy[];
-  upcomingPayments: any[];
+  upcomingPayments: UpcomingPayment[];
   typeCounts: Record<string, number>;
   companyCounts: Record<string, number>;
 }
 
 export default function DashboardPage() {
   const { appUser, loading: authLoading } = useAuth();
-  const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
-  const [loading, setLoading] = useState(true);
 
   // Demo context
   const { isDemoMode, setIsDemoMode } = useDemo();
 
-  useEffect(() => {
-    async function loadData() {
-      if (!appUser) {
-        setLoading(false);
-        return;
-      }
-      try {
-        const data = await getPoliciesByTenant(appUser.tenantId);
-        setDbPolicies(data as Policy[]);
-      } catch (err) {
-        console.error("Failed to load policies", err);
-      } finally {
-        setLoading(false);
-      }
-    }
+  // G-09: usePolicies hook — eski useEffect + dbPolicies state'inin yerini aldı
+  const { policies: dbPolicies, loading, error } = usePolicies(
+    isDemoMode ? null : appUser?.tenantId
+  );
 
-    if (!authLoading) {
-      loadData();
-    }
-  }, [appUser, authLoading]);
-
-  // Use Db policies or Mock policies based on mode
   const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
 
   const { stats, sortedPayments } = useMemo(() => {
@@ -62,7 +52,7 @@ export default function DashboardPage() {
       return days >= 0 && days <= 90;
     });
 
-    const upcomingPayments: any[] = [];
+    const upcomingPayments: UpcomingPayment[] = [];
     activePolicies.forEach(p => {
       if (p.premium.paymentType === "installment" && p.premium.installments) {
         p.premium.installments.forEach(inst => {
@@ -109,6 +99,18 @@ export default function DashboardPage() {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
         <p style={{ color: "var(--text-tertiary)" }}>Verileriniz yükleniyor...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <div style={{ textAlign: "center", padding: "var(--space-8)", background: "var(--danger-50)", border: "1px solid var(--danger-200)", borderRadius: "var(--radius-lg)", maxWidth: 420 }}>
+          <div style={{ fontSize: "2rem", marginBottom: "var(--space-3)" }}>⚠️</div>
+          <div style={{ fontWeight: 700, color: "var(--danger-800)", marginBottom: "var(--space-2)" }}>Veriler Yüklenemedi</div>
+          <div style={{ fontSize: "var(--text-sm)", color: "var(--danger-700)" }}>Lütfen sayfayı yenileyip tekrar deneyin.</div>
+        </div>
       </div>
     );
   }

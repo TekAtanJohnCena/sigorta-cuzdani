@@ -39,8 +39,8 @@ export default function SettingsPage() {
         name: userName
       });
       setMessage({ text: "Profil bilgileriniz başarıyla güncellendi.", type: "success" });
-    } catch (err: any) {
-      setMessage({ text: "Güncelleme başarısız: " + err.message, type: "error" });
+    } catch (err: unknown) {
+      setMessage({ text: "Güncelleme başarısız: " + (err as Error).message, type: "error" });
     } finally {
       setSaving(false);
     }

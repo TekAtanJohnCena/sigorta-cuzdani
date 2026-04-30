@@ -39,8 +39,8 @@ export default function proxy(req: NextRequest) {
         throw new Error("Invalid token structure");
       }
     } catch {
-      if (pathname.startsWith("/emre")) {
-        return NextResponse.redirect(new URL("/emre?unauthorized=1", req.url));
+      if (pathname.startsWith("/efsun")) {
+        return NextResponse.redirect(new URL("/efsun?unauthorized=1", req.url));
       }
       return NextResponse.json({ error: "Geçersiz token." }, { status: 401 });
     }

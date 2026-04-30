@@ -7,17 +7,11 @@ import { getEmployeesByTenant, addEmployee, updateEmployee } from "@/lib/firebas
 import { Policy, POLICY_TYPE_LABELS } from "@/types/policy";
 import { Employee, InsuranceStatus, INSURANCE_STATUS_LABELS, INSURANCE_STATUS_COLORS, INSURANCE_STATUS_ICONS } from "@/types/employee";
 import { useDemo } from "@/lib/context/DemoContext";
-import { MOCK_POLICIES } from "@/lib/mockData";
+import { MOCK_POLICIES, MOCK_EMPLOYEES } from "@/lib/mockData";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort } from "@/lib/utils/date";
 
-const MOCK_EMPLOYEES: Employee[] = [
-  { id: "emp-001", tenantId: "tenant-001", fullName: "Ayşe Kara", department: "Mühendislik", position: "Kıdemli Yazılım Geliştirici", startDate: "2023-03-01", isActive: true, insuranceStatus: "covered", healthPolicyId: "pol-003", insuranceCoverageStartDate: "2023-03-01", createdAt: "2023-03-01T00:00:00Z", updatedAt: "2023-03-01T00:00:00Z" },
-  { id: "emp-002", tenantId: "tenant-001", fullName: "Mehmet Yılmaz", department: "Satış", position: "Satış Müdürü", startDate: "2022-06-15", isActive: true, insuranceStatus: "covered", healthPolicyId: "pol-003", insuranceCoverageStartDate: "2022-06-15", createdAt: "2022-06-15T00:00:00Z", updatedAt: "2022-06-15T00:00:00Z" },
-  { id: "emp-003", tenantId: "tenant-001", fullName: "Fatma Demir", department: "İnsan Kaynakları", position: "İK Uzmanı", startDate: "2024-01-10", isActive: true, insuranceStatus: "covered", healthPolicyId: "pol-003", createdAt: "2024-01-10T00:00:00Z", updatedAt: "2024-01-10T00:00:00Z" },
-  { id: "emp-004", tenantId: "tenant-001", fullName: "Ali Çelik", department: "Finans", position: "Mali Kontrolör", startDate: "2025-03-01", isActive: true, insuranceStatus: "pending_addition", pendingRequestType: "addition", pendingRequestDate: "2025-03-01", createdAt: "2025-03-01T00:00:00Z", updatedAt: "2025-03-01T00:00:00Z" },
-  { id: "emp-005", tenantId: "tenant-001", fullName: "Zeynep Arslan", department: "Mühendislik", position: "Ürün Müdürü", startDate: "2024-09-15", isActive: true, insuranceStatus: "covered", healthPolicyId: "pol-003", createdAt: "2024-09-15T00:00:00Z", updatedAt: "2024-09-15T00:00:00Z" },
-];
+
 
 const DEPARTMENTS = ["Mühendislik", "Satış", "İnsan Kaynakları", "Finans", "Operasyon", "Hukuk", "Pazarlama", "Yönetim", "Muhasebe"];
 

@@ -43,7 +43,7 @@ const NAV_ITEMS: NavSection[] = [
   {
     section: "Yönetim",
     items: [
-      { href: "/dashboard/hr", icon: "👥", label: "İK & Personel" },
+      { href: "/dashboard/hr", icon: "👥", label: "Personel" },
       { href: "/dashboard/settings", icon: "⚙️", label: "Ayarlar" },
     ],
   },
@@ -143,7 +143,9 @@ export default function DashboardLayout({
                 <div className="sidebar-user-avatar">{appUser ? appUser.name.substring(0,2).toUpperCase() : "?"}</div>
                 <div className="sidebar-user-info">
                   <div className="sidebar-user-name">{appUser?.name || "Yükleniyor..."}</div>
-                  <div className="sidebar-user-role">{appUser?.role === 'admin' ? "Yönetici" : "Personel"}</div>
+                  <div className="sidebar-user-role" style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
+                    {appUser?.companyName ? appUser.companyName : (appUser?.role === 'admin' ? "Yönetici" : "Personel")}
+                  </div>
                 </div>
               </div>
               <button onClick={logout} style={{ background: "none", border: "none", color: "var(--text-tertiary)", cursor: "pointer", fontSize: 18 }} title="Çıkış Yap">

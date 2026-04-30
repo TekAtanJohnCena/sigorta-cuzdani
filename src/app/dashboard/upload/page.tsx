@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort } from "@/lib/utils/date";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { uploadPolicyPDF } from "@/lib/firebase/storage";
+import { auth } from "@/lib/firebase/config";
 
 type UploadStage = "upload" | "processing" | "review" | "complete";
 
@@ -56,10 +57,13 @@ export default function UploadPage() {
     setIsSaving(true);
     setError(null);
     try {
+      // Firebase ID Token al — server-side auth için zorunlu
+      const idToken = await auth.currentUser?.getIdToken();
       const res = await fetch("/api/policies", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          ...(idToken ? { "Authorization": `Bearer ${idToken}` } : {}),
         },
         body: JSON.stringify({ ...extracted, tenantId: appUser.tenantId }),
       });

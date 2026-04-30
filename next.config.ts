@@ -1,4 +1,9 @@
 import type { NextConfig } from "next";
+import withBundleAnalyzer from "@next/bundle-analyzer";
+
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const securityHeaders = [
   // Clickjacking koruması
@@ -77,6 +82,12 @@ const nextConfig: NextConfig = {
       fullUrl: process.env.NODE_ENV === "development",
     },
   },
+
+  // B2B Performans Optimizasyonları (G-18)
+  compiler: {
+    // Production'da console.log vs. kaldır (error ve warn hariç)
+    removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+  },
 };
 
-export default nextConfig;
+export default bundleAnalyzer(nextConfig);

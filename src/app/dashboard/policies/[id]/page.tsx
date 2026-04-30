@@ -16,6 +16,7 @@ import { formatDateShort, daysUntil, getRelativeTime } from "@/lib/utils/date";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { calculatePolicyQualityScore } from "@/lib/engines/portfolioScoreEngine";
+import type { RiskAlert, AnalysisApiResponse } from "@/types/policy-analysis";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "badge-green badge-dot",
@@ -35,6 +36,12 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPdf, setShowPdf] = useState(false);
+
+  // Gizli Mayın Analizi state
+  const [analysisAlerts, setAnalysisAlerts] = useState<RiskAlert[] | null>(null);
+  const [analysisSummary, setAnalysisSummary] = useState<string | null>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -74,6 +81,58 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
       load();
     }
   }, [id, appUser, authLoading, isDemoMode]);
+
+  const handleAnalyze = async () => {
+    if (!policy) return;
+    setAnalysisLoading(true);
+    setAnalysisError(null);
+    setAnalysisAlerts(null);
+    setAnalysisSummary(null);
+
+    // Poliçeden analiz için metin oluştur
+    const textParts: string[] = [
+      `Poliçe Tipi: ${POLICY_TYPE_LABELS[policy.policyType]}`,
+      `Sigorta Şirketi: ${policy.insuranceCompany}`,
+      `Poliçe No: ${policy.policyNumber}`,
+      `Başlangıç: ${policy.startDate} — Bitiş: ${policy.endDate}`,
+      `Toplam Prim: ${policy.premium.totalPremium} ${policy.premium.currency}`,
+    ];
+
+    if (policy.coverages?.length) {
+      textParts.push("\nTeminatlar:");
+      policy.coverages.forEach((c) => {
+        textParts.push(
+          `- ${c.name}: ${c.amount} ${c.currency}` +
+          (c.deductible ? ` (Muafiyet: ${c.deductible}${c.deductibleType === "percentage" ? "%" : " " + c.currency})` : "")
+        );
+      });
+    }
+
+    if (policy.notes) {
+      textParts.push(`\nÖzel Şartlar:\n${policy.notes}`);
+    }
+
+    const policyText = textParts.join("\n");
+
+    try {
+      const res = await fetch("/api/analyze-policy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ policyText }),
+      });
+      const data: AnalysisApiResponse = await res.json();
+      if (data.isSuccess) {
+        setAnalysisAlerts(data.alerts);
+        setAnalysisSummary(data.summary);
+      } else {
+        setAnalysisError(data.error || "Analiz başarısız oldu.");
+      }
+    } catch {
+      setAnalysisError("Sunucu hatası. Lütfen tekrar deneyin.");
+    } finally {
+      setAnalysisLoading(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm("Bu poliçeyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
@@ -325,6 +384,227 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
               </div>
             </div>
           )}
+
+          {/* ── Gizli Mayın Analizi ────────────────────────────── */}
+          <div className="card" style={{ padding: "var(--space-5)", border: "1px solid var(--warning-200)", background: "var(--warning-50)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: analysisAlerts ? "var(--space-5)" : 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                <span style={{ fontSize: 24 }}>💣</span>
+                <div>
+                  <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 700, color: "var(--warning-900)", margin: 0 }}>Gizli Mayın Analizi</h3>
+                  <p style={{ fontSize: "var(--text-xs)", color: "var(--warning-700)", margin: 0, marginTop: 2 }}>
+                    AI destekli istisna, muafiyet ve eksik teminat taraması
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleAnalyze}
+                disabled={analysisLoading}
+                style={{
+                  background: analysisLoading
+                    ? "var(--neutral-300)"
+                    : "linear-gradient(135deg, #d97706, #b45309)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "var(--radius-md)",
+                  padding: "var(--space-2) var(--space-5)",
+                  fontWeight: 700,
+                  fontSize: "var(--text-sm)",
+                  cursor: analysisLoading ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--space-2)",
+                  transition: "opacity 0.2s",
+                }}
+              >
+                {analysisLoading ? (
+                  <>
+                    <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⚙️</span>
+                    Taranıyor...
+                  </>
+                ) : analysisAlerts ? (
+                  "🔄 Yeniden Tara"
+                ) : (
+                  "🔍 Analiz Başlat"
+                )}
+              </button>
+            </div>
+
+            {/* Hata */}
+            {analysisError && (
+              <div style={{
+                marginTop: "var(--space-4)",
+                background: "var(--danger-50)",
+                border: "1px solid var(--danger-200)",
+                borderRadius: "var(--radius-md)",
+                padding: "var(--space-4)",
+                color: "var(--danger-700)",
+                fontSize: "var(--text-sm)",
+                fontWeight: 500,
+              }}>
+                ⚠️ {analysisError}
+              </div>
+            )}
+
+            {/* Loading Skeleton */}
+            {analysisLoading && (
+              <div style={{ marginTop: "var(--space-5)", display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} style={{
+                    background: "rgba(255,255,255,0.6)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "var(--space-4)",
+                    animation: "pulse 1.5s ease-in-out infinite",
+                    animationDelay: `${i * 0.2}s`,
+                  }}>
+                    <div style={{ height: 12, background: "var(--neutral-200)", borderRadius: 4, width: "60%", marginBottom: 8 }} />
+                    <div style={{ height: 10, background: "var(--neutral-100)", borderRadius: 4, width: "90%" }} />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Sonuçlar */}
+            {analysisAlerts && !analysisLoading && (
+              <div style={{ marginTop: "var(--space-5)" }}>
+                {/* Summary */}
+                {analysisSummary && (
+                  <div style={{
+                    background: "white",
+                    border: "1px solid var(--warning-200)",
+                    borderRadius: "var(--radius-md)",
+                    padding: "var(--space-4)",
+                    marginBottom: "var(--space-4)",
+                    fontSize: "var(--text-sm)",
+                    lineHeight: 1.6,
+                    color: "var(--warning-900)",
+                    fontStyle: "italic",
+                  }}>
+                    📊 {analysisSummary}
+                  </div>
+                )}
+
+                {/* Alert kartları */}
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+                  {analysisAlerts.map((alert) => {
+                    const severityConfig = {
+                      CRITICAL: {
+                        bg: "var(--danger-50)",
+                        border: "var(--danger-200)",
+                        icon: "🚨",
+                        label: "KRİTİK",
+                        labelColor: "var(--danger-700)",
+                        labelBg: "var(--danger-100)",
+                        titleColor: "var(--danger-900)",
+                      },
+                      WARNING: {
+                        bg: "var(--warning-50)",
+                        border: "var(--warning-200)",
+                        icon: "⚠️",
+                        label: "UYARI",
+                        labelColor: "var(--warning-700)",
+                        labelBg: "var(--warning-100)",
+                        titleColor: "var(--warning-900)",
+                      },
+                      INFO: {
+                        bg: "var(--primary-50)",
+                        border: "var(--primary-200)",
+                        icon: "ℹ️",
+                        label: "BİLGİ",
+                        labelColor: "var(--primary-700)",
+                        labelBg: "var(--primary-100)",
+                        titleColor: "var(--primary-900)",
+                      },
+                    }[alert.severity];
+
+                    return (
+                      <div
+                        key={alert.id}
+                        style={{
+                          background: severityConfig.bg,
+                          border: `1px solid ${severityConfig.border}`,
+                          borderLeft: `4px solid ${severityConfig.border}`,
+                          borderRadius: "var(--radius-md)",
+                          padding: "var(--space-4)",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
+                            <span>{severityConfig.icon}</span>
+                            <span style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: severityConfig.titleColor }}>
+                              {alert.title}
+                            </span>
+                          </div>
+                          <span style={{
+                            fontSize: "var(--text-xs)",
+                            fontWeight: 800,
+                            color: severityConfig.labelColor,
+                            background: severityConfig.labelBg,
+                            padding: "1px 8px",
+                            borderRadius: 99,
+                            whiteSpace: "nowrap",
+                          }}>
+                            {severityConfig.label}
+                          </span>
+                        </div>
+                        <p style={{ fontSize: "var(--text-sm)", color: severityConfig.titleColor, lineHeight: 1.6, margin: 0, opacity: 0.85 }}>
+                          {alert.description}
+                        </p>
+                        {alert.financialImpact && (
+                          <div style={{
+                            marginTop: "var(--space-2)",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            background: "rgba(255,255,255,0.7)",
+                            border: `1px solid ${severityConfig.border}`,
+                            borderRadius: "var(--radius-sm)",
+                            padding: "2px 10px",
+                            fontSize: "var(--text-xs)",
+                            fontWeight: 700,
+                            color: severityConfig.labelColor,
+                          }}>
+                            💰 {alert.financialImpact}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Özet istatistik */}
+                <div style={{
+                  marginTop: "var(--space-4)",
+                  display: "flex",
+                  gap: "var(--space-3)",
+                  flexWrap: "wrap",
+                }}>
+                  {["CRITICAL", "WARNING", "INFO"].map((sev) => {
+                    const count = analysisAlerts.filter((a) => a.severity === sev).length;
+                    if (!count) return null;
+                    const labels: Record<string, { label: string; color: string; bg: string }> = {
+                      CRITICAL: { label: "Kritik", color: "var(--danger-700)", bg: "var(--danger-100)" },
+                      WARNING: { label: "Uyarı", color: "var(--warning-700)", bg: "var(--warning-100)" },
+                      INFO: { label: "Bilgi", color: "var(--primary-700)", bg: "var(--primary-100)" },
+                    };
+                    return (
+                      <span key={sev} style={{
+                        fontSize: "var(--text-xs)",
+                        fontWeight: 700,
+                        color: labels[sev].color,
+                        background: labels[sev].bg,
+                        padding: "2px 10px",
+                        borderRadius: 99,
+                      }}>
+                        {count} {labels[sev].label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* System Metadata */}
           <div className="card" style={{ padding: "var(--space-5)", background: "var(--neutral-50)" }}>

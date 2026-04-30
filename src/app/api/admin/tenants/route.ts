@@ -70,8 +70,8 @@ export async function POST(req: NextRequest) {
         }
         
         return NextResponse.json({ success: true, uid: userRecord.uid });
-      } catch (authError: any) {
-        return NextResponse.json({ success: false, error: authError.message }, { status: 400 });
+      } catch (error: unknown) {
+        return NextResponse.json({ success: false, error: (error as Error).message }, { status: 400 });
       }
     }
 
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       manualSetupRequired: true,
     }, { status: 200 });
 
-  } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
   }
 }

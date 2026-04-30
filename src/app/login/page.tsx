@@ -23,11 +23,12 @@ export default function LoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       router.push("/dashboard");
-    } catch (err: any) {
-      if (err.code === "auth/user-not-found" || err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+    } catch (err: unknown) {
+      const fbErr = err as { code?: string; message?: string };
+      if (fbErr.code === "auth/user-not-found" || fbErr.code === "auth/wrong-password" || fbErr.code === "auth/invalid-credential") {
         setError("E-posta veya şifre hatalı.");
       } else {
-        setError(err.message || "Bir hata oluştu.");
+        setError(fbErr.message || "Bir hata oluştu.");
       }
       setLoading(false);
     }

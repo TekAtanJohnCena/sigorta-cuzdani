@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useDemo } from "@/lib/context/DemoContext";
 import { useAuth } from "@/lib/firebase/AuthContext";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { MOCK_POLICIES } from "@/lib/mockData";
 import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS, Policy } from "@/types/policy";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -18,10 +19,28 @@ function UrgencyBadge({ days }: { days: number }) {
 
 export default function RenewalsPage() {
   const { isDemoMode } = useDemo();
-  const { appUser } = useAuth();
+  const { appUser, loading: authLoading } = useAuth();
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
+  const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const policies = isDemoMode ? MOCK_POLICIES : [];
+  useEffect(() => {
+    async function load() {
+      if (isDemoMode) { setLoading(false); return; }
+      if (!appUser) { setLoading(false); return; }
+      try {
+        const data = await getPoliciesByTenant(appUser.tenantId);
+        setDbPolicies(data as Policy[]);
+      } catch (e) {
+        console.error("Renewals: Failed to load policies", e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (!authLoading) load();
+  }, [appUser, authLoading, isDemoMode]);
+
+  const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
 
   const renewalPolicies = useMemo(() => {
     return policies
@@ -37,6 +56,14 @@ export default function RenewalsPage() {
       .map(p => ({ ...p, daysLeft: daysUntil(p.endDate) }))
       .sort((a, b) => a.daysLeft - b.daysLeft);
   }, [policies]);
+
+  if (authLoading || loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
+        <p style={{ color: "var(--text-tertiary)" }}>Yenileme verileri yükleniyor...</p>
+      </div>
+    );
+  }
 
   return (
     <div>

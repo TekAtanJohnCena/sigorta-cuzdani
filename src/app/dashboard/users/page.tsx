@@ -81,9 +81,9 @@ export default function UsersPage() {
       setUsers([...users, newUserDoc]);
       setName(""); setEmail(""); setPassword(""); setRole("user");
       setMessage({ text: "Kullanıcı başarıyla oluşturuldu.", type: "success" });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setMessage({ text: err.message || "Bir hata oluştu", type: "error" });
+      setMessage({ text: (err as Error).message || "Bir hata oluştu", type: "error" });
     } finally {
       setIsSubmitting(false);
     }

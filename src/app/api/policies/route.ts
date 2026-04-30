@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { savePolicyToFirestore } from "@/lib/firebase/firestore";
 import { Policy, PolicyStatus } from "@/types/policy";
 import { logger } from "@/lib/logger";
+import { withAuth } from "@/lib/api/withAuth";
 
 // ============================================
-// Policies API — Input Validation ile güçlendirildi
-// tenantId artık body'den değil, auth context'ten alınıyor
+// Policies API — G-01, G-04, G-11 güvenlik düzeltmeleri
+// tenantId artık Firebase ID Token'dan alınıyor (withAuth)
 // ============================================
 
 // Basit string sanitizasyonu (XSS koruması)
@@ -22,6 +23,13 @@ function sanitizeNumber(value: unknown, fallback = 0): number {
   return isFinite(n) && n >= 0 ? n : fallback;
 }
 
+// ISO tarih formatı doğrulama (G-11)
+function isValidISODate(value: unknown): boolean {
+  if (typeof value !== "string" || !value) return false;
+  const d = new Date(value);
+  return !isNaN(d.getTime());
+}
+
 // Zorunlu alan doğrulama
 function validatePolicyBody(body: Record<string, unknown>): string | null {
   if (!body.policeTipi || typeof body.policeTipi !== "string") {
@@ -30,12 +38,9 @@ function validatePolicyBody(body: Record<string, unknown>): string | null {
   if (!body.sigortaSirketi || typeof body.sigortaSirketi !== "string") {
     return "Sigorta şirketi zorunludur.";
   }
-  if (!body.tenantId || typeof body.tenantId !== "string") {
-    return "Oturum bilgisi gerekli.";
-  }
-  // İzin verilen poliçe tipleri
+  // G-04: "isyeri" eklendi
   const ALLOWED_TYPES = [
-    "kasko", "trafik", "yangin", "saglik", "nakliyat",
+    "kasko", "trafik", "yangin", "saglik", "nakliyat", "isyeri",
     "dask", "ferdi_kaza", "sorumluluk", "muhendislik", "tarim", "diger"
   ];
   if (!ALLOWED_TYPES.includes(body.policeTipi as string)) {
@@ -44,31 +49,35 @@ function validatePolicyBody(body: Record<string, unknown>): string | null {
   return null;
 }
 
-export async function POST(req: NextRequest) {
+// G-01: withAuth wrapper — tenantId artık token'dan geliyor
+export const POST = withAuth(async (req, { tenantId, uid }) => {
   try {
     const body = await req.json();
 
     // Input doğrulama
     const validationError = validatePolicyBody(body);
     if (validationError) {
-      logger.warn("Policy validation failed", "api/policies", { error: validationError });
+      logger.warn("Policy validation failed", "api/policies", { error: validationError, uid });
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    const tenantId = sanitize(body.tenantId, 128);
+    // G-11: Başlangıç tarihi doğrulama
+    if (body.baslangicTarihi && !isValidISODate(body.baslangicTarihi)) {
+      return NextResponse.json({ error: "Geçersiz başlangıç tarihi." }, { status: 400 });
+    }
 
-    // Tarih doğrulama
+    // Bitiş tarihi doğrulama (mevcut)
     let status: PolicyStatus = "active";
     if (body.bitisTarihi) {
-      const endDate = new Date(body.bitisTarihi as string);
-      if (isNaN(endDate.getTime())) {
+      if (!isValidISODate(body.bitisTarihi)) {
         return NextResponse.json({ error: "Geçersiz bitiş tarihi." }, { status: 400 });
       }
+      const endDate = new Date(body.bitisTarihi as string);
       if (endDate.getTime() < Date.now()) status = "expired";
     }
 
     const mappedPolicy: Partial<Policy> = {
-      tenantId,
+      tenantId, // G-01: Token'dan geliyor, client body'den DEĞİL
       policyType: sanitize(body.policeTipi, 50) as Policy["policyType"],
       policyNumber: sanitize(body.policeNumarasi, 50) || "Bilinmiyor",
       insuranceCompany: sanitize(body.sigortaSirketi, 100) || "Bilinmiyor",
@@ -126,7 +135,7 @@ export async function POST(req: NextRequest) {
         : "",
     };
 
-    logger.info("Saving policy", "api/policies", { tenantId, type: mappedPolicy.policyType });
+    logger.info("Saving policy", "api/policies", { tenantId, uid, type: mappedPolicy.policyType });
 
     const documentId = await savePolicyToFirestore(mappedPolicy, tenantId);
 
@@ -145,4 +154,5 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
+

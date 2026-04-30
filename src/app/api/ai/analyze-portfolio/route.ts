@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { getPoliciesByTenant, saveAnalysisResults } from "@/lib/firebase/firestore";
+import { Policy, Coverage } from "@/types/policy";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { PORTFOLIO_ANALYSIS_SYSTEM_PROMPT } from "@/lib/ai/analysisPrompts";
 
@@ -36,12 +37,12 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const simplifiedPolicies = policies.map((p: any) => ({
+    const simplifiedPolicies = (policies as unknown as Policy[]).map((p: Policy) => ({
       tipi: p.policyType,
       sirket: p.insuranceCompany,
       tarihler: { baslangic: p.startDate, bitis: p.endDate },
       prim: p.premium,
-      teminatlar: p.coverages?.map((c: any) => ({ ad: c.name, tutar: c.amount })),
+      teminatlar: p.coverages?.map((c: Coverage) => ({ ad: c.name, tutar: c.amount })),
       kapsam: p.notes,
     }));
 

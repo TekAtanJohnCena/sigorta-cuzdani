@@ -1,90 +1,63 @@
-// ============================================
-// Firestore Security Rules
-// DEPLOY: npx firebase deploy --only firestore:rules
-// ============================================
-
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── Yardımcı Fonksiyonlar ────────────────────────────
-
-    // Kullanıcı giriş yapmış mı?
+    // Yardımcı Fonksiyonlar
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // Tenant izolasyonu: sadece kendi verisine erişebilir
-    function isTenantOwner(tenantId) {
-      return isAuthenticated() && request.auth.uid == tenantId;
+    // Kullanıcının tenantId'sini Firestore'dan güvenli şekilde oku
+    // Eğer kullanıcı dokümanı yoksa, auth.uid'yi (admin/owner varsayımı) kullan
+    function getUserTenantId() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) 
+        ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data.tenantId 
+        : request.auth.uid;
     }
 
-    // Tenant'ın belgeye sahip olup olmadığını kontrol et
-    function ownsTenantData() {
-      return isAuthenticated() &&
-        request.auth.uid == resource.data.tenantId;
+    function isTenantMatch(docTenantId) {
+      return isAuthenticated() && getUserTenantId() == docTenantId;
     }
 
-    // Yeni belgede tenantId doğru set edilmiş mi?
-    function setsCorrectTenantId() {
-      return request.resource.data.tenantId == request.auth.uid;
-    }
-
-    // ─── Kullanıcı Profilleri ─────────────────────────────
-    match /users/{userId} {
-      // Kullanıcı sadece kendi profilini okuyabilir/yazabilir
-      allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow write: if isAuthenticated() && request.auth.uid == userId;
-    }
-
-    // ─── Poliçeler ────────────────────────────────────────
+    // 1. Poliçeler (Policies) Koleksiyonu Kuralları
     match /policies/{policyId} {
-      // Sadece tenantId sahibi okuyabilir
-      allow read: if ownsTenantData();
-
-      // Oluştururken doğru tenantId set edilmeli
-      allow create: if isAuthenticated() && setsCorrectTenantId();
-
-      // Güncellerken tenantId değiştirilememeli
-      allow update: if ownsTenantData() &&
-        request.resource.data.tenantId == resource.data.tenantId;
-
-      // Silme — sadece kendi verisi
-      allow delete: if ownsTenantData();
+      // Okuma ve silme işlemi için mevcut poliçenin tenantId'si kullanıcınınkiyle eşleşmeli
+      allow read, delete: if isTenantMatch(resource.data.tenantId);
+      
+      // Yeni poliçe oluştururken, verinin içine yazılan tenantId kullanıcınınkiyle eşleşmeli
+      allow create: if isTenantMatch(request.resource.data.tenantId);
+      
+      // Güncelleme yaparken, hem mevcut poliçenin hem de güncellenen verinin tenantId'si eşleşmeli
+      // (Böylece bir poliçe başka bir tenant'a transfer edilemez)
+      allow update: if isTenantMatch(resource.data.tenantId) 
+                    && isTenantMatch(request.resource.data.tenantId);
     }
 
-    // ─── Hasar Dosyaları ──────────────────────────────────
-    match /claims/{claimId} {
-      allow read: if ownsTenantData();
-      allow create: if isAuthenticated() && setsCorrectTenantId();
-      allow update: if ownsTenantData() &&
-        request.resource.data.tenantId == resource.data.tenantId;
-      allow delete: if ownsTenantData();
+    // 2. Yapay Zeka Sonuçları (Insights) Koleksiyonu Kuralları
+    match /insights/{insightId} {
+      allow read, delete: if isTenantMatch(resource.data.tenantId);
+      allow create: if isTenantMatch(request.resource.data.tenantId);
+      allow update: if isTenantMatch(resource.data.tenantId) 
+                    && isTenantMatch(request.resource.data.tenantId);
     }
 
-    // ─── Personel ─────────────────────────────────────────
-    match /employees/{employeeId} {
-      allow read: if ownsTenantData();
-      allow create: if isAuthenticated() && setsCorrectTenantId();
-      allow update: if ownsTenantData() &&
-        request.resource.data.tenantId == resource.data.tenantId;
-      allow delete: if ownsTenantData();
+    // 3. Kullanıcılar (Users) Koleksiyonu Kuralları
+    match /users/{userId} {
+      // Herkes kendi kullanıcı dökümanına tam erişime sahiptir
+      allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      // Veya aynı tenant altındaki diğer kullanıcıları okuyabilir (Admin paneli listelemesi için)
+      allow read: if isTenantMatch(resource.data.tenantId);
     }
 
-    // ─── AI Analiz Sonuçları ──────────────────────────────
-    match /analyses/{analysisId} {
-      allow read: if ownsTenantData();
-      allow write: if false; // Sadece server-side (Admin SDK) yazabilir
-    }
-
-    // ─── Tenant Kayıtları ─────────────────────────────────
-    // Tenant kayıtları sadece Admin SDK üzerinden okunur/yazılır
+    // 4. Admin Yönetim Koleksiyonu (Tenants)
     match /tenants/{tenantId} {
-      allow read: if false;  // Client erişimi kapalı
-      allow write: if false; // Sadece Admin SDK
+      // Client-side'dan erişime kapatıldı. Bu koleksiyon sadece Server-side (Admin SDK) ile yönetilmelidir.
+      allow read, write: if false;
     }
 
-    // ─── Varsayılan: Tümünü reddet ────────────────────────
+    // 5. Varsayılan Güvenlik Duvarı (Fail-Closed)
+    // Yukarıda tanımlanmayan hiçbir koleksiyona erişim izni verme
     match /{document=**} {
       allow read, write: if false;
     }

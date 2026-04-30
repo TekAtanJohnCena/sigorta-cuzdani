@@ -539,3 +539,68 @@ export const MOCK_RISK_SCORE: RiskScore = {
     },
   ],
 };
+
+// ============================================
+// G-12: MOCK_CLAIMS — claims/page.tsx'ten merkeze taşındı
+// ============================================
+import { Claim, ClaimStatus } from '@/types/claim';
+
+export const MOCK_CLAIMS: Claim[] = [
+  {
+    id: 'clm-001',
+    tenantId: 'tenant-001',
+    policyId: 'pol-001',
+    policyNumber: 'KSK-2025-48521',
+    policyType: 'kasko',
+    insuranceCompany: 'Allianz Sigorta',
+    claimDate: '2025-03-22',
+    incidentDate: '2025-03-21',
+    description: 'Park halindeki araca arkadan çarptı, bagaj hasarı oluştu',
+    estimatedAmount: 45000,
+    approvedAmount: 38500,
+    status: 'approved' as ClaimStatus,
+    statusHistory: [
+      { status: 'submitted' as ClaimStatus, timestamp: '2025-03-22T09:00:00Z' },
+      { status: 'expert_assigned' as ClaimStatus, timestamp: '2025-03-24T11:00:00Z' },
+      { status: 'under_review' as ClaimStatus, timestamp: '2025-03-27T14:00:00Z' },
+      { status: 'approved' as ClaimStatus, timestamp: '2025-04-02T10:00:00Z', note: 'Tamir bedeli onaylandı' },
+    ],
+    documents: [],
+    createdAt: '2025-03-22T09:00:00Z',
+    updatedAt: '2025-04-02T10:00:00Z',
+  },
+  {
+    id: 'clm-002',
+    tenantId: 'tenant-001',
+    policyId: 'pol-007',
+    policyNumber: 'NKL-2025-21003',
+    policyType: 'nakliyat',
+    insuranceCompany: 'Mapfre Sigorta',
+    claimDate: '2025-04-10',
+    incidentDate: '2025-04-09',
+    description: 'İstanbul-Ankara arası taşınan elektronik ürünlerde nem hasarı tespit edildi',
+    estimatedAmount: 120000,
+    status: 'expert_assigned' as ClaimStatus,
+    statusHistory: [
+      { status: 'submitted' as ClaimStatus, timestamp: '2025-04-10T10:00:00Z' },
+      { status: 'expert_assigned' as ClaimStatus, timestamp: '2025-04-12T09:00:00Z', note: 'Ahmet Yılmaz eksper olarak atandı' },
+    ],
+    documents: [],
+    createdAt: '2025-04-10T10:00:00Z',
+    updatedAt: '2025-04-12T09:00:00Z',
+  },
+];
+
+// ============================================
+// G-12: MOCK_EMPLOYEES — hr/page.tsx'ten merkeze taşındı
+// ============================================
+import { Employee } from '@/types/employee';
+
+export const MOCK_EMPLOYEES: Employee[] = [
+  { id: 'emp-001', tenantId: 'tenant-001', fullName: 'Ayşe Kara', department: 'Mühendislik', position: 'Kıdemli Yazılım Geliştirici', startDate: '2023-03-01', isActive: true, insuranceStatus: 'covered', healthPolicyId: 'pol-003', insuranceCoverageStartDate: '2023-03-01', createdAt: '2023-03-01T00:00:00Z', updatedAt: '2023-03-01T00:00:00Z' },
+  { id: 'emp-002', tenantId: 'tenant-001', fullName: 'Mehmet Yılmaz', department: 'Satış', position: 'Satış Müdürü', startDate: '2022-06-15', isActive: true, insuranceStatus: 'covered', healthPolicyId: 'pol-003', insuranceCoverageStartDate: '2022-06-15', createdAt: '2022-06-15T00:00:00Z', updatedAt: '2022-06-15T00:00:00Z' },
+  { id: 'emp-003', tenantId: 'tenant-001', fullName: 'Fatma Demir', department: 'İnsan Kaynakları', position: 'İK Uzmanı', startDate: '2024-01-10', isActive: true, insuranceStatus: 'covered', healthPolicyId: 'pol-003', createdAt: '2024-01-10T00:00:00Z', updatedAt: '2024-01-10T00:00:00Z' },
+  { id: 'emp-004', tenantId: 'tenant-001', fullName: 'Ali Çelik', department: 'Finans', position: 'Mali Kontrolör', startDate: '2025-03-01', isActive: true, insuranceStatus: 'pending_addition', pendingRequestType: 'addition', pendingRequestDate: '2025-03-01', createdAt: '2025-03-01T00:00:00Z', updatedAt: '2025-03-01T00:00:00Z' },
+  { id: 'emp-005', tenantId: 'tenant-001', fullName: 'Zeynep Arslan', department: 'Mühendislik', position: 'Ürün Müdürü', startDate: '2024-09-15', isActive: true, insuranceStatus: 'covered', healthPolicyId: 'pol-003', createdAt: '2024-09-15T00:00:00Z', updatedAt: '2024-09-15T00:00:00Z' },
+];
+

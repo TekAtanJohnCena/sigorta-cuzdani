@@ -6,6 +6,25 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
 import { getLastAnalysisByTenant } from "@/lib/firebase/firestore";
 
+interface AIAnalysisConflict {
+  teminatAdi: string;
+  ilgiliPoliceler: string[];
+  aciklama: string;
+  tahminiBosaOdenenTutar: number;
+}
+
+interface AIAnalysisRisk {
+  eksikTeminat: string;
+  riskSeviyesi: "yuksek" | "orta";
+  ilgiliPoliceTipi: string;
+  aciklama: string;
+}
+
+interface AIAnalysisOptimization {
+  baslik: string;
+  aciklama: string;
+}
+
 const MOCK_AI_ANALYSIS = {
   ozet: "Portföyünüzde tespit edilen 7 poliçe Kapsamlı Risk Analizinden geçirilmiştir. Risk skorunuz iyi görünmekle birlikte, poliçeler arasında ciddi örtüşmeler mevcut. Özellikle elektronik donanım teminatlarınız çiftlenmiş durumda. Ayrıca, siber saldırı ve iş durması gibi modern felaket senaryolarına karşı büyük reasürans açıkları tespit ettim.",
   riskSkoru: 72,
@@ -210,7 +229,7 @@ export default function AiAnalysisPage() {
               
               {aiAnalysis.cakismalar?.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {aiAnalysis.cakismalar.map((c: any, i: number) => (
+                  {aiAnalysis.cakismalar.map((c: AIAnalysisConflict, i: number) => (
                     <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--warning-400)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                         <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{c.teminatAdi}</div>
@@ -243,7 +262,7 @@ export default function AiAnalysisPage() {
               
               {aiAnalysis.riskAciklari?.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {aiAnalysis.riskAciklari.map((r: any, i: number) => (
+                  {aiAnalysis.riskAciklari.map((r: AIAnalysisRisk, i: number) => (
                     <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--danger-400)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                         <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{r.eksikTeminat}</div>
@@ -274,7 +293,7 @@ export default function AiAnalysisPage() {
                 </div>
                 
                 <div className="grid-2">
-                  {aiAnalysis.optimizasyonOnerileri.map((o: any, i: number) => (
+                  {aiAnalysis.optimizasyonOnerileri.map((o: AIAnalysisOptimization, i: number) => (
                     <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--primary-400)" }}>
                       <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem", marginBottom: "8px" }}>{o.baslik}</div>
                       <div style={{ fontSize: "0.95rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>{o.aciklama}</div>

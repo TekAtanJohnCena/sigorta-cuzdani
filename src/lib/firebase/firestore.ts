@@ -10,6 +10,9 @@ import {
   query,
   where,
   orderBy,
+  limit,
+  startAfter,
+  DocumentSnapshot,
   Timestamp,
   setDoc,
 } from "firebase/firestore";
@@ -37,11 +40,65 @@ export async function getPoliciesByTenant(tenantId: string) {
   const snap = await getDocs(q);
   // Sort on client side to avoid requiring a composite index in Firestore
   const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  return docs.sort((a: any, b: any) => {
+  return docs.sort((a: Record<string, any>, b: Record<string, any>) => {
     const aDate = a.createdAt?.toDate?.() ?? new Date(a.createdAt || 0);
     const bDate = b.createdAt?.toDate?.() ?? new Date(b.createdAt || 0);
     return bDate.getTime() - aDate.getTime();
   });
+}
+
+// ============================================
+// G-10: Cursor-based Pagination
+// Geriye dönük uyumlu — mevcut usePolicies hook'u etkilenmiyor
+// ============================================
+
+export interface PaginatedPoliciesResult {
+  policies: Record<string, unknown>[];
+  /** Sonraki sayfa için cursor — null ise son sayfadayız */
+  nextCursor: DocumentSnapshot | null;
+  /** Bu sayfada dönen kayıt sayısı */
+  count: number;
+  /** Daha fazla kayıt var mı? */
+  hasMore: boolean;
+}
+
+/**
+ * Cursor-based paginated policy fetching.
+ * Ana şablonda 25 kayıt/sayfa önerilir.
+ *
+ * Kullanım:
+ *   const { policies, nextCursor, hasMore } = await getPoliciesByTenantPaginated(tenantId);
+ *   // Sonraki sayfa:
+ *   const page2 = await getPoliciesByTenantPaginated(tenantId, { pageSize: 25, cursor: nextCursor });
+ */
+export async function getPoliciesByTenantPaginated(
+  tenantId: string,
+  options: { pageSize?: number; cursor?: DocumentSnapshot | null } = {}
+): Promise<PaginatedPoliciesResult> {
+  const { pageSize = 25, cursor = null } = options;
+
+  // pageSize + 1 çekerek hasMore'u hesaplıyoruz (ekstra sorgu yok)
+  const fetchSize = pageSize + 1;
+
+  const constraints = [
+    where("tenantId", "==", tenantId),
+    orderBy("createdAt", "desc"),
+    limit(fetchSize),
+    ...(cursor ? [startAfter(cursor)] : []),
+  ];
+
+  const q = query(collection(db, POLICIES_COLLECTION), ...constraints);
+  const snap = await getDocs(q);
+
+  const hasMore = snap.docs.length > pageSize;
+  const docs = snap.docs.slice(0, pageSize);
+
+  return {
+    policies: docs.map((d) => ({ id: d.id, ...d.data() })),
+    nextCursor: hasMore ? docs[docs.length - 1] : null,
+    count: docs.length,
+    hasMore,
+  };
 }
 
 /**
@@ -64,10 +121,19 @@ export async function getUsersByTenant(tenantId: string) {
   return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
 }
 
-export async function getPolicyById(id: string) {
+export async function getPolicyById(id: string, tenantId?: string) {
   const snap = await getDoc(doc(db, POLICIES_COLLECTION, id));
   if (!snap.exists()) return null;
-  return { id: snap.id, ...snap.data() };
+
+  const data = snap.data();
+
+  // G-02: Tenant izolasyonu — eşleşmezse erişimi engelle
+  if (tenantId && data.tenantId !== tenantId) {
+    console.warn(`[SECURITY] Cross-tenant access blocked: requested=${tenantId}, actual=${data.tenantId}, policyId=${id}`);
+    return null;
+  }
+
+  return { id: snap.id, ...data };
 }
 
 export async function updatePolicy(
@@ -80,14 +146,25 @@ export async function updatePolicy(
   });
 }
 
-export async function deletePolicy(id: string) {
+export async function deletePolicy(id: string, tenantId?: string) {
+  // G-03: Önce dokümanı oku, tenant eşleşmesini doğrula
+  if (tenantId) {
+    const snap = await getDoc(doc(db, POLICIES_COLLECTION, id));
+    if (!snap.exists()) {
+      throw new Error(`Poliçe bulunamadı: ${id}`);
+    }
+    if (snap.data().tenantId !== tenantId) {
+      console.error(`[SECURITY] Unauthorized delete attempt: requested=${tenantId}, actual=${snap.data().tenantId}, policyId=${id}`);
+      throw new Error("Bu poliçeyi silme yetkiniz yok.");
+    }
+  }
   await deleteDoc(doc(db, POLICIES_COLLECTION, id));
 }
 
 // AI Insights Persistence
 const INSIGHTS_COLLECTION = "insights";
 
-export async function saveAnalysisResults(tenantId: string, analysisData: any) {
+export async function saveAnalysisResults(tenantId: string, analysisData: Record<string, unknown>) {
   // Use tenantId as doc ID to keep only the latest one per tenant (or we could use addDoc for history)
   await setDoc(doc(db, INSIGHTS_COLLECTION, tenantId), {
     ...analysisData,
@@ -160,7 +237,8 @@ export async function checkTenantExpiry(tenantId: string): Promise<{ expired: bo
     const endDate = new Date(data.endDate);
     const now = new Date();
     return { expired: now > endDate, endDate: data.endDate };
-  } catch {
-    return { expired: false }; // Fail open — don't block on error
+  } catch (error) {
+    console.error(`[SECURITY] [FAIL-CLOSED] Tenant expiry verification failed. Access denied for tenantId=${tenantId}. Error: ${(error as Error).message}`);
+    return { expired: true }; // Fail closed — block access on error
   }
 }

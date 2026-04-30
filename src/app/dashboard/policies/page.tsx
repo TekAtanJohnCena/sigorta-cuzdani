@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getPoliciesByTenant, deletePolicy } from "@/lib/firebase/firestore";
+import { deletePolicy } from "@/lib/firebase/firestore";
 import {
   Policy,
   PolicyType,
@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
 import { MOCK_POLICIES } from "@/lib/mockData";
 import { exportPoliciesToCSV } from "@/lib/utils/export";
+import { usePolicies } from "@/lib/hooks/usePolicies";
 
 const STATUS_BADGE_MAP: Record<PolicyStatus, string> = {
   active: "badge-green badge-dot",
@@ -34,9 +35,13 @@ export default function PoliciesPage() {
   const [filterStatus, setFilterStatus] = useState<string>(searchParams.get("status") || "all");
   const [sortBy, setSortBy] = useState<string>("endDate");
 
-  const [policies, setPolicies] = useState<Policy[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const { appUser, loading: authLoading } = useAuth();
+  const { isDemoMode } = useDemo();
+
+  // G-09: usePolicies hook — eski useEffect + useState bloklarının yerini aldı
+  const { policies: dbPolicies, loading: isLoading, error, refetch } = usePolicies(
+    isDemoMode ? null : appUser?.tenantId
+  );
 
   // Sync with URL params (for global search and dashboard clicks)
   useEffect(() => {
@@ -46,26 +51,7 @@ export default function PoliciesPage() {
     if (status !== null) setFilterStatus(status);
   }, [searchParams]);
 
-  useEffect(() => {
-    async function load() {
-      if (!appUser) return;
-      try {
-        // AppUser is guaranteed to have a tenantId from context payload
-        const data = await getPoliciesByTenant(appUser.tenantId);
-        setPolicies(data as Policy[]);
-      } catch (err) {
-        console.error("Failed to load policies", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    if (!authLoading && appUser) {
-      load();
-    }
-  }, [appUser, authLoading]);
-
-  const { isDemoMode } = useDemo();
-  const effectivePolicies = isDemoMode ? MOCK_POLICIES : policies;
+  const effectivePolicies = isDemoMode ? MOCK_POLICIES : dbPolicies;
 
   const filteredPolicies = useMemo(() => {
     let result = [...effectivePolicies];
@@ -125,7 +111,7 @@ export default function PoliciesPage() {
 
     try {
       await deletePolicy(id);
-      setPolicies(policies.filter(p => p.id !== id));
+      refetch(); // hook ile listeyi tazele
     } catch (err) {
       alert("Silme işlemi başarısız oldu.");
     }
@@ -239,6 +225,12 @@ export default function PoliciesPage() {
       {isLoading ? (
         <div style={{ textAlign: "center", padding: "var(--space-12)" }}>
            <div style={{ fontSize: "var(--text-lg)" }}>Poliçeler yükleniyor...</div>
+        </div>
+      ) : error ? (
+        <div style={{ textAlign: "center", padding: "var(--space-12)", background: "var(--danger-50)", border: "1px solid var(--danger-200)", borderRadius: "var(--radius-lg)" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "var(--space-3)" }}>⚠️</div>
+          <div style={{ fontWeight: 700, color: "var(--danger-800)", marginBottom: "var(--space-2)" }}>Poliçeler Yüklenemedi</div>
+          <button className="btn btn-secondary" style={{ marginTop: "var(--space-4)" }} onClick={() => refetch()}>Tekrar Dene</button>
         </div>
       ) : effectivePolicies.length === 0 ? (
         <div className="empty-state">

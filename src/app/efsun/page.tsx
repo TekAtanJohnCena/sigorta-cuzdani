@@ -8,6 +8,17 @@ import {
 } from "@/lib/firebase/firestore";
 import { doc, setDoc, getFirestore } from "firebase/firestore";
 
+interface Tenant {
+  id: string;
+  companyName: string;
+  email: string;
+  packageType: string;
+  endDate: string;
+  durationDays?: number;
+  notes?: string;
+  isActive?: boolean;
+}
+
 const PACKAGE_LABELS: Record<string, string> = {
   demo: "Demo",
   monthly: "Aylık",
@@ -32,7 +43,7 @@ export default function EmreAdminPage() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const [tenants, setTenants] = useState<any[]>([]);
+  const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantsLoading, setTenantsLoading] = useState(false);
 
   // New tenant form
@@ -44,14 +55,14 @@ export default function EmreAdminPage() {
   const [formLoading, setFormLoading] = useState(false);
 
   // Edit modal
-  const [editTenant, setEditTenant] = useState<any>(null);
+  const [editTenant, setEditTenant] = useState<Tenant | null>(null);
   const [editDays, setEditDays] = useState("30");
 
   const loadTenants = useCallback(async () => {
     setTenantsLoading(true);
     try {
       const data = await getAllTenants();
-      setTenants(data as any[]);
+      setTenants(data as Tenant[]);
     } finally {
       setTenantsLoading(false);
     }
@@ -105,7 +116,7 @@ export default function EmreAdminPage() {
       await createTenant({
         companyName: form.companyName,
         email: form.email,
-        packageType: form.packageType as any,
+        packageType: form.packageType as "demo" | "monthly" | "yearly",
         durationDays: parseInt(form.durationDays),
         notes: form.notes,
       });
@@ -113,14 +124,14 @@ export default function EmreAdminPage() {
       setFormSuccess(`✅ ${form.companyName} başarıyla eklendi. Giriş: ${form.email}`);
       setForm({ companyName: "", email: "", password: "", packageType: "demo", durationDays: "7", notes: "" });
       loadTenants();
-    } catch (err: any) {
-      setFormError(err.message || "Hata oluştu.");
+    } catch (err: unknown) {
+      setFormError((err as Error).message || "Hata oluştu.");
     } finally {
       setFormLoading(false);
     }
   }
 
-  async function handleExtend(tenant: any, days: number) {
+  async function handleExtend(tenant: Tenant, days: number) {
     const newEnd = new Date();
     newEnd.setDate(newEnd.getDate() + days);
     await updateTenant(tenant.id, { endDate: newEnd.toISOString(), isActive: true });
@@ -230,7 +241,7 @@ export default function EmreAdminPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tenants.map((t: any) => {
+                  {tenants.map((t: Tenant) => {
                     const left = daysLeft(t.endDate);
                     const expired = left <= 0;
                     const urgent = left > 0 && left <= 7;
