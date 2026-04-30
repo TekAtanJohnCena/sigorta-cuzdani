@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 // ============================================
 // Next.js Proxy (v16.2.4+) — Route Koruması
 // middleware.ts yerine proxy.ts kullanılıyor
-// /dashboard, /emre ve /api/* route'larını korur
+// /dashboard, /efsun ve /api/* route'larını korur
 // ============================================
 
 const ADMIN_PATHS = ["/api/admin"];
@@ -22,8 +22,8 @@ export default function proxy(req: NextRequest) {
       req.headers.get("x-admin-token");
 
     if (!adminToken) {
-      if (pathname.startsWith("/emre")) {
-        return NextResponse.redirect(new URL("/emre?unauthorized=1", req.url));
+      if (pathname.startsWith("/efsun")) {
+        return NextResponse.redirect(new URL("/efsun?unauthorized=1", req.url));
       }
       return NextResponse.json(
         { error: "Yönetici yetkisi gerekli." },
@@ -73,8 +73,8 @@ export default function proxy(req: NextRequest) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/emre/:path*",
-    "/emre",
+    "/efsun/:path*",
+    "/efsun",
     "/api/:path*",
   ],
 };
