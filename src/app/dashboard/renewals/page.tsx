@@ -69,8 +69,57 @@ export default function RenewalsPage() {
     <div>
       {/* Header */}
       <div style={{ marginBottom: "var(--space-8)" }}>
-        <h1 className="page-title">🔄 Yenileme Merkezi</h1>
-        <p className="page-subtitle">Vadesi yaklaşan poliçelerinizi yönetin ve piyasadaki en iyi teklifleri karşılaştırın.</p>
+        <h1 className="page-title">🎯 Teklif & Yenileme Merkezi</h1>
+        <p className="page-subtitle">Yeni poliçe satın alın veya vadesi yaklaşan poliçelerinizi en iyi tekliflerle yenileyin.</p>
+      </div>
+
+      {/* Yeni Poliçe Al / Ürünler Grid */}
+      <div style={{ marginBottom: "var(--space-8)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
+          <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--text-primary)" }}>✨ Yeni Poliçe Teklifi Alın</h2>
+          <span style={{ fontSize: "var(--text-sm)", color: "var(--primary-600)", fontWeight: 600, cursor: "pointer" }}>Tüm Ürünleri Gör →</span>
+        </div>
+        
+        <div style={{ 
+          display: "grid", 
+          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", 
+          gap: "var(--space-4)" 
+        }}>
+          {/* Araç Sigortaları */}
+          <Link href="/dashboard/renewals/quote-engine?policyType=kasko" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none", position: "relative" }}>
+            <div style={{ position: "absolute", top: -8, right: -8, background: "var(--warning-500)", color: "white", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 99 }}>POPÜLER</div>
+            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🚗</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Kasko</div>
+          </Link>
+          
+          <Link href="/dashboard/renewals/quote-engine?policyType=trafik" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none" }}>
+            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🚥</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Trafik Sigortası</div>
+          </Link>
+
+          {/* Sağlık Sigortaları */}
+          <Link href="/dashboard/renewals/quote-engine?policyType=saglik" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none", position: "relative" }}>
+            <div style={{ position: "absolute", top: -8, right: -8, background: "var(--success-500)", color: "white", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 99 }}>YENİ</div>
+            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>⚕️</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Kurumsal Sağlık</div>
+          </Link>
+
+          {/* İşyeri ve Sorumluluk */}
+          <Link href="/dashboard/renewals/quote-engine?policyType=isyeri" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none" }}>
+            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🏢</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>İşyeri Sigortası</div>
+          </Link>
+
+          <Link href="/dashboard/renewals/quote-engine?policyType=sorumluluk" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none" }}>
+            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>⚖️</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Sorumluluk</div>
+          </Link>
+
+          <Link href="/dashboard/renewals/quote-engine?policyType=diger" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none", background: "var(--primary-50)", border: "1px dashed var(--primary-300)" }}>
+            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🔍</div>
+            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--primary-700)" }}>Diğer Branşlar</div>
+          </Link>
+        </div>
       </div>
 
       {/* Savings Banner */}

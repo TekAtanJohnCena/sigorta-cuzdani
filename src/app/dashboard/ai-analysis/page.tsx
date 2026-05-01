@@ -302,6 +302,34 @@ export default function AiAnalysisPage() {
                 </div>
               </div>
             )}
+
+            {/* Limit Uyarıları (AI tarafından üretilir) */}
+            {aiAnalysis.limitUyarilari?.length > 0 && (
+              <div className="card" style={{ borderTop: "4px solid var(--info-500)", gridColumn: "1 / -1", boxShadow: "0 8px 24px rgba(0,0,0,0.04)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "var(--space-6)" }}>
+                  <span style={{ fontSize: "1.5rem" }}>📏</span>
+                  <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--info-800)" }}>Teminat Limit Uyarıları</h3>
+                </div>
+                
+                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {aiAnalysis.limitUyarilari.map((l: { policeTipi?: string; mevcutLimit?: number; onerilenLimit?: number; aciklama?: string }, i: number) => (
+                    <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--info-400)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+                        <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{l.policeTipi || "Poliçe"}</div>
+                        {l.mevcutLimit != null && l.onerilenLimit != null && (
+                          <div style={{ textAlign: "right", fontSize: "0.85rem" }}>
+                            <span style={{ color: "var(--danger-600)", fontWeight: 700 }}>{formatCurrency(l.mevcutLimit)}</span>
+                            {" → "}
+                            <span style={{ color: "var(--success-600)", fontWeight: 700 }}>{formatCurrency(l.onerilenLimit)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ fontSize: "0.95rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>{l.aciklama}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

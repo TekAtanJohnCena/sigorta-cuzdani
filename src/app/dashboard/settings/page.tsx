@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
+import { saveCompanyProfile, getCompanyProfile } from "@/lib/firebase/firestore";
+import { SECTOR_OPTIONS, SectorKey } from "@/lib/data/sectorInsurance";
 
 export default function SettingsPage() {
   const { appUser } = useAuth();
@@ -12,6 +14,13 @@ export default function SettingsPage() {
   const [userName, setUserName] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ text: "", type: "" });
+
+  // Şirket Profili (Limit Benchmarking & AI Analiz)
+  const [sector, setSector] = useState<SectorKey>("genel");
+  const [annualRevenue, setAnnualRevenue] = useState("");
+  const [employeeCount, setEmployeeCount] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState({ text: "", type: "" });
   
   // Bildirim Ayarları
   const [notifications, setNotifications] = useState([
@@ -25,6 +34,14 @@ export default function SettingsPage() {
     if (appUser) {
       setCompanyName(appUser.companyName || "");
       setUserName(appUser.name || "");
+      // Şirket profilini yükle
+      getCompanyProfile(appUser.tenantId).then(profile => {
+        if (profile) {
+          setSector((profile.sector as SectorKey) || "genel");
+          setAnnualRevenue(profile.annualRevenue ? String(profile.annualRevenue) : "");
+          setEmployeeCount(profile.employeeCount ? String(profile.employeeCount) : "");
+        }
+      }).catch(err => console.error("Failed to load company profile", err));
     }
   }, [appUser]);
 
@@ -92,6 +109,81 @@ export default function SettingsPage() {
 
             <button className="btn btn-primary" style={{ alignSelf: "flex-end", marginTop: "var(--space-2)" }} onClick={handleSaveProfile} disabled={saving}>
               {saving ? "Kaydediliyor..." : "Değişiklikleri Kaydet"}
+            </button>
+          </div>
+        </div>
+
+        {/* Şirket Profili — Limit Benchmarking & AI Analiz */}
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: "var(--space-2)" }}>
+            📊 Şirket Profili
+          </div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-5)", lineHeight: 1.5 }}>
+            Bu bilgiler, Risk Açığı Analizi'nde teminat limitlerinin yeterliliğini ve AI Portföy Analizi'nde şirketinize özel önerileri hesaplamak için kullanılır.
+          </div>
+
+          {profileMessage.text && (
+            <div className={`toast toast-${profileMessage.type}`} style={{ position: "relative", right: "auto", bottom: "auto", maxWidth: "100%", marginBottom: "var(--space-4)" }}>
+              <div className="toast-message">{profileMessage.text}</div>
+            </div>
+          )}
+
+          <div className="auth-form" style={{ gap: "var(--space-4)" }}>
+            <div className="input-group">
+              <label className="input-label">Faaliyet Sektörü</label>
+              <select className="input" value={sector} onChange={e => setSector(e.target.value as SectorKey)}>
+                {SECTOR_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)" }}>
+              <div className="input-group">
+                <label className="input-label">Tahmini Yıllık Ciro (₺)</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Örn: 15000000"
+                  value={annualRevenue}
+                  onChange={e => setAnnualRevenue(e.target.value)}
+                />
+              </div>
+              <div className="input-group">
+                <label className="input-label">Çalışan Sayısı</label>
+                <input
+                  className="input"
+                  type="number"
+                  placeholder="Örn: 25"
+                  value={employeeCount}
+                  onChange={e => setEmployeeCount(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button
+              className="btn btn-primary"
+              style={{ alignSelf: "flex-end", marginTop: "var(--space-2)" }}
+              disabled={profileSaving}
+              onClick={async () => {
+                if (!appUser) return;
+                setProfileSaving(true);
+                setProfileMessage({ text: "", type: "" });
+                try {
+                  await saveCompanyProfile(appUser.tenantId, {
+                    sector,
+                    annualRevenue: parseFloat(annualRevenue) || 0,
+                    employeeCount: parseInt(employeeCount) || 0,
+                  });
+                  setProfileMessage({ text: "Şirket profili başarıyla kaydedildi. Risk analizi otomatik güncellenecek.", type: "success" });
+                } catch (err: unknown) {
+                  setProfileMessage({ text: "Profil kaydedilemedi: " + (err as Error).message, type: "error" });
+                } finally {
+                  setProfileSaving(false);
+                }
+              }}
+            >
+              {profileSaving ? "Kaydediliyor..." : "Profili Kaydet"}
             </button>
           </div>
         </div>

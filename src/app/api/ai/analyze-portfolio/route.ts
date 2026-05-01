@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { getPoliciesByTenant, saveAnalysisResults } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant, saveAnalysisResults, getCompanyProfile } from "@/lib/firebase/firestore";
 import { Policy, Coverage } from "@/types/policy";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { PORTFOLIO_ANALYSIS_SYSTEM_PROMPT } from "@/lib/ai/analysisPrompts";
@@ -48,6 +48,17 @@ export async function POST(req: NextRequest) {
 
     const policiesJson = JSON.stringify(simplifiedPolicies, null, 2);
 
+    // Şirket profili varsa AI'a zenginleştirilmiş veri gönder
+    let companyContext = "";
+    try {
+      const profile = await getCompanyProfile(tenantId);
+      if (profile && profile.annualRevenue) {
+        companyContext = `\n\nŞİRKET PROFİLİ:\n- Sektör: ${profile.sector}\n- Yıllık Ciro: ${profile.annualRevenue.toLocaleString('tr-TR')} TL\n- Çalışan Sayısı: ${profile.employeeCount}\n\nBu bilgileri kullanarak poliçelerdeki teminat limitlerinin şirket büyüklüğüne uygun olup olmadığını değerlendir. Yetersiz limitleri "limitUyarilari" alanında raporla (her biri için: policeTipi, mevcutLimit, onerilenLimit, aciklama).`;
+      }
+    } catch (e) {
+      logger.warn("Failed to load company profile for AI enrichment", "api/ai/analyze-portfolio", { error: (e as Error).message });
+    }
+
     const bedrockBody = {
       anthropic_version: "bedrock-2023-05-31",
       max_tokens: 4096,
@@ -55,7 +66,7 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "user",
-          content: `Aşağıdaki poliçe portföyünü analiz et ve SADECE istenen formata uygun JSON çıktısı ver:\n\n${policiesJson}`,
+          content: `Aşağıdaki poliçe portföyünü analiz et ve SADECE istenen formata uygun JSON çıktısı ver:\n\n${policiesJson}${companyContext}`,
         },
       ],
     };

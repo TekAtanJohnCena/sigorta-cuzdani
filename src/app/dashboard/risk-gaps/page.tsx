@@ -15,6 +15,10 @@ import {
 } from "@/lib/data/sectorInsurance";
 import { formatCurrency } from "@/lib/utils/currency";
 import { calculatePortfolioScore } from "@/lib/engines/portfolioScoreEngine";
+import { analyzeLimitAdequacy, LimitWarning } from "@/lib/engines/limitBenchmarkEngine";
+import { getCompanyProfile } from "@/lib/firebase/firestore";
+import { CompanyProfile } from "@/types/companyProfile";
+import Link from "next/link";
 
 export default function RiskGapsPage() {
   const { appUser, loading: authLoading } = useAuth();
@@ -22,6 +26,7 @@ export default function RiskGapsPage() {
   const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSector, setSelectedSector] = useState<SectorKey>("teknoloji");
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -36,7 +41,26 @@ export default function RiskGapsPage() {
         setLoading(false);
       }
     }
-    if (!authLoading) load();
+    async function loadProfile() {
+      if (!appUser) return;
+      try {
+        const profile = await getCompanyProfile(appUser.tenantId);
+        if (profile) {
+          setCompanyProfile({
+            sector: profile.sector as SectorKey,
+            annualRevenue: profile.annualRevenue,
+            employeeCount: profile.employeeCount,
+          });
+          setSelectedSector(profile.sector as SectorKey);
+        }
+      } catch (e) {
+        console.error("Failed to load company profile", e);
+      }
+    }
+    if (!authLoading) {
+      load();
+      loadProfile();
+    }
   }, [appUser, authLoading, isDemoMode]);
 
   const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
@@ -70,6 +94,14 @@ export default function RiskGapsPage() {
     (sum, m) => sum + (m.estimatedAnnualCost.min + m.estimatedAnnualCost.max) / 2,
     0
   );
+
+  // Limit Benchmarking — sadece şirket profili varsa hesapla
+  const limitWarnings: LimitWarning[] = useMemo(() => {
+    if (!companyProfile || !companyProfile.annualRevenue) return [];
+    return analyzeLimitAdequacy(policies, companyProfile);
+  }, [policies, companyProfile]);
+
+  const criticalLimitCount = limitWarnings.filter(w => w.severity === 'critical').length;
 
   if (authLoading || loading) {
     return (
@@ -276,6 +308,87 @@ export default function RiskGapsPage() {
           </div>
         </div>
       </div>
+
+      {/* Limit Benchmarking Bölümü */}
+      {limitWarnings.length > 0 && (
+        <div style={{ marginBottom: "var(--space-8)" }}>
+          <div className="card-header" style={{ marginBottom: "var(--space-4)", paddingBottom: "var(--space-3)", borderBottom: "1px solid var(--neutral-200)" }}>
+            <div className="card-title">📏 Yetersiz Teminat Limitleri</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+            {limitWarnings.map((warning, idx) => (
+              <div
+                key={`limit-${idx}`}
+                className="card"
+                style={{
+                  borderLeft: `4px solid ${warning.severity === 'critical' ? 'var(--danger-500)' : 'var(--warning-500)'}`,
+                  padding: "var(--space-5)",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "var(--space-3)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: "1.8rem" }}>📏</span>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: "var(--text-base)", color: "var(--text-primary)" }}>
+                        {warning.policyLabel} — {warning.insuranceCompany}
+                      </div>
+                      <span style={{
+                        fontSize: 11, fontWeight: 700, letterSpacing: "0.5px",
+                        padding: "2px 8px", borderRadius: 4,
+                        background: warning.severity === 'critical' ? "var(--danger-100)" : "var(--warning-100)",
+                        color: warning.severity === 'critical' ? "var(--danger-800)" : "var(--warning-800)",
+                      }}>
+                        {warning.severity === 'critical' ? `LİMİT %${warning.gapPercent} YETERSİZ` : `LİMİT %${warning.gapPercent} DÜŞÜK`}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginBottom: 2 }}>Mevcut → Önerilen</div>
+                    <div style={{ fontWeight: 700, fontSize: "var(--text-sm)" }}>
+                      <span style={{ color: "var(--danger-600)" }}>{formatCurrency(warning.currentLimit)}</span>
+                      {" → "}
+                      <span style={{ color: "var(--success-600)" }}>{formatCurrency(warning.recommendedLimit)}</span>
+                    </div>
+                  </div>
+                </div>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: "0 0 var(--space-3)" }}>
+                  {warning.explanation}
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, background: "var(--neutral-100)", borderRadius: 4, height: 8, overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%",
+                      width: `${Math.min(100, 100 - warning.gapPercent)}%`,
+                      background: warning.severity === 'critical'
+                        ? "linear-gradient(90deg, var(--danger-400), var(--danger-600))"
+                        : "linear-gradient(90deg, var(--warning-400), var(--warning-600))",
+                      borderRadius: 4,
+                      transition: "width 0.5s ease",
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-tertiary)" }}>
+                    {Math.min(100, 100 - warning.gapPercent)}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Profil yoksa bilgi mesajı */}
+      {!companyProfile && (
+        <div className="card" style={{ textAlign: "center", padding: "var(--space-8)", background: "var(--info-50)", border: "1px solid var(--info-200)", marginBottom: "var(--space-8)" }}>
+          <div style={{ fontSize: "2rem", marginBottom: "var(--space-3)" }}>📏</div>
+          <h3 style={{ color: "var(--info-800)", marginBottom: "var(--space-2)", fontSize: "var(--text-base)" }}>Teminat Limit Analizi İçin Şirket Profilinizi Girin</h3>
+          <p style={{ color: "var(--info-700)", fontSize: "var(--text-sm)", marginBottom: "var(--space-4)", maxWidth: 500, margin: "0 auto var(--space-4)" }}>
+            Ayarlar sayfasından şirketinizin yıllık cirosunu ve çalışan sayısını girerek, poliçe limitlerinin sektörel standartlara uygunluğunu analiz edebilirsiniz.
+          </p>
+          <Link href="/dashboard/settings" className="btn btn-primary btn-sm" style={{ textDecoration: "none" }}>
+            ⚙️ Şirket Profilini Ayarla
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

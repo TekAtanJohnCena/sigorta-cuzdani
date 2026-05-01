@@ -135,6 +135,53 @@ export default function DashboardPage() {
     );
   }
 
+  const statCards = [
+    {
+      href: "/dashboard/policies",
+      color: "blue" as const,
+      icon: "📋",
+      value: String(stats.activePolicies),
+      label: "Aktif Poliçe",
+      sub: null,
+      gradient: "linear-gradient(135deg, #EEF2FF 0%, #D8E0FF 100%)",
+    },
+    {
+      href: "/dashboard/policies?status=expiring",
+      color: (stats.expiringCount > 0 ? "red" : "green") as "red" | "green",
+      icon: "⏰",
+      value: String(stats.expiringCount),
+      label: "Yaklaşan Vadeler",
+      sub: "Son 90 gün",
+      subColor: stats.expiringCount > 0 ? "var(--danger-600)" : "var(--success-600)",
+      gradient: stats.expiringCount > 0
+        ? "linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)"
+        : "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)",
+    },
+    {
+      href: "/dashboard/finance",
+      color: "teal" as const,
+      icon: "💰",
+      value: formatCurrency(stats.totalPremium),
+      label: "Yıllık Toplam Prim",
+      sub: null,
+      gradient: "linear-gradient(135deg, #F0FDFA 0%, #CCFBF1 100%)",
+    },
+    {
+      href: "/dashboard/ai-analysis",
+      color: (stats.riskScore < 55 ? "red" : stats.riskScore < 75 ? "amber" : "green") as "red" | "amber" | "green",
+      icon: "🛡️",
+      value: `${stats.riskScore}/100`,
+      label: "Portföy Güvenlik Skoru",
+      sub: `${(stats as any).riskGrade} Sınıfı — ${(stats as any).riskLabel}`,
+      subColor: stats.riskScore >= 75 ? "var(--success-600)" : stats.riskScore >= 55 ? "var(--warning-600)" : "var(--danger-600)",
+      gradient: stats.riskScore >= 75
+        ? "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)"
+        : stats.riskScore >= 55
+        ? "linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)"
+        : "linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)",
+    },
+  ];
+
   return (
     <div>
       {/* Header Context */}
@@ -151,54 +198,73 @@ export default function DashboardPage() {
 
       <div style={{ marginBottom: "var(--space-8)", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
-          <h1 className="page-title">Dashboard</h1>
+          <h1 className="page-title" style={{ fontSize: "var(--text-2xl)", fontWeight: 800 }}>Dashboard</h1>
           <p className="page-subtitle">Sigorta portföyünüzün genel özeti</p>
         </div>
         <div>
           {policies.length > 0 && (
-            <div style={{ animation: "pulse 2s infinite" }}>
-              <Link
-                href="/dashboard/ai-analysis"
-                className="btn btn-primary"
-                style={{ display: "flex", gap: "8px", alignItems: "center", background: "linear-gradient(135deg, #6200ea 0%, #aa00ff 100%)", borderColor: "transparent", fontSize: "1.05rem", padding: "10px 20px", textDecoration: "none" }}
-              >
-                ✨ Yapay Zeka ile Analiz Et
-              </Link>
-            </div>
+            <Link
+              href="/dashboard/ai-analysis"
+              className="btn btn-primary"
+              style={{ display: "flex", gap: "8px", alignItems: "center", background: "linear-gradient(135deg, #6200ea 0%, #aa00ff 100%)", borderColor: "transparent", fontSize: "1rem", padding: "10px 22px", textDecoration: "none", boxShadow: "0 4px 16px rgba(98,0,234,0.3)" }}
+            >
+              ✨ Yapay Zeka ile Analiz Et
+            </Link>
           )}
         </div>
       </div>
 
       <div className="grid-stats stagger-children" style={{ marginBottom: "var(--space-8)" }}>
-        <Link href="/dashboard/policies" className="stats-card" data-color="blue" style={{ textDecoration: 'none' }}>
-          <div className="stats-icon">📋</div>
-          <div className="stats-value">{stats.activePolicies}</div>
-          <div className="stats-label">Aktif Poliçe</div>
-        </Link>
-
-
-        <Link href="/dashboard/policies?status=expiring" className="stats-card" data-color={stats.expiringCount > 0 ? "red" : "green"} style={{ textDecoration: 'none' }}>
-          <div className="stats-icon">⏰</div>
-          <div className="stats-value">{stats.expiringCount}</div>
-          <div className="stats-label">Yaklaşan Vadeler</div>
-          <div className="stats-change negative">Son 90 gün</div>
-        </Link>
-
-        <Link href="/dashboard/finance" className="stats-card" data-color="teal" style={{ textDecoration: 'none' }}>
-          <div className="stats-icon">💰</div>
-          <div className="stats-value">{formatCurrency(stats.totalPremium)}</div>
-          <div className="stats-label">Yıllık Toplam Prim</div>
-        </Link>
-
-        <Link href="/dashboard/ai-analysis" className="stats-card" data-color={stats.riskScore < 55 ? "red" : (stats.riskScore < 75 ? "amber" : "green")} style={{ textDecoration: 'none' }}>
-          <div className="stats-icon">🛡️</div>
-          <div className="stats-value">{stats.riskScore}<span style={{ fontSize: "var(--text-base)", fontWeight: 500 }}>/100</span></div>
-          <div className="stats-label">Portföy Güvenlik Skoru</div>
-          <div className="stats-change" style={{ background: 'transparent', padding: 0, marginTop: 4, fontSize: 11, fontWeight: 600, color: stats.riskScore >= 75 ? 'var(--success-600)' : stats.riskScore >= 55 ? 'var(--warning-600)' : 'var(--danger-600)' }}>
-            {(stats as any).riskGrade} Sınıfı — {(stats as any).riskLabel}
-          </div>
-        </Link>
+        {statCards.map((card) => (
+          <Link
+            key={card.href}
+            href={card.href}
+            className="stats-card"
+            data-color={card.color}
+            style={{ textDecoration: "none", background: card.gradient }}
+          >
+            <div className="stats-icon" style={{ fontSize: 24, width: 48, height: 48, background: "rgba(255,255,255,0.7)", backdropFilter: "blur(4px)" }}>
+              {card.icon}
+            </div>
+            <div className="stats-value" style={{ fontSize: "var(--text-3xl)", letterSpacing: "-0.03em" }}>
+              {card.value}
+            </div>
+            <div className="stats-label" style={{ fontWeight: 600 }}>{card.label}</div>
+            {card.sub && (
+              <div style={{ fontSize: "var(--text-xs)", fontWeight: 700, color: card.subColor, marginTop: 2 }}>
+                {card.sub}
+              </div>
+            )}
+          </Link>
+        ))}
       </div>
+
+      {/* Sigortasız Varlık Uyarısı */}
+      {policies.length > 0 && (
+        <Link href="/dashboard/assets" style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "var(--space-4) var(--space-5)",
+          background: "linear-gradient(135deg, var(--info-50), var(--primary-50))",
+          border: "1px solid var(--primary-200)",
+          borderRadius: "var(--radius-lg)",
+          marginBottom: "var(--space-8)",
+          textDecoration: "none",
+          transition: "var(--transition-fast)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <span style={{ fontSize: "1.5rem" }}>🏗️</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--primary-900)" }}>
+                Varlık Envanteri
+              </div>
+              <div style={{ fontSize: "var(--text-xs)", color: "var(--primary-700)" }}>
+                Araç, bina ve ekipmanlarınızı kaydedin — sigortasız varlıklarınızı tespit edin
+              </div>
+            </div>
+          </div>
+          <span style={{ fontSize: "var(--text-sm)", color: "var(--primary-600)", fontWeight: 600 }}>Keşfet →</span>
+        </Link>
+      )}
 
       {/* Charts & Summaries (Insight Layer) */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "var(--space-6)", marginBottom: "var(--space-8)" }}>

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { DemoProvider } from "@/lib/context/DemoContext";
+import RightPanel from "@/components/RightPanel";
 
 interface NavItem {
   href: string;
@@ -33,7 +34,8 @@ const NAV_ITEMS: NavSection[] = [
     items: [
       { href: "/dashboard/ai-analysis", icon: "🤖", label: "AI Analizi", highlight: true },
       { href: "/dashboard/risk-gaps", icon: "🎯", label: "Risk Açıkları" },
-      { href: "/dashboard/renewals", icon: "🔄", label: "Yenileme Merkezi" },
+      { href: "/dashboard/assets", icon: "🏗️", label: "Varlık Envanteri" },
+      { href: "/dashboard/renewals", icon: "🔄", label: "Teklif & Yenileme" },
       { href: "/dashboard/claims", icon: "🚨", label: "Hasar Merkezi" },
       { href: "/dashboard/calendar", icon: "📅", label: "Vade Takvimi" },
       { href: "/dashboard/finance", icon: "💰", label: "Finansal Analiz" },
@@ -190,7 +192,12 @@ export default function DashboardLayout({
             </div>
           </header>
 
-          <main className="main-body">{children}</main>
+          <div className="main-with-panel">
+            <main className="main-body">{children}</main>
+            <Suspense fallback={null}>
+              <RightPanel />
+            </Suspense>
+          </div>
         </div>
 
       </div>

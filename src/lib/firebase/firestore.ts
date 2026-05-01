@@ -242,3 +242,26 @@ export async function checkTenantExpiry(tenantId: string): Promise<{ expired: bo
     return { expired: true }; // Fail closed — block access on error
   }
 }
+
+// ============================================
+// Company Profile (Şirket Profili)
+// Limit Benchmarking & AI Analiz Zenginleştirme
+// ============================================
+const COMPANY_PROFILES_COLLECTION = "companyProfiles";
+
+export async function saveCompanyProfile(
+  tenantId: string,
+  profile: { sector: string; annualRevenue: number; employeeCount: number }
+) {
+  await setDoc(doc(db, COMPANY_PROFILES_COLLECTION, tenantId), {
+    ...profile,
+    tenantId,
+    updatedAt: Timestamp.now(),
+  });
+}
+
+export async function getCompanyProfile(tenantId: string) {
+  const snap = await getDoc(doc(db, COMPANY_PROFILES_COLLECTION, tenantId));
+  if (!snap.exists()) return null;
+  return snap.data() as { sector: string; annualRevenue: number; employeeCount: number; tenantId: string };
+}
