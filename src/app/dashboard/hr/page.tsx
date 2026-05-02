@@ -7,7 +7,6 @@ import { getEmployeesByTenant, addEmployee, updateEmployee } from "@/lib/firebas
 import { Policy, POLICY_TYPE_LABELS } from "@/types/policy";
 import { Employee, InsuranceStatus, INSURANCE_STATUS_LABELS, INSURANCE_STATUS_COLORS, INSURANCE_STATUS_ICONS } from "@/types/employee";
 import { useDemo } from "@/lib/context/DemoContext";
-import { MOCK_POLICIES, MOCK_EMPLOYEES } from "@/lib/mockData";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort } from "@/lib/utils/date";
 
@@ -32,6 +31,8 @@ export default function HRPage() {
   useEffect(() => {
     async function load() {
       if (isDemoMode) {
+        // G-02: Lazy load mock data
+        const { MOCK_EMPLOYEES } = await import("@/lib/mockData");
         setEmployees(MOCK_EMPLOYEES);
         setLoading(false);
         return;
@@ -53,7 +54,18 @@ export default function HRPage() {
     if (!authLoading) load();
   }, [appUser, authLoading, isDemoMode]);
 
-  const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
+  // Lazy load MOCK_POLICIES only when needed
+  const [mockPolicies, setMockPolicies] = useState<Policy[]>([]);
+
+  useEffect(() => {
+    if (isDemoMode) {
+      import("@/lib/mockData").then(({ MOCK_POLICIES }) => {
+        setMockPolicies(MOCK_POLICIES);
+      });
+    }
+  }, [isDemoMode]);
+
+  const policies = isDemoMode ? mockPolicies : dbPolicies;
   const healthPolicy = policies.find(p => p.policyType === "saglik" && p.status === "active");
 
   const stats = useMemo(() => {

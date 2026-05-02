@@ -80,7 +80,7 @@ export default function AlertsPage() {
       }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setDbPolicies(data as Policy[]);
+        setDbPolicies(data as unknown as Policy[]);
       } catch (err) {
         console.error("Failed to load policies", err);
       } finally {

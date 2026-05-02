@@ -62,7 +62,7 @@ function QuoteEngineContent() {
             Piyasa Taranıyor...
           </h2>
           <p style={{ color: "var(--text-secondary)", maxWidth: 440 }}>
-            {POLICY_TYPE_LABELS[policyType] || policyType} poliçeniz için {company}'ın mevcut teklifini 15 farklı şirketle karşılaştırıyoruz.
+            {POLICY_TYPE_LABELS[policyType] || policyType} poliçeniz için {company}&apos;ın mevcut teklifini 15 farklı şirketle karşılaştırıyoruz.
           </p>
         </div>
 

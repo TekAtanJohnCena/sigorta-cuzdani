@@ -63,31 +63,21 @@ export default function DashboardLayout({
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const { appUser, logout } = useAuth();
 
-  // Sync search state with URL
-  useEffect(() => {
-    const q = searchParams.get("q");
-    if (q !== null) setSearchQuery(q);
-  }, [searchParams]);
+  const currentQ = searchParams.get("q") || "";
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearchQuery(val);
-    
-    // Update URL debounced-like or immediately for MVP
+
     const params = new URLSearchParams(window.location.search);
     if (val) {
       params.set("q", val);
     } else {
       params.delete("q");
     }
-    
-    // Use replace to avoid bloating history
+
     router.replace(`${pathname}?${params.toString()}`);
   };
-  
-  const navItems = useMemo(() => {
-    return NAV_ITEMS;
-  }, [appUser]);
 
   return (
     <DemoProvider>
@@ -112,7 +102,7 @@ export default function DashboardLayout({
           </div>
 
           <nav className="sidebar-nav">
-            {navItems.map((section) => (
+            {NAV_ITEMS.map((section) => (
               <div key={section.section}>
                 <div className="sidebar-section-label">{section.section}</div>
                 {section.items.map((item) => {

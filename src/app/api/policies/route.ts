@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { savePolicyToFirestore } from "@/lib/firebase/firestore";
+import { savePolicyToFirestore, getPoliciesByTenantPaginated } from "@/lib/firebase/firestore";
 import { Policy, PolicyStatus } from "@/types/policy";
 import { logger } from "@/lib/logger";
 import { withAuth } from "@/lib/api/withAuth";
@@ -49,7 +49,54 @@ function validatePolicyBody(body: Record<string, unknown>): string | null {
   return null;
 }
 
+// ============================================
+// GET /api/policies?page=1&limit=25
+// Pagination endpoint (P-03)
+// ============================================
+export const GET = withAuth(async (req, { tenantId, uid }) => {
+  try {
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "25", 10)));
+
+    logger.info("Fetching policies with pagination", "api/policies", { tenantId, uid, page, limit });
+
+    // İlk sayfa için cursor yok, sonraki sayfalar için cursor implementasyonu gerekirse eklenebilir
+    // Şimdilik basit offset-based pagination simulation yapıyoruz
+    const result = await getPoliciesByTenantPaginated(tenantId, { pageSize: limit });
+
+    return NextResponse.json({
+      success: true,
+      data: result.policies,
+      pagination: {
+        page,
+        limit,
+        hasMore: result.hasMore,
+        count: result.count,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error("Failed to fetch policies", "api/policies", {
+      error: (error as Error).message,
+      tenantId,
+    });
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Poliçeler yüklenirken bir hata oluştu.",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
+  }
+});
+
+// ============================================
+// POST /api/policies
 // G-01: withAuth wrapper — tenantId artık token'dan geliyor
+// ============================================
 export const POST = withAuth(async (req, { tenantId, uid }) => {
   try {
     const body = await req.json();
@@ -58,19 +105,40 @@ export const POST = withAuth(async (req, { tenantId, uid }) => {
     const validationError = validatePolicyBody(body);
     if (validationError) {
       logger.warn("Policy validation failed", "api/policies", { error: validationError, uid });
-      return NextResponse.json({ error: validationError }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: validationError,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 }
+      );
     }
 
     // G-11: Başlangıç tarihi doğrulama
     if (body.baslangicTarihi && !isValidISODate(body.baslangicTarihi)) {
-      return NextResponse.json({ error: "Geçersiz başlangıç tarihi." }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Geçersiz başlangıç tarihi.",
+          timestamp: new Date().toISOString(),
+        },
+        { status: 400 }
+      );
     }
 
     // Bitiş tarihi doğrulama (mevcut)
     let status: PolicyStatus = "active";
     if (body.bitisTarihi) {
       if (!isValidISODate(body.bitisTarihi)) {
-        return NextResponse.json({ error: "Geçersiz bitiş tarihi." }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Geçersiz bitiş tarihi.",
+            timestamp: new Date().toISOString(),
+          },
+          { status: 400 }
+        );
       }
       const endDate = new Date(body.bitisTarihi as string);
       if (endDate.getTime() < Date.now()) status = "expired";
@@ -141,16 +209,23 @@ export const POST = withAuth(async (req, { tenantId, uid }) => {
 
     return NextResponse.json({
       success: true,
-      message: "Poliçe başarıyla kaydedildi.",
-      documentId,
+      data: {
+        documentId,
+        message: "Poliçe başarıyla kaydedildi.",
+      },
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     logger.error("Policy save failed", "api/policies", {
       error: (error as Error).message,
     });
-    // İç hata detaylarını client'a gösterme
+    // İç hata detaylarını client'a gösterme (güvenlik için generic mesaj)
     return NextResponse.json(
-      { error: "Poliçe kaydedilirken bir hata oluştu." },
+      {
+        success: false,
+        error: "Poliçe kaydedilirken bir hata oluştu.",
+        timestamp: new Date().toISOString(),
+      },
       { status: 500 }
     );
   }

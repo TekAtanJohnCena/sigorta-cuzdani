@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useCallback } from "react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort } from "@/lib/utils/date";
@@ -49,11 +50,62 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const { appUser } = useAuth();
   
+  const validateExtractedData = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!extracted) return false;
+
+    // Date validation
+    if (extracted.baslangicTarihi && extracted.bitisTarihi) {
+      const startDate = new Date(extracted.baslangicTarihi);
+      const endDate = new Date(extracted.bitisTarihi);
+
+      if (isNaN(startDate.getTime())) {
+        errors.baslangicTarihi = "Geçersiz başlangıç tarihi formatı";
+      }
+
+      if (isNaN(endDate.getTime())) {
+        errors.bitisTarihi = "Geçersiz bitiş tarihi formatı";
+      }
+
+      if (startDate > endDate) {
+        errors.dateRange = "Başlangıç tarihi bitiş tarihinden sonra olamaz";
+      }
+    }
+
+    // Policy number validation
+    if (!extracted.policeNumarasi || extracted.policeNumarasi.trim().length === 0) {
+      errors.policeNumarasi = "Poliçe numarası zorunludur";
+    }
+
+    // Insurance company validation
+    if (!extracted.sigortaSirketi || extracted.sigortaSirketi.trim().length === 0) {
+      errors.sigortaSirketi = "Sigorta şirketi zorunludur";
+    }
+
+    // Premium validation
+    if (extracted.primBilgileri?.toplamPrim && extracted.primBilgileri.toplamPrim <= 0) {
+      errors.toplamPrim = "Toplam prim sıfırdan büyük olmalıdır";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSavePolicy = async () => {
     if (!extracted || !appUser) return;
+
+    // Client-side validation
+    if (!validateExtractedData()) {
+      setError("Lütfen formdaki hataları düzeltin");
+      return;
+    }
+
     setIsSaving(true);
     setError(null);
     try {
@@ -73,6 +125,8 @@ export default function UploadPage() {
         throw new Error(json.error || "Kaydedilirken bir hata oluştu");
       }
 
+      setShowSuccessToast(true);
+      setTimeout(() => setShowSuccessToast(false), 5000);
       setStage("complete");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Bilinmeyen hata";
@@ -447,7 +501,7 @@ export default function UploadPage() {
           </p>
           <div style={{ display: "flex", gap: "var(--space-4)", justifyContent: "center" }}>
             <button className="btn btn-secondary" onClick={reset}> Yeni PDF Yükle</button>
-            <a href="/dashboard/policies" className="btn btn-primary"> Poliçeleri Görüntüle</a>
+            <Link href="/dashboard/policies" className="btn btn-primary"> Poliçeleri Görüntüle</Link>
           </div>
         </div>
       )}

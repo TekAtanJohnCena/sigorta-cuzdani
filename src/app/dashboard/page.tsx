@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/currency";
-import { POLICY_TYPE_ICONS, POLICY_TYPE_LABELS, Policy } from "@/types/policy";
-import { daysUntil, getRelativeTime, formatDateShort } from "@/lib/utils/date";
+import { POLICY_TYPE_LABELS, Policy } from "@/types/policy";
+import { daysUntil, formatDateShort } from "@/lib/utils/date";
 import Link from "next/link";
 import { useDemo } from "@/lib/context/DemoContext";
 import { useAuth } from "@/lib/firebase/AuthContext";
@@ -20,22 +20,10 @@ interface UpcomingPayment {
 import { calculatePortfolioScore } from "@/lib/engines/portfolioScoreEngine";
 import { usePolicies } from "@/lib/hooks/usePolicies";
 
-interface DashboardStats {
-  activePolicies: number;
-  expiringCount: number;
-  totalPremium: number;
-  riskScore: number;
-  expiringPolicies: Policy[];
-  upcomingPayments: UpcomingPayment[];
-  typeCounts: Record<string, number>;
-  companyCounts: Record<string, number>;
-}
-
 export default function DashboardPage() {
   const { appUser, loading: authLoading } = useAuth();
 
-  // Demo context
-  const { isDemoMode, setIsDemoMode } = useDemo();
+  const { isDemoMode } = useDemo();
 
   // G-09: usePolicies hook — eski useEffect + dbPolicies state'inin yerini aldı
   const { policies: dbPolicies, loading, error } = usePolicies(

@@ -228,7 +228,7 @@ export default function RiskGapsPage() {
 
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
                     <span style={{ background: "var(--neutral-100)", padding: "3px 8px", borderRadius: 4, fontWeight: 600 }}>
-                      📊 {sector.label} sektöründeki şirketlerin %{coverage.adoptionRate}'i bu teminata sahip
+                      📊 {sector.label} sektöründeki şirketlerin %{coverage.adoptionRate}&apos;i bu teminata sahip
                     </span>
                   </div>
                 </div>

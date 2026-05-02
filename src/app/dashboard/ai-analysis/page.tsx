@@ -23,9 +23,25 @@ interface AIAnalysisRisk {
 interface AIAnalysisOptimization {
   baslik: string;
   aciklama: string;
+  potansiyelTasarruf?: number;
 }
 
-const MOCK_AI_ANALYSIS = {
+interface AIAnalysisResult {
+  ozet: string;
+  riskSkoru: number;
+  cakismalar: AIAnalysisConflict[];
+  riskAciklari: AIAnalysisRisk[];
+  optimizasyonOnerileri: AIAnalysisOptimization[];
+  toplamTahminiTasarruf: number;
+  limitUyarilari?: Array<{
+    policeTipi?: string;
+    mevcutLimit?: number;
+    onerilenLimit?: number;
+    aciklama?: string;
+  }>;
+}
+
+const MOCK_AI_ANALYSIS: AIAnalysisResult = {
   ozet: "Portföyünüzde tespit edilen 7 poliçe Kapsamlı Risk Analizinden geçirilmiştir. Risk skorunuz iyi görünmekle birlikte, poliçeler arasında ciddi örtüşmeler mevcut. Özellikle elektronik donanım teminatlarınız çiftlenmiş durumda. Ayrıca, siber saldırı ve iş durması gibi modern felaket senaryolarına karşı büyük reasürans açıkları tespit ettim.",
   riskSkoru: 72,
   cakismalar: [
@@ -70,7 +86,7 @@ export default function AiAnalysisPage() {
   const { appUser, loading: authLoading } = useAuth();
   const { isDemoMode } = useDemo();
   
-  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [loadingInitial, setLoadingInitial] = useState(true);
@@ -87,7 +103,7 @@ export default function AiAnalysisPage() {
       try {
         const last = await getLastAnalysisByTenant(appUser.tenantId);
         if (last) {
-          setAiAnalysis(last);
+          setAiAnalysis(last as unknown as AIAnalysisResult);
           setHasStarted(true);
         }
       } catch (err) {
@@ -201,7 +217,7 @@ export default function AiAnalysisPage() {
           <div className="card" style={{ marginBottom: "var(--space-6)", backgroundColor: "var(--primary-50)", border: "1px solid var(--primary-200)", backgroundImage: "linear-gradient(120deg, var(--primary-50), white)", display: "flex", gap: "2rem", alignItems: "center" }}>
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: "1rem", color: "var(--primary-700)", textTransform: "uppercase", fontWeight: 800, marginBottom: "8px", letterSpacing: "0.5px" }}>Aktüeryal Değerlendirme Özeti</h3>
-              <p style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--primary-900)", lineHeight: 1.6, margin: 0 }}>"{aiAnalysis.ozet}"</p>
+              <p style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--primary-900)", lineHeight: 1.6, margin: 0 }}>&quot;{aiAnalysis.ozet}&quot;</p>
             </div>
             
             <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -304,7 +320,7 @@ export default function AiAnalysisPage() {
             )}
 
             {/* Limit Uyarıları (AI tarafından üretilir) */}
-            {aiAnalysis.limitUyarilari?.length > 0 && (
+            {aiAnalysis.limitUyarilari && aiAnalysis.limitUyarilari.length > 0 && (
               <div className="card" style={{ borderTop: "4px solid var(--info-500)", gridColumn: "1 / -1", boxShadow: "0 8px 24px rgba(0,0,0,0.04)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "var(--space-6)" }}>
                   <span style={{ fontSize: "1.5rem" }}>📏</span>

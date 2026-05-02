@@ -9,6 +9,7 @@ import { MOCK_POLICIES } from "@/lib/mockData";
 import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS, Policy } from "@/types/policy";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort, daysUntil } from "@/lib/utils/date";
+import { TableSkeleton, CardSkeleton } from "@/components/SkeletonLoader";
 
 function UrgencyBadge({ days }: { days: number }) {
   if (days < 0) return <span style={{ background: "#450a0a", color: "#fca5a5", borderRadius: 99, padding: "3px 10px", fontSize: "0.75rem", fontWeight: 700 }}>Süresi Doldu</span>;
@@ -59,8 +60,17 @@ export default function RenewalsPage() {
 
   if (authLoading || loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
-        <p style={{ color: "var(--text-tertiary)" }}>Yenileme verileri yükleniyor...</p>
+      <div>
+        <div style={{ marginBottom: "var(--space-8)" }}>
+          <h1 className="page-title">🎯 Teklif & Yenileme Merkezi</h1>
+          <p className="page-subtitle">Yeni poliçe satın alın veya vadesi yaklaşan poliçelerinizi en iyi tekliflerle yenileyin.</p>
+        </div>
+        <div className="card" style={{ padding: "var(--space-6)", marginBottom: "var(--space-6)" }}>
+          <CardSkeleton />
+        </div>
+        <div className="card" style={{ padding: "var(--space-6)" }}>
+          <TableSkeleton rows={5} />
+        </div>
       </div>
     );
   }

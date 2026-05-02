@@ -33,7 +33,14 @@ function isAdminAuthorized(req: NextRequest): boolean {
 // This route handles Firebase Auth user creation (server-side only operation)
 export async function POST(req: NextRequest) {
   if (!isAdminAuthorized(req)) {
-    return NextResponse.json({ success: false, error: "Yetkisiz erişim." }, { status: 401 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Yetkisiz erişim.",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 401 }
+    );
   }
 
   try {
@@ -69,20 +76,41 @@ export async function POST(req: NextRequest) {
           });
         }
         
-        return NextResponse.json({ success: true, uid: userRecord.uid });
+        return NextResponse.json({
+          success: true,
+          data: { uid: userRecord.uid },
+          timestamp: new Date().toISOString(),
+        });
       } catch (error: unknown) {
-        return NextResponse.json({ success: false, error: (error as Error).message }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: (error as Error).message,
+            timestamp: new Date().toISOString(),
+          },
+          { status: 400 }
+        );
       }
     }
 
     // Fallback: return instructions for manual Firebase Auth setup
-    return NextResponse.json({
-      success: false,
-      error: "Firebase Admin SDK credentials not configured. Please create user manually in Firebase Console and then add tenant record.",
-      manualSetupRequired: true,
-    }, { status: 200 });
-
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Firebase Admin SDK credentials not configured. Please create user manually in Firebase Console and then add tenant record.",
+        manualSetupRequired: true,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 200 }
+    );
   } catch (error: unknown) {
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Sunucu hatası oluştu.",
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 }

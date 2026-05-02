@@ -32,17 +32,30 @@ export async function savePolicyToFirestore(
   return docRef.id;
 }
 
-export async function getPoliciesByTenant(tenantId: string) {
+// PolicyDocument artık Policy tipini extend ediyor — type safety için
+import type { Policy } from "@/types/policy";
+
+interface PolicyDocument extends Omit<Policy, 'id'> {
+  id: string;
+  createdAt?: Timestamp | string | number;
+  [key: string]: unknown;
+}
+
+export async function getPoliciesByTenant(tenantId: string): Promise<PolicyDocument[]> {
   const q = query(
     collection(db, POLICIES_COLLECTION),
     where("tenantId", "==", tenantId)
   );
   const snap = await getDocs(q);
   // Sort on client side to avoid requiring a composite index in Firestore
-  const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-  return docs.sort((a: Record<string, any>, b: Record<string, any>) => {
-    const aDate = a.createdAt?.toDate?.() ?? new Date(a.createdAt || 0);
-    const bDate = b.createdAt?.toDate?.() ?? new Date(b.createdAt || 0);
+  const docs: PolicyDocument[] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return docs.sort((a: PolicyDocument, b: PolicyDocument) => {
+    const aDate = a.createdAt instanceof Timestamp
+      ? a.createdAt.toDate()
+      : new Date(a.createdAt || 0);
+    const bDate = b.createdAt instanceof Timestamp
+      ? b.createdAt.toDate()
+      : new Date(b.createdAt || 0);
     return bDate.getTime() - aDate.getTime();
   });
 }
@@ -164,7 +177,10 @@ export async function deletePolicy(id: string, tenantId?: string) {
 // AI Insights Persistence
 const INSIGHTS_COLLECTION = "insights";
 
-export async function saveAnalysisResults(tenantId: string, analysisData: Record<string, unknown>) {
+export async function saveAnalysisResults(
+  tenantId: string,
+  analysisData: Record<string, unknown>
+): Promise<void> {
   // Use tenantId as doc ID to keep only the latest one per tenant (or we could use addDoc for history)
   await setDoc(doc(db, INSIGHTS_COLLECTION, tenantId), {
     ...analysisData,

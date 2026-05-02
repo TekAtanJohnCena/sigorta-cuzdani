@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { getClaimsByTenant, createClaim } from "@/lib/firebase/claims";
 import { Policy, POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
 import { Claim, ClaimStatus, CLAIM_STATUS_LABELS, CLAIM_STATUS_COLORS, CLAIM_STATUS_ICONS, CLAIM_STATUS_ORDER } from "@/types/claim";
 import { useDemo } from "@/lib/context/DemoContext";
-import { MOCK_POLICIES, MOCK_CLAIMS } from "@/lib/mockData";
 import { CLAIM_REQUIREMENTS, DEFAULT_CLAIM_INFO } from "@/lib/data/claimRequirements";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort } from "@/lib/utils/date";
@@ -31,6 +30,8 @@ export default function ClaimsPage() {
   useEffect(() => {
     async function load() {
       if (isDemoMode) {
+        // G-02: Lazy load mock data
+        const { MOCK_CLAIMS } = await import("@/lib/mockData");
         setClaims(MOCK_CLAIMS);
         setLoading(false);
         return;
@@ -52,7 +53,18 @@ export default function ClaimsPage() {
     if (!authLoading) load();
   }, [appUser, authLoading, isDemoMode]);
 
-  const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
+  // Lazy load MOCK_POLICIES only when needed
+  const [mockPolicies, setMockPolicies] = useState<Policy[]>([]);
+
+  useEffect(() => {
+    if (isDemoMode) {
+      import("@/lib/mockData").then(({ MOCK_POLICIES }) => {
+        setMockPolicies(MOCK_POLICIES);
+      });
+    }
+  }, [isDemoMode]);
+
+  const policies = isDemoMode ? mockPolicies : dbPolicies;
   const activePolicies = policies.filter(p => p.status === "active");
 
   const selectedPolicy = activePolicies.find(p => p.id === selectedPolicyId);
@@ -160,7 +172,7 @@ export default function ClaimsPage() {
         <div className="empty-state">
           <div className="empty-state-icon">📂</div>
           <div className="empty-state-title">Henüz Hasar Dosyası Yok</div>
-          <div className="empty-state-description">Hasar bildiriminde bulunmak için "Yeni Hasar Bildir" butonunu kullanın.</div>
+          <div className="empty-state-description">Hasar bildiriminde bulunmak için &quot;Yeni Hasar Bildir&quot; butonunu kullanın.</div>
           <button className="btn btn-primary" style={{ marginTop: "var(--space-4)" }} onClick={() => setShowNewModal(true)}>
             + Yeni Hasar Bildir
           </button>

@@ -21,25 +21,23 @@ service cloud.firestore {
     }
 
     // 1. Poliçeler (Policies) Koleksiyonu Kuralları
+    // G-07: Cross-tenant read koruması güçlendirildi
     match /policies/{policyId} {
-      // Okuma ve silme işlemi için mevcut poliçenin tenantId'si kullanıcınınkiyle eşleşmeli
-      allow read, delete: if isTenantMatch(resource.data.tenantId);
-      
-      // Yeni poliçe oluştururken, verinin içine yazılan tenantId kullanıcınınkiyle eşleşmeli
-      allow create: if isTenantMatch(request.resource.data.tenantId);
-      
-      // Güncelleme yaparken, hem mevcut poliçenin hem de güncellenen verinin tenantId'si eşleşmeli
-      // (Böylece bir poliçe başka bir tenant'a transfer edilemez)
-      allow update: if isTenantMatch(resource.data.tenantId) 
-                    && isTenantMatch(request.resource.data.tenantId);
+      // SADECE okuma izni - Yazma işlemleri server-side API üzerinden yapılmalı
+      allow read: if isTenantMatch(resource.data.tenantId);
+
+      // Client-side write operations kapatıldı (güvenlik için)
+      // Tüm yazma işlemleri /api/policies endpoint'i üzerinden yapılmalı
+      allow write: if false;
     }
 
     // 2. Yapay Zeka Sonuçları (Insights) Koleksiyonu Kuralları
+    // Sadece okuma - AI analiz sonuçları yalnızca server-side yazılabilir
     match /insights/{insightId} {
-      allow read, delete: if isTenantMatch(resource.data.tenantId);
-      allow create: if isTenantMatch(request.resource.data.tenantId);
-      allow update: if isTenantMatch(resource.data.tenantId) 
-                    && isTenantMatch(request.resource.data.tenantId);
+      allow read: if isTenantMatch(resource.data.tenantId);
+
+      // Client-side write koruması - AI insights sadece server tarafından yazılmalı
+      allow write: if false;
     }
 
     // 3. Kullanıcılar (Users) Koleksiyonu Kuralları

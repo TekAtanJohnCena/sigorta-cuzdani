@@ -21,6 +21,18 @@ export interface UsePoliciesResult {
   error: string | null;
   /** Poliçeleri manuel olarak yeniden çek */
   refetch: () => void;
+  /** Pagination state */
+  pagination: {
+    currentPage: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    goToPage: (page: number) => void;
+    nextPage: () => void;
+    previousPage: () => void;
+    hasNext: boolean;
+    hasPrevious: boolean;
+  };
 }
 
 // ─── Hook ───────────────────────────────────────────────────────────────────
@@ -34,10 +46,11 @@ export interface UsePoliciesResult {
  * @param tenantId - Firestore'daki tenant izolasyon kimliği
  * @returns UsePoliciesResult
  */
-export function usePolicies(tenantId: string | undefined | null): UsePoliciesResult {
+export function usePolicies(tenantId: string | undefined | null, pageSize: number = 25): UsePoliciesResult {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   const fetchPolicies = useCallback(async () => {
     // tenantId olmadan istek yapma
@@ -78,10 +91,45 @@ export function usePolicies(tenantId: string | undefined | null): UsePoliciesRes
     fetchPolicies();
   }, [fetchPolicies]);
 
+  // Pagination calculations
+  const totalItems = policies.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const hasNext = currentPage < totalPages;
+  const hasPrevious = currentPage > 1;
+
+  const goToPage = useCallback((page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  }, [totalPages]);
+
+  const nextPage = useCallback(() => {
+    if (hasNext) {
+      setCurrentPage(prev => prev + 1);
+    }
+  }, [hasNext]);
+
+  const previousPage = useCallback(() => {
+    if (hasPrevious) {
+      setCurrentPage(prev => prev - 1);
+    }
+  }, [hasPrevious]);
+
   return {
     policies,
     loading,
     error,
     refetch: fetchPolicies,
+    pagination: {
+      currentPage,
+      pageSize,
+      totalItems,
+      totalPages,
+      goToPage,
+      nextPage,
+      previousPage,
+      hasNext,
+      hasPrevious,
+    },
   };
 }

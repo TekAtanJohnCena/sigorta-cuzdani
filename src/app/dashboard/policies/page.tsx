@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { deletePolicy } from "@/lib/firebase/firestore";
 import {
   Policy,
@@ -19,6 +19,7 @@ import { useDemo } from "@/lib/context/DemoContext";
 import { MOCK_POLICIES } from "@/lib/mockData";
 import { exportPoliciesToCSV } from "@/lib/utils/export";
 import { usePolicies } from "@/lib/hooks/usePolicies";
+import { TableSkeleton } from "@/components/SkeletonLoader";
 
 const STATUS_BADGE_MAP: Record<PolicyStatus, string> = {
   active: "badge-green badge-dot",
@@ -29,27 +30,17 @@ const STATUS_BADGE_MAP: Record<PolicyStatus, string> = {
 
 export default function PoliciesPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>(searchParams.get("status") || "all");
   const [sortBy, setSortBy] = useState<string>("endDate");
 
-  const { appUser, loading: authLoading } = useAuth();
+  const { appUser } = useAuth();
   const { isDemoMode } = useDemo();
 
-  // G-09: usePolicies hook — eski useEffect + useState bloklarının yerini aldı
   const { policies: dbPolicies, loading: isLoading, error, refetch } = usePolicies(
     isDemoMode ? null : appUser?.tenantId
   );
-
-  // Sync with URL params (for global search and dashboard clicks)
-  useEffect(() => {
-    const q = searchParams.get("q");
-    const status = searchParams.get("status");
-    if (q !== null) setSearchQuery(q);
-    if (status !== null) setFilterStatus(status);
-  }, [searchParams]);
 
   const effectivePolicies = isDemoMode ? MOCK_POLICIES : dbPolicies;
 
@@ -223,8 +214,8 @@ export default function PoliciesPage() {
 
       {/* Table & Empty States */}
       {isLoading ? (
-        <div style={{ textAlign: "center", padding: "var(--space-12)" }}>
-           <div style={{ fontSize: "var(--text-lg)" }}>Poliçeler yükleniyor...</div>
+        <div className="card" style={{ padding: "var(--space-6)" }}>
+          <TableSkeleton rows={8} />
         </div>
       ) : error ? (
         <div style={{ textAlign: "center", padding: "var(--space-12)", background: "var(--danger-50)", border: "1px solid var(--danger-200)", borderRadius: "var(--radius-lg)" }}>
@@ -374,12 +365,13 @@ export default function PoliciesPage() {
                   <td>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
                       {policy.documents?.originalPdf && (
-                        <a 
-                          href={policy.documents.originalPdf} 
-                          target="_blank" 
+                        <a
+                          href={policy.documents.originalPdf}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-ghost btn-icon btn-sm"
                           title="PDF Görüntüle"
+                          aria-label={`${policy.policyNumber} poliçesinin PDF dosyasını görüntüle`}
                         >
                           📄
                         </a>
@@ -388,14 +380,16 @@ export default function PoliciesPage() {
                         href={`/dashboard/policies/${policy.id}`}
                         className="btn btn-ghost btn-sm"
                         title="Detaylar"
+                        aria-label={`${policy.policyNumber} poliçesinin detaylarını görüntüle`}
                       >
                         🔍
                       </Link>
-                      <button 
+                      <button
                         onClick={() => handleDelete(policy.id)}
                         className="btn btn-ghost btn-sm"
                         style={{ color: 'var(--danger-500)' }}
                         title="Sil"
+                        aria-label={`${policy.policyNumber} poliçesini sil`}
                       >
                         🗑️
                       </button>

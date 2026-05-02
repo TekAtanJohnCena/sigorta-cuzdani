@@ -119,7 +119,7 @@ export default function SettingsPage() {
             📊 Şirket Profili
           </div>
           <div style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-5)", lineHeight: 1.5 }}>
-            Bu bilgiler, Risk Açığı Analizi'nde teminat limitlerinin yeterliliğini ve AI Portföy Analizi'nde şirketinize özel önerileri hesaplamak için kullanılır.
+            Bu bilgiler, Risk Açığı Analizi&apos;nde teminat limitlerinin yeterliliğini ve AI Portföy Analizi&apos;nde şirketinize özel önerileri hesaplamak için kullanılır.
           </div>
 
           {profileMessage.text && (
