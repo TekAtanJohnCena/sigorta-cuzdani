@@ -6,6 +6,8 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
 import { getLastAnalysisByTenant } from "@/lib/firebase/firestore";
 import type { AIAnalysisResult } from "@/lib/mockData";
+import { InsuranceHealthScore } from "@/components/ai/InsuranceHealthScore";
+import { CrossPolicyInsightCard } from "@/components/ai/CrossPolicyInsightCard";
 
 export default function AiAnalysisPage() {
   const { appUser, loading: authLoading } = useAuth();
@@ -141,92 +143,117 @@ export default function AiAnalysisPage() {
             </div>
             <button onClick={handleAnalyzePortfolio} className="btn btn-secondary btn-sm">🔄 Yeniden Analiz Et</button>
           </div>
-          
+
+          {/* Insurance Health Score */}
+          <InsuranceHealthScore
+            score={aiAnalysis.riskSkoru}
+            breakdown={{
+              criticalIssues: aiAnalysis.riskAciklari?.filter((r) => r.riskSeviyesi === 'yuksek').length || 0,
+              warningIssues: aiAnalysis.riskAciklari?.filter((r) => r.riskSeviyesi !== 'yuksek').length || 0,
+              coverageGaps: aiAnalysis.riskAciklari?.length || 0,
+              optimization: aiAnalysis.optimizasyonOnerileri?.length || 0,
+            }}
+          />
+
           <div className="card" style={{ marginBottom: "var(--space-6)", backgroundColor: "var(--primary-50)", border: "1px solid var(--primary-200)", backgroundImage: "linear-gradient(120deg, var(--primary-50), white)", display: "flex", gap: "2rem", alignItems: "center" }}>
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: "1rem", color: "var(--primary-700)", textTransform: "uppercase", fontWeight: 800, marginBottom: "8px", letterSpacing: "0.5px" }}>Aktüeryal Değerlendirme Özeti</h3>
               <p style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--primary-900)", lineHeight: 1.6, margin: 0 }}>&quot;{aiAnalysis.ozet}&quot;</p>
             </div>
-            
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              <div style={{ background: "white", padding: "12px 20px", borderRadius: "12px", border: "1px solid var(--neutral-200)", textAlign: "center", minWidth: 160, boxShadow: "0 4px 6px rgba(0,0,0,0.02)" }}>
-                <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", fontWeight: 700, textTransform: "uppercase", marginBottom: 4 }}>Risk Skoru</div>
-                <div style={{ fontSize: "2rem", fontWeight: 900, color: aiAnalysis.riskSkoru > 80 ? "var(--success-600)" : (aiAnalysis.riskSkoru > 50 ? "var(--warning-600)" : "var(--danger-600)") }}>{aiAnalysis.riskSkoru}<span style={{fontSize: "1rem", color: "var(--text-tertiary)"}}>/100</span></div>
+
+            {aiAnalysis.toplamTahminiTasarruf > 0 && (
+              <div style={{ background: "linear-gradient(135deg, var(--success-500), var(--success-600))", color: "white", padding: "12px 20px", borderRadius: "12px", textAlign: "center", boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)", minWidth: 160 }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase", marginBottom: 4, color: "rgba(255,255,255,0.9)" }}>Yıllık Net Tasarruf</div>
+                <div style={{ fontSize: "1.5rem", fontWeight: 900 }}>{formatCurrency(aiAnalysis.toplamTahminiTasarruf)}</div>
               </div>
-              
-              {aiAnalysis.toplamTahminiTasarruf > 0 && (
-                <div style={{ background: "linear-gradient(135deg, var(--success-500), var(--success-600))", color: "white", padding: "12px 20px", borderRadius: "12px", textAlign: "center", boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)" }}>
-                  <div style={{ fontSize: "0.8rem", fontWeight: 700, textTransform: "uppercase", marginBottom: 4, color: "rgba(255,255,255,0.9)" }}>Yıllık Net Tasarruf</div>
-                  <div style={{ fontSize: "1.5rem", fontWeight: 900 }}>{formatCurrency(aiAnalysis.toplamTahminiTasarruf)}</div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
+          {/* Cross-Policy Insights - Çakışmalar */}
+          {aiAnalysis.cakismalar && aiAnalysis.cakismalar.length > 0 && (
+            <div style={{ marginBottom: "var(--space-6)" }}>
+              <h3 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "var(--space-4)", color: "var(--warning-800)" }}>
+                🔄 Çapraz Poliçe Analizleri
+              </h3>
+              {aiAnalysis.cakismalar.map((c, i) => (
+                <CrossPolicyInsightCard
+                  key={i}
+                  insight={{
+                    type: "overlap",
+                    title: c.teminatAdi,
+                    description: c.aciklama,
+                    affectedPolicies: c.ilgiliPoliceler || [],
+                    potentialSavings: c.tahminiBosaOdenenTutar,
+                    recommendation: "Bu çakışan teminatları optimize ederek yıllık prim giderinizi azaltabilirsiniz.",
+                    priority: c.tahminiBosaOdenenTutar > 5000 ? "high" : c.tahminiBosaOdenenTutar > 2000 ? "medium" : "low",
+                  }}
+                  onAction={(actionType) => {
+                    if (actionType === "optimize_coverage") {
+                      alert("✂️ Teminat optimizasyon özelliği yakında aktif olacak.");
+                    } else if (actionType === "view_details") {
+                      alert("📊 Detaylı analiz sayfası hazırlanıyor.");
+                    }
+                  }}
+                />
+              ))}
+            </div>
+          )}
+
           <div className="grid-2">
-            {/* Çakışmalar */}
-            <div className="card" style={{ borderTop: "4px solid var(--warning-500)", boxShadow: "0 8px 24px rgba(0,0,0,0.04)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "var(--space-6)" }}>
-                <span style={{ fontSize: "1.5rem" }}>⚠️</span>
-                <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--warning-800)" }}>Gereksiz Ödenen Primler (Çakışmalar)</h3>
-              </div>
-              
-              {aiAnalysis.cakismalar?.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {aiAnalysis.cakismalar.map((c, i) => (
-                    <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--warning-400)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                        <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{c.teminatAdi}</div>
-                        {c.tahminiBosaOdenenTutar > 0 && (
-                          <div style={{ background: "var(--warning-100)", color: "var(--warning-800)", padding: "4px 10px", borderRadius: "100px", fontWeight: 700, fontSize: "0.85rem" }}>
-                            -{formatCurrency(c.tahminiBosaOdenenTutar)}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-tertiary)", marginBottom: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ background: "var(--neutral-100)", padding: "2px 8px", borderRadius: 4 }}>📍 İlgili Poliçeler: {c.ilgiliPoliceler?.join(" + ")}</span>
-                      </div>
-                      <div style={{ fontSize: "0.95rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>{c.aciklama}</div>
-                    </div>
-                  ))}
+            {/* Çakışmalar - Legacy fallback */}
+            {(!aiAnalysis.cakismalar || aiAnalysis.cakismalar.length === 0) && (
+              <div className="card" style={{ borderTop: "4px solid var(--warning-500)", boxShadow: "0 8px 24px rgba(0,0,0,0.04)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "var(--space-6)" }}>
+                  <span style={{ fontSize: "1.5rem" }}>⚠️</span>
+                  <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--warning-800)" }}>Gereksiz Ödenen Primler (Çakışmalar)</h3>
                 </div>
-              ) : (
                 <div style={{ padding: "2rem", textAlign: "center", background: "var(--neutral-50)", borderRadius: 8, color: "var(--text-tertiary)" }}>
                   Portföyünüzde prim israfı yaratan çakışan teminat bulunamadı.
                 </div>
-              )}
-            </div>
-
-            {/* Risk Açıkları */}
-            <div className="card" style={{ borderTop: "4px solid var(--danger-500)", boxShadow: "0 8px 24px rgba(0,0,0,0.04)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "var(--space-6)" }}>
-                <span style={{ fontSize: "1.5rem" }}>🚨</span>
-                <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--danger-800)" }}>Felaket Senaryoları (Teminat Açıkları)</h3>
               </div>
-              
-              {aiAnalysis.riskAciklari?.length > 0 ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            )}
+
+            {/* Risk Açıkları - Using CrossPolicyInsightCard */}
+            {aiAnalysis.riskAciklari?.length > 0 ? (
+              <div style={{ gridColumn: "1 / -1" }}>
+                <h3 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "var(--space-4)", color: "var(--danger-800)" }}>
+                  🚨 Felaket Senaryoları (Teminat Açıkları)
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   {aiAnalysis.riskAciklari.map((r, i) => (
-                    <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--danger-400)" }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
-                        <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{r.eksikTeminat}</div>
-                        <span style={{ fontSize: "0.75rem", letterSpacing: "0.5px", padding: "4px 8px", borderRadius: "4px", backgroundColor: r.riskSeviyesi === 'yuksek' ? 'var(--danger-100)' : 'var(--warning-100)', color: r.riskSeviyesi === 'yuksek' ? 'var(--danger-800)' : 'var(--warning-800)', fontWeight: 800 }}>
-                          {r.riskSeviyesi === 'yuksek' ? "KRİTİK AÇIK" : "RİSKLİ"}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--text-tertiary)", marginBottom: "0.75rem", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ background: "var(--neutral-100)", padding: "2px 8px", borderRadius: 4 }}>🛡️ Çözüm: {r.ilgiliPoliceTipi}</span>
-                      </div>
-                      <div style={{ fontSize: "0.95rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>{r.aciklama}</div>
-                    </div>
+                    <CrossPolicyInsightCard
+                      key={i}
+                      insight={{
+                        type: "gap",
+                        title: r.eksikTeminat,
+                        description: r.aciklama,
+                        affectedPolicies: [r.ilgiliPoliceTipi],
+                        riskExposure: r.riskSeviyesi === 'yuksek' ? 50000 : 25000,
+                        recommendation: `Bu teminat eksikliğini ${r.ilgiliPoliceTipi} poliçesi ile kapatmanız önerilir.`,
+                        priority: r.riskSeviyesi === 'yuksek' ? "high" : "medium",
+                      }}
+                      onAction={(actionType) => {
+                        if (actionType === "close_gap") {
+                          alert("🛡️ Teminat boşluğu kapatma özelliği yakında eklenecek.");
+                        } else if (actionType === "view_details") {
+                          alert("📊 Detaylı risk analizi hazırlanıyor.");
+                        }
+                      }}
+                    />
                   ))}
                 </div>
-              ) : (
+              </div>
+            ) : (
+              <div className="card" style={{ borderTop: "4px solid var(--danger-500)", boxShadow: "0 8px 24px rgba(0,0,0,0.04)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "var(--space-6)" }}>
+                  <span style={{ fontSize: "1.5rem" }}>🚨</span>
+                  <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--danger-800)" }}>Felaket Senaryoları (Teminat Açıkları)</h3>
+                </div>
                 <div style={{ padding: "2rem", textAlign: "center", background: "var(--neutral-50)", borderRadius: 8, color: "var(--text-tertiary)" }}>
                   Portföyünüz ana hatlarıyla güvende. Kritik bir risk açığı tespit edilmedi.
                 </div>
-              )}
-            </div>
+              </div>
+            )}
             
             {/* Optimizasyon Önerileri */}
             {aiAnalysis.optimizasyonOnerileri?.length > 0 && (
