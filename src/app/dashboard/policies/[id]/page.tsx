@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { calculatePolicyQualityScore } from "@/lib/engines/portfolioScoreEngine";
 import type { RiskAlert, AnalysisApiResponse } from "@/types/policy-analysis";
+import { AISuggestionCard } from "@/components/ai/AISuggestionCard";
 
 const STATUS_COLORS: Record<string, string> = {
   active: "badge-green badge-dot",
@@ -485,92 +486,25 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                   </div>
                 )}
 
-                {/* Alert kartları */}
+                {/* Alert kartları - AISuggestionCard kullanımı */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  {analysisAlerts.map((alert) => {
-                    const severityConfig = {
-                      CRITICAL: {
-                        bg: "var(--danger-50)",
-                        border: "var(--danger-200)",
-                        icon: "🚨",
-                        label: "KRİTİK",
-                        labelColor: "var(--danger-700)",
-                        labelBg: "var(--danger-100)",
-                        titleColor: "var(--danger-900)",
-                      },
-                      WARNING: {
-                        bg: "var(--warning-50)",
-                        border: "var(--warning-200)",
-                        icon: "⚠️",
-                        label: "UYARI",
-                        labelColor: "var(--warning-700)",
-                        labelBg: "var(--warning-100)",
-                        titleColor: "var(--warning-900)",
-                      },
-                      INFO: {
-                        bg: "var(--primary-50)",
-                        border: "var(--primary-200)",
-                        icon: "ℹ️",
-                        label: "BİLGİ",
-                        labelColor: "var(--primary-700)",
-                        labelBg: "var(--primary-100)",
-                        titleColor: "var(--primary-900)",
-                      },
-                    }[alert.severity];
-
-                    return (
-                      <div
-                        key={alert.id}
-                        style={{
-                          background: severityConfig.bg,
-                          border: `1px solid ${severityConfig.border}`,
-                          borderLeft: `4px solid ${severityConfig.border}`,
-                          borderRadius: "var(--radius-md)",
-                          padding: "var(--space-4)",
-                        }}
-                      >
-                        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "var(--space-3)", marginBottom: "var(--space-2)" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
-                            <span>{severityConfig.icon}</span>
-                            <span style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: severityConfig.titleColor }}>
-                              {alert.title}
-                            </span>
-                          </div>
-                          <span style={{
-                            fontSize: "var(--text-xs)",
-                            fontWeight: 800,
-                            color: severityConfig.labelColor,
-                            background: severityConfig.labelBg,
-                            padding: "1px 8px",
-                            borderRadius: 99,
-                            whiteSpace: "nowrap",
-                          }}>
-                            {severityConfig.label}
-                          </span>
-                        </div>
-                        <p style={{ fontSize: "var(--text-sm)", color: severityConfig.titleColor, lineHeight: 1.6, margin: 0, opacity: 0.85 }}>
-                          {alert.description}
-                        </p>
-                        {alert.financialImpact && (
-                          <div style={{
-                            marginTop: "var(--space-2)",
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            background: "rgba(255,255,255,0.7)",
-                            border: `1px solid ${severityConfig.border}`,
-                            borderRadius: "var(--radius-sm)",
-                            padding: "2px 10px",
-                            fontSize: "var(--text-xs)",
-                            fontWeight: 700,
-                            color: severityConfig.labelColor,
-                          }}>
-                            💰 {alert.financialImpact}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {analysisAlerts.map((alert) => (
+                    <AISuggestionCard
+                      key={alert.id}
+                      alert={alert}
+                      onAction={(actionType) => {
+                        if (actionType === "contact_agent") {
+                          alert("📞 Acentenizle paylaşım özelliği yakında aktif olacak.");
+                        } else if (actionType === "request_amendment") {
+                          alert("📝 Zeyilname talep sistemi geliştiriliyor.");
+                        } else if (actionType === "increase_limit") {
+                          alert("📈 Limit artırma özelliği yakında eklenecek.");
+                        } else if (actionType === "learn_more") {
+                          alert("📖 Detaylı bilgi sayfası hazırlanıyor.");
+                        }
+                      }}
+                    />
+                  ))}
                 </div>
 
                 {/* Özet istatistik */}
