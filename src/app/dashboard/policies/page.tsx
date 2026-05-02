@@ -237,6 +237,7 @@ export default function PoliciesPage() {
       ) : (
         <>
           {filteredPolicies.length > 0 && (
+            <>
             <div className="table-wrapper">
             <table className="table table-clickable">
           <thead>
@@ -401,7 +402,65 @@ export default function PoliciesPage() {
           </tbody>
         </table>
         </div>
+
+        {/* Mobile Card List (visible when table is hidden) */}
+        <div className="mobile-policy-list" style={{ display: 'none' }}>
+          {filteredPolicies.map((policy) => {
+            const days = daysUntil(policy.endDate);
+            const isExpiring = days >= 0 && days <= 30;
+            return (
+              <Link
+                key={policy.id}
+                href={`/dashboard/policies/${policy.id}`}
+                className="card"
+                style={{
+                  marginBottom: 'var(--space-3)',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                    <span style={{ fontSize: '1.5rem' }}>{POLICY_TYPE_ICONS[policy.policyType]}</span>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{POLICY_TYPE_LABELS[policy.policyType]}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)', fontFamily: 'var(--font-mono)' }}>
+                        {policy.policyNumber}
+                      </div>
+                    </div>
+                  </div>
+                  <span className={`badge ${STATUS_BADGE_MAP[policy.status]}`}>
+                    {POLICY_STATUS_LABELS[policy.status]}
+                  </span>
+                </div>
+
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)' }}>
+                  <div style={{ fontWeight: 500 }}>{policy.insuranceCompany}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>{policy.agencyName}</div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'var(--space-3)', fontSize: '0.8125rem' }}>
+                  <div>
+                    <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>Vade Bitiş</div>
+                    <div style={{ fontWeight: 500 }}>{formatDateShort(policy.endDate)}</div>
+                    <div style={{ fontSize: '0.75rem', color: isExpiring ? 'var(--danger-500)' : 'var(--text-tertiary)', fontWeight: isExpiring ? 600 : 400 }}>
+                      {getRelativeTime(policy.endDate)}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ color: 'var(--text-tertiary)', fontSize: '0.75rem' }}>Toplam Prim</div>
+                    <div style={{ fontWeight: 600, color: 'var(--primary-600)' }}>
+                      {formatCurrency(policy.premium.totalPremium, policy.premium.currency)}
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+        </>
         )}
+
           
       {effectivePolicies.length > 0 && filteredPolicies.length === 0 && (
         <div className="empty-state" style={{ marginTop: "var(--space-6)" }}>
