@@ -27,68 +27,40 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const simplifiedPolicies = (policies as unknown as Policy[]).map((p: Policy) => ({
-      tipi: p.policyType,
-      sirket: p.insuranceCompany,
-      tarihler: { baslangic: p.startDate, bitis: p.endDate },
-      prim: p.premium,
-      teminatlar: p.coverages?.map((c: Coverage) => ({ ad: c.name, tutar: c.amount })),
-      kapsam: p.notes,
-    }));
-
-    const policiesJson = JSON.stringify(simplifiedPolicies, null, 2);
-
-    // Şirket profili varsa AI'a zenginleştirilmiş veri gönder
-    let companyContext = "";
+    // Load company profile for enriched analysis
+    let companyProfile: any = null;
     try {
-      const profile = await getCompanyProfile(tenantId);
-      if (profile && profile.annualRevenue) {
-        companyContext = `\n\nŞİRKET PROFİLİ:\n- Sektör: ${profile.sector}\n- Yıllık Ciro: ${profile.annualRevenue.toLocaleString('tr-TR')} TL\n- Çalışan Sayısı: ${profile.employeeCount}\n\nBu bilgileri kullanarak poliçelerdeki teminat limitlerinin şirket büyüklüğüne uygun olup olmadığını değerlendir. Yetersiz limitleri "limitUyarilari" alanında raporla (her biri için: policeTipi, mevcutLimit, onerilenLimit, aciklama).`;
-      }
+      companyProfile = await getCompanyProfile(tenantId);
     } catch (e) {
-      logger.warn("Failed to load company profile for AI enrichment", "api/ai/analyze-portfolio", { error: (e as Error).message });
+      logger.warn("Failed to load company profile", "api/ai/analyze-portfolio", {
+        error: (e as Error).message,
+      });
     }
 
-    const bedrockBody = {
-      anthropic_version: "bedrock-2023-05-31",
-      max_tokens: 4096,
-      system: PORTFOLIO_ANALYSIS_SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Aşağıdaki poliçe portföyünü analiz et ve SADECE istenen formata uygun JSON çıktısı ver:\n\n${policiesJson}${companyContext}`,
-        },
-      ],
-    };
-
-    const command = new InvokeModelCommand({
-      modelId: MODEL_ID,
-      contentType: "application/json",
-      accept: "application/json",
-      body: JSON.stringify(bedrockBody),
+    // Call aiService with enhanced portfolio analysis
+    const response = await aiService.callAI<
+      { policies: Policy[]; companyProfile: any },
+      PortfolioAnalysisResult
+    >({
+      operation: "analyzePortfolio",
+      input: {
+        policies: policies as unknown as Policy[],
+        companyProfile,
+      },
+      options: {
+        enableFallback: true,
+        preferredProvider: "bedrock",
+        tenantId,
+      },
     });
 
-    const response = await bedrock.send(command);
-    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-    const rawText = responseBody.content?.[0]?.text ?? "";
-
-    const cleanJson = rawText
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/\s*```$/i, "")
-      .trim();
-
-    let analysisResult;
-    try {
-      analysisResult = JSON.parse(cleanJson);
-    } catch {
-      logger.error("AI response parse failed", "api/ai/analyze-portfolio", {
-        tenantId,
-        preview: cleanJson.substring(0, 100),
-      });
-      return NextResponse.json({ error: "AI analiz sonucu işlenemedi." }, { status: 500 });
+    if (!response.success || !response.data) {
+      throw new Error(response.error?.message || "Portfolio analysis failed");
     }
 
+    const analysisResult = response.data;
+
+    // Persist results to Firestore
     try {
       await saveAnalysisResults(tenantId, analysisResult);
     } catch (saveErr) {
@@ -97,9 +69,24 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    logger.info("Portfolio analysis complete", "api/ai/analyze-portfolio", { tenantId });
+    logger.info("Portfolio analysis complete", "api/ai/analyze-portfolio", {
+      tenantId,
+      insightCount: analysisResult.insights.length,
+      provider: response.metadata.provider,
+      latencyMs: response.metadata.latencyMs,
+      estimatedCostUSD: response.metadata.estimatedCostUSD,
+    });
 
-    return NextResponse.json({ success: true, data: analysisResult });
+    return NextResponse.json({
+      success: true,
+      data: analysisResult,
+      aiMetadata: {
+        provider: response.metadata.provider,
+        latencyMs: response.metadata.latencyMs,
+        insightDepth: analysisResult.insights.length,
+        fallbackUsed: response.metadata.fallbackUsed,
+      },
+    });
   } catch (error) {
     const body = await req.json().catch(() => ({}));
     logger.error("Portfolio analysis error", "api/ai/analyze-portfolio", {

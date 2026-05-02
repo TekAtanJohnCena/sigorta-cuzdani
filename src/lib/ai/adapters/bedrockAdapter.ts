@@ -102,7 +102,8 @@ export class BedrockAdapter implements AIAdapter {
   }
 
   /**
-   * Analyze portfolio for gaps and overlaps
+   * Analyze portfolio with DEEP cross-policy logic
+   * Detects overlaps, gaps, concentration risks, and optimization opportunities
    */
   private async analyzePortfolio(input: {
     policies: any[];
@@ -110,29 +111,52 @@ export class BedrockAdapter implements AIAdapter {
   }): Promise<PortfolioAnalysisResult> {
     const { policies, companyProfile } = input;
 
-    // Build summary of all policies
-    const policySummary = policies
-      .map(
-        (p) =>
-          `- ${p.policyType}: ${p.policyNumber} (${p.company}, ${p.coverages.length} teminat, ${p.premium} TL)`
-      )
-      .join("\n");
+    // Enhanced policy summary with structured coverage details
+    const policyDetails = policies.map((p) => ({
+      id: p.id,
+      tipi: p.policyType,
+      sirket: p.insuranceCompany,
+      policeNo: p.policyNumber,
+      baslangic: p.startDate,
+      bitis: p.endDate,
+      prim: p.premium,
+      teminatlar: p.coverages?.map((c: any) => ({
+        ad: c.name,
+        limit: c.amount,
+        paraBirimi: c.currency || "TRY",
+        muafiyet: c.deductible,
+      })),
+      durum: p.status,
+    }));
+
+    // Build company context
+    let companyContext = "Şirket profili bilinmiyor.";
+    if (companyProfile) {
+      companyContext = `Şirket Profili:
+- Sektör: ${companyProfile.sector || "Bilinmiyor"}
+- Yıllık Ciro: ${companyProfile.annualRevenue ? companyProfile.annualRevenue.toLocaleString("tr-TR") + " TL" : "Bilinmiyor"}
+- Çalışan Sayısı: ${companyProfile.employeeCount || "Bilinmiyor"}`;
+    }
 
     const body = {
       anthropic_version: "bedrock-2023-05-31",
       max_tokens: 4096,
-      system: this.getPortfolioAnalysisSystemPrompt(),
+      system: this.getEnhancedPortfolioAnalysisSystemPrompt(),
       messages: [
         {
           role: "user",
-          content: `Şirket Profili:
-Sektör: ${companyProfile.industry || "Bilinmiyor"}
-Çalışan Sayısı: ${companyProfile.employeeCount || "Bilinmiyor"}
+          content: `${companyContext}
 
-Poliçe Portföyü:
-${policySummary}
+Poliçe Portföyü (${policies.length} poliçe):
+${JSON.stringify(policyDetails, null, 2)}
 
-Bu portföyde teminat eksiklikleri, tekrarlar ve optimizasyon fırsatlarını analiz et.`,
+GÖREV: Bu portföyü DERİN analiz et. Sadece yüzeysel özetleme değil, CROSS-POLICY mantık ile:
+1. TEKRARLAR: Aynı riskin birden fazla poliçede teminat altına alınması (gereksiz maliyet)
+2. AÇIKLAR: Şirketin sektörüne göre eksik olan kritik teminatlar
+3. KONSANTRASYONlar: Aynı sigorta şirketine bağımlılık riski
+4. LİMİT YETERSİZLİKLERİ: Enflasyon/ciro göz önüne alındığında düşük limitler
+
+JSON formatında döndür (SADECE JSON, açıklama yok).`,
         },
       ],
     };
@@ -149,7 +173,14 @@ Bu portföyde teminat eksiklikleri, tekrarlar ve optimizasyon fırsatlarını an
     const text = responseBody.content?.[0]?.text ?? "";
 
     const parsed = this.parseJsonResponse<PortfolioAnalysisResult>(text);
-    return parsed;
+
+    // Enrich with calculated fields
+    return {
+      ...parsed,
+      tenantId: input.policies[0]?.tenantId || "unknown",
+      analyzedAt: new Date().toISOString(),
+      policyCount: policies.length,
+    };
   }
 
   /**
@@ -253,68 +284,102 @@ JSON şeması:
 }`;
   }
 
-  private getPortfolioAnalysisSystemPrompt(): string {
-    return `Sen Türk şirketleri için sigorta portföyü analiz uzmanısın. Teminat eksiklikleri, tekrarlar ve optimizasyon fırsatlarını tespit ediyorsun.
+  private getEnhancedPortfolioAnalysisSystemPrompt(): string {
+    return `Sen Türk şirketleri için sigorta portföyü DERİN ANALİZ uzmanısın. Sadece yüzeysel özetleme değil, CROSS-POLICY mantık ile gizli riskleri ve optimizasyon fırsatlarını tespit ediyorsun.
 
-GÖREV: Verilen poliçe portföyünü analiz et ve JSON formatında rapor döndür.
+ÖZEL YETENEKLERİN:
+1. **Teminat Çakışması Tespiti**: Aynı riskin birden fazla poliçede karşılanması (örn: Ferdi Kaza hem Kasko'da hem Sağlık'ta)
+2. **Sektörel Boşluk Analizi**: Şirketin sektörüne göre eksik olan zorunlu/kritik teminatlar
+3. **Konsantrasyon Riski**: Aynı sigorta şirketine aşırı bağımlılık (tek şirkette %70+ prim)
+4. **Limit Yetersizliği**: Enflasyon/ciro/çalışan sayısına göre düşük kalan teminat limitleri
+5. **Zaman Boşlukları**: Poliçeler arası süreklilik kopukluğu (teminatsız dönemler)
 
-JSON şeması:
+TÜRK SİGORTA MEVZUATI BİLGİN:
+- İşyeri: Yangın, İşveren Mali Sorumluluk, DASK zorunlu
+- Trafik: İMM (İhtiyari Mali Mesuliyet) çok düşük tutulmamalı (min 500k TL önerilir)
+- Kasko: Değer kaybı enflasyon nedeniyle yıllık %50+ olabiliyor
+- Sorumluluk: Hukuki Koruma teminatı genelde unutuluyor ama kritik
+
+JSON ŞEMASI (SADECE BU FORMATTA DÖNDÜR):
 {
   "tenantId": "string",
-  "analyzedAt": "ISO 8601 timestamp",
+  "analyzedAt": "ISO 8601",
   "policyCount": number,
   "insights": [
     {
       "type": "overlap" | "gap" | "inefficiency" | "concentration_risk",
-      "title": "string",
-      "description": "string",
-      "affectedPolicies": ["policy-id"],
-      "potentialSavings": number (optional),
-      "riskExposure": number (optional),
-      "recommendation": "string",
+      "title": "TÜRKÇE başlık (max 80 karakter)",
+      "description": "Detaylı açıklama (neden sorun, potansiyel sonuçlar)",
+      "affectedPolicies": ["policy-id1", "policy-id2"],
+      "potentialSavings": number (TRY cinsinden, varsa),
+      "riskExposure": number (TRY cinsinden risk tutarı, varsa),
+      "recommendation": "Somut aksiyon adımları",
       "priority": "high" | "medium" | "low"
     }
   ],
   "summary": {
-    "totalSavingsOpportunity": number,
-    "totalRiskExposure": number,
-    "criticalGaps": number,
-    "optimizationScore": number
+    "totalSavingsOpportunity": number (toplam tasarruf, TRY),
+    "totalRiskExposure": number (toplam açık risk, TRY),
+    "criticalGaps": number (yüksek öncelikli boşluk sayısı),
+    "optimizationScore": number (0-100, 100 = mükemmel portföy)
   }
-}`;
+}
+
+ÖNEMLI: insights dizisini ÖNCELIĞE göre sırala (high → medium → low).`;
   }
 
   private getRiskAnalysisSystemPrompt(policyType: string): string {
-    return `Sen Türk sigorta poliçelerindeki GİZLİ MAYINLARI tespit eden bir uzmansın.
+    return `Sen Türk sigorta poliçelerindeki GİZLİ MAYINLARI tespit eden UZMAN bir sigorta analistsin.
 
-GÖREV: ${policyType} poliçesindeki istisnalar, yüksek muafiyetler ve eksik teminatları analiz et.
+ÖZELLEŞTİRİLMİŞ GÖREV (${policyType.toUpperCase()} POLİÇESİ):
+Poliçe metninde şu riskli durumları DERİNLEMESİNE ara:
 
-JSON şeması:
+1. **ZEYİLNAMELER**: Poliçeyi kısıtlayan ek maddeler
+2. **MUAFİYET ORANLAR**: Hasar tazminatını engelleyecek yüksek muafiyetler
+3. **TEMİNAT DIŞI HALLER**: Belirsiz veya geniş kapsamlı istisnalar
+4. **LİMİT YETERSİZLİĞİ**: Güncel piyasa değerlerine göre düşük teminat limitleri
+5. **BELİRSİZ İFADELER**: "makul süre", "gerekli özen" gibi subjektif terimler
+
+TÜRK SİGORTA PİYASASI ÖZEL KURALLARI:
+- ${policyType === "kasko" ? "Kasko: Değer kaybı teminatı kritik, yıllık enflasyon %50+ olabilir" : ""}
+- ${policyType === "trafik" ? "Trafik: İMM (İhtiyari Mali Mesuliyet) minimum 500k TL olmalı" : ""}
+- ${policyType === "isyeri" ? "İşyeri: DASK zorunlu, İşveren Sorumluluk teminatı şart" : ""}
+- ${policyType === "yangin" ? "Yangın: Deprem ayrı (DASK), yeniden inşa maliyeti güncel olmalı" : ""}
+
+TEHLİKELİ MADDE ÖRNEKLERİ:
+- "Bakımsızlıktan kaynaklanan hasarlar teminat dışıdır" → Çok geniş istisna
+- "Derhal bildirilmemiş hasarlar karşılanmaz" → "Derhal" tanımı belirsiz
+- "Alkollü sürüş halinde teminat geçersizdir" → Tüm kazayı kapsıyor olabilir
+- "%5 muafiyet uygulanır" → Küçük hasarlarda tazminat yok
+
+JSON ÇIKTI ŞEMASI (SADECE JSON DÖNDÜR, AÇIKLAMA YOK):
 {
   "policyId": "string",
-  "analyzedAt": "ISO 8601",
+  "analyzedAt": "ISO 8601 timestamp",
   "alerts": [
     {
-      "id": "string",
-      "title": "string",
-      "description": "string",
+      "id": "unique-id",
+      "title": "Kısa başlık (TÜRKÇE, max 60 karakter)",
+      "description": "Detaylı risk açıklaması (neden tehlikeli, potansiyel sonuç)",
       "severity": "CRITICAL" | "WARNING" | "INFO",
       "category": "exclusion" | "deductible" | "coverage_gap" | "limit_inadequacy" | "claim_barrier",
-      "affectedCoverages": ["string"],
-      "regulatoryRisk": boolean,
-      "financialImpact": "string (optional)",
-      "remediationSteps": ["string"],
-      "estimatedRemediationCost": number (optional),
-      "confidenceScore": number
+      "affectedCoverages": ["hangi teminatlar etkileniyor"],
+      "regulatoryRisk": boolean (TSB düzenlemelerine aykırı mı?),
+      "financialImpact": "Hasar durumunda kaç TL zarar olabilir (sayısal tahmin)",
+      "remediationSteps": ["Somut aksiyon adımları", "Nasıl düzeltilir"],
+      "estimatedRemediationCost": number (ek prim tahmini, TRY),
+      "confidenceScore": number (0-100, bu tespitte ne kadar eminsin)
     }
   ],
   "summary": {
     "criticalCount": number,
     "warningCount": number,
     "infoCount": number,
-    "totalRiskExposure": number,
-    "actionableInsights": number
+    "totalRiskExposure": number (toplam potansiyel zarar, TRY),
+    "actionableInsights": number (düzeltilebilir risk sayısı)
   }
-}`;
+}
+
+ÖNEMLİ: Alerts dizisini severity'ye göre sırala (CRITICAL → WARNING → INFO).`;
   }
 }
