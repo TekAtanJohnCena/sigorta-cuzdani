@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { DemoProvider } from "@/lib/context/DemoContext";
 import RightPanel from "@/components/RightPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useDemo } from "@/lib/context/DemoContext";
 
 interface NavItem {
   href: string;
@@ -33,7 +34,7 @@ const NAV_ITEMS: NavSection[] = [
   {
     section: "Analiz & Operasyon",
     items: [
-      { href: "/dashboard/ai-analysis", icon: "🤖", label: "AI Analizi", highlight: true },
+      { href: "/dashboard/ai-analysis", icon: "🤖", label: "AI Analizi", highlight: true, badge: 0 }, // badge will be set dynamically
       { href: "/dashboard/risk-gaps", icon: "🎯", label: "Risk Açıkları" },
       { href: "/dashboard/assets", icon: "🏗️", label: "Varlık Envanteri" },
       { href: "/dashboard/renewals", icon: "🔄", label: "Teklif & Yenileme" },
@@ -52,7 +53,7 @@ const NAV_ITEMS: NavSection[] = [
   },
 ];
 
-export default function DashboardLayout({
+function DashboardLayoutInner({
   children,
 }: {
   children: React.ReactNode;
@@ -63,6 +64,8 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const { appUser, logout } = useAuth();
+  const { isDemoMode } = useDemo();
+  const [criticalAlertCount, setCriticalAlertCount] = useState<number>(0);
 
   const currentQ = searchParams.get("q") || "";
 
@@ -79,6 +82,29 @@ export default function DashboardLayout({
 
     router.replace(`${pathname}?${params.toString()}`);
   };
+
+  // Fetch critical alert count on mount
+  useEffect(() => {
+    async function fetchAlerts() {
+      if (isDemoMode) {
+        setCriticalAlertCount(3); // Mock data for demo
+        return;
+      }
+      if (!appUser) return;
+
+      try {
+        const res = await fetch("/api/ai/critical-alerts");
+        const data = await res.json();
+        if (data.success) {
+          setCriticalAlertCount(data.data.criticalCount);
+        }
+      } catch (err) {
+        console.error("Failed to fetch critical alerts:", err);
+      }
+    }
+
+    fetchAlerts();
+  }, [appUser, isDemoMode]);
 
   return (
     <ErrorBoundary>
@@ -112,6 +138,12 @@ export default function DashboardLayout({
                     item.href === "/dashboard"
                       ? pathname === "/dashboard"
                       : pathname.startsWith(item.href);
+
+                  // Dynamic badge for AI Analysis
+                  const displayBadge = item.href === "/dashboard/ai-analysis" && criticalAlertCount > 0
+                    ? criticalAlertCount
+                    : item.badge;
+
                   return (
                     <Link
                       key={item.href}
@@ -121,8 +153,8 @@ export default function DashboardLayout({
                     >
                       <span className="sidebar-link-icon">{item.icon}</span>
                       <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="sidebar-link-badge">{item.badge}</span>
+                      {displayBadge && displayBadge > 0 && (
+                        <span className="sidebar-link-badge">{displayBadge}</span>
                       )}
                     </Link>
                   );
@@ -193,6 +225,22 @@ export default function DashboardLayout({
         </div>
 
         </div>
+      </DemoProvider>
+    </ErrorBoundary>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <ErrorBoundary>
+      <DemoProvider>
+        <Suspense fallback={<div>Loading...</div>}>
+          <DashboardLayoutInner>{children}</DashboardLayoutInner>
+        </Suspense>
       </DemoProvider>
     </ErrorBoundary>
   );
