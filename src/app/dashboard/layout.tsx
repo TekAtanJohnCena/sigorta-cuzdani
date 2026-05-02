@@ -6,6 +6,7 @@ import { useState, useMemo, useEffect, Suspense } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { DemoProvider } from "@/lib/context/DemoContext";
 import RightPanel from "@/components/RightPanel";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface NavItem {
   href: string;
@@ -80,8 +81,9 @@ export default function DashboardLayout({
   };
 
   return (
-    <DemoProvider>
-      <div className="layout-wrapper">
+    <ErrorBoundary>
+      <DemoProvider>
+        <div className="layout-wrapper">
         {/* Mobile overlay */}
         {mobileOpen && (
           <div
@@ -190,7 +192,8 @@ export default function DashboardLayout({
           </div>
         </div>
 
-      </div>
-    </DemoProvider>
+        </div>
+      </DemoProvider>
+    </ErrorBoundary>
   );
 }

@@ -3,6 +3,9 @@
 // ============================================
 import { Policy } from '@/types/policy';
 import { Alert, CalendarEvent, RiskScore } from '@/types/finance';
+import { Claim, ClaimStatus } from '@/types/claim';
+import { Employee } from '@/types/employee';
+import { Asset } from '@/types/asset';
 
 export const MOCK_POLICIES: Policy[] = [
   {
@@ -543,8 +546,6 @@ export const MOCK_RISK_SCORE: RiskScore = {
 // ============================================
 // G-12: MOCK_CLAIMS — claims/page.tsx'ten merkeze taşındı
 // ============================================
-import { Claim, ClaimStatus } from '@/types/claim';
-
 export const MOCK_CLAIMS: Claim[] = [
   {
     id: 'clm-001',
@@ -594,8 +595,6 @@ export const MOCK_CLAIMS: Claim[] = [
 // ============================================
 // G-12: MOCK_EMPLOYEES — hr/page.tsx'ten merkeze taşındı
 // ============================================
-import { Employee } from '@/types/employee';
-
 export const MOCK_EMPLOYEES: Employee[] = [
   { id: 'emp-001', tenantId: 'tenant-001', fullName: 'Ayşe Kara', department: 'Mühendislik', position: 'Kıdemli Yazılım Geliştirici', startDate: '2023-03-01', isActive: true, insuranceStatus: 'covered', healthPolicyId: 'pol-003', insuranceCoverageStartDate: '2023-03-01', createdAt: '2023-03-01T00:00:00Z', updatedAt: '2023-03-01T00:00:00Z' },
   { id: 'emp-002', tenantId: 'tenant-001', fullName: 'Mehmet Yılmaz', department: 'Satış', position: 'Satış Müdürü', startDate: '2022-06-15', isActive: true, insuranceStatus: 'covered', healthPolicyId: 'pol-003', insuranceCoverageStartDate: '2022-06-15', createdAt: '2022-06-15T00:00:00Z', updatedAt: '2022-06-15T00:00:00Z' },
@@ -603,4 +602,93 @@ export const MOCK_EMPLOYEES: Employee[] = [
   { id: 'emp-004', tenantId: 'tenant-001', fullName: 'Ali Çelik', department: 'Finans', position: 'Mali Kontrolör', startDate: '2025-03-01', isActive: true, insuranceStatus: 'pending_addition', pendingRequestType: 'addition', pendingRequestDate: '2025-03-01', createdAt: '2025-03-01T00:00:00Z', updatedAt: '2025-03-01T00:00:00Z' },
   { id: 'emp-005', tenantId: 'tenant-001', fullName: 'Zeynep Arslan', department: 'Mühendislik', position: 'Ürün Müdürü', startDate: '2024-09-15', isActive: true, insuranceStatus: 'covered', healthPolicyId: 'pol-003', createdAt: '2024-09-15T00:00:00Z', updatedAt: '2024-09-15T00:00:00Z' },
 ];
+
+// ============================================
+// G-12: MOCK_ASSETS — assets/page.tsx'ten merkeze taşındı
+// ============================================
+export const MOCK_ASSETS: Asset[] = [
+  { id: "asset-001", tenantId: "tenant-001", category: "vehicle", name: "34 YT 2025", description: "2024 Model VW Transporter — Kurye Aracı", estimatedValue: 1_800_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-01-15T10:00:00Z", updatedAt: "2025-01-15T10:00:00Z" },
+  { id: "asset-002", tenantId: "tenant-001", category: "property", name: "Levent Merkez Ofis", description: "Büyükdere Cad. No:123, 3 katlı ofis", estimatedValue: 12_000_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-01-15T10:00:00Z", updatedAt: "2025-01-15T10:00:00Z" },
+  { id: "asset-003", tenantId: "tenant-001", category: "equipment", name: "Sunucu Odası Ekipmanları", description: "20 adet Dell PowerEdge + UPS + Rack", estimatedValue: 2_500_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-02-01T10:00:00Z", updatedAt: "2025-02-01T10:00:00Z" },
+  { id: "asset-004", tenantId: "tenant-001", category: "vehicle", name: "06 ABC 789", description: "2023 Model Ford Courier — Ankara Operasyon", estimatedValue: 1_200_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-03-01T10:00:00Z", updatedAt: "2025-03-01T10:00:00Z" },
+];
+
+// ============================================
+// G-12: MOCK_AI_ANALYSIS — ai-analysis/page.tsx'ten merkeze taşındı
+// ============================================
+export interface AIAnalysisConflict {
+  teminatAdi: string;
+  ilgiliPoliceler: string[];
+  aciklama: string;
+  tahminiBosaOdenenTutar: number;
+}
+
+export interface AIAnalysisRisk {
+  eksikTeminat: string;
+  riskSeviyesi: "yuksek" | "orta";
+  ilgiliPoliceTipi: string;
+  aciklama: string;
+}
+
+export interface AIAnalysisOptimization {
+  baslik: string;
+  aciklama: string;
+  potansiyelTasarruf?: number;
+}
+
+export interface AIAnalysisResult {
+  ozet: string;
+  riskSkoru: number;
+  cakismalar: AIAnalysisConflict[];
+  riskAciklari: AIAnalysisRisk[];
+  optimizasyonOnerileri: AIAnalysisOptimization[];
+  toplamTahminiTasarruf: number;
+  limitUyarilari?: Array<{
+    policeTipi?: string;
+    mevcutLimit?: number;
+    onerilenLimit?: number;
+    aciklama?: string;
+  }>;
+}
+
+export const MOCK_AI_ANALYSIS: AIAnalysisResult = {
+  ozet: "Portföyünüzde tespit edilen 7 poliçe Kapsamlı Risk Analizinden geçirilmiştir. Risk skorunuz iyi görünmekle birlikte, poliçeler arasında ciddi örtüşmeler mevcut. Özellikle elektronik donanım teminatlarınız çiftlenmiş durumda. Ayrıca, siber saldırı ve iş durması gibi modern felaket senaryolarına karşı büyük reasürans açıkları tespit ettim.",
+  riskSkoru: 72,
+  cakismalar: [
+    {
+      teminatAdi: "Elektronik Cihaz Koruması (Aşırı Teminat)",
+      ilgiliPoliceler: ["Kasko (Araç İçi Donanım)", "Yangın (İşyeri Demirbaş)"],
+      aciklama: "Araç kasko poliçenizdeki 'genişletilmiş donanım' teminatı, işyeri poliçenizdeki 'taşınabilir cihazlar' (görevli personeldeki) teminatı ile tam aynı kapsamda işliyor. Sigorta şirketini zengin ediyorsunuz, kaskodaki gereksiz ek klozu iptal edin.",
+      tahminiBosaOdenenTutar: 4500
+    },
+    {
+       teminatAdi: "Ferdi Kaza & Tedavi (Limit Aşımı)",
+       ilgiliPoliceler: ["Sağlık (Grup)", "Kasko"],
+       aciklama: "Çalışanlarınız için yapılmış Özel Sağlık Sigortası (TSS/ÖSS) halihazırda genişletilmiş ferdi kaza içeriyor. Kaskodaki yüksek limitli ek ferdi kaza (İMM dışı) teminatı tamamen izole bir hobi teminatıdır, boşa ödenmektedir.",
+       tahminiBosaOdenenTutar: 1200
+    }
+  ],
+  riskAciklari: [
+    {
+      eksikTeminat: "Siber Sorumluluk & KVKK Veri İhlali",
+      ilgiliPoliceTipi: "Bağımsız Siber Risk Poliçesi",
+      riskSeviyesi: "yuksek",
+      aciklama: "Dijital ayak izi olan bir işletmeniz var ancak ransomware (fidyecilik) veya KVKK müşteri verisi sızıntılarına karşı 1 TL bile korumanız yok. İlk veri sızıntısında uygulanacak idari para cezası işletme sermayenizi tüketebilir."
+    },
+    {
+      eksikTeminat: "Kar Kaybı (İş Durması)",
+      ilgiliPoliceTipi: "Yangın / İşyeri Poliçesi Ek Teminatı",
+      riskSeviyesi: "yuksek",
+      aciklama: "Yangın poliçeniz var ancak ofis yandığı için iş yapamadığınız, maaş ödemeye devam ettiğiniz aylardaki 'Faaliyet Durması Ciro Kaybı' klozunuz yok. Hasar sonrası sizi yangın değil, maaş yükü batırır."
+    }
+  ],
+  optimizasyonOnerileri: [
+    {
+      baslik: "Dağınık Araç Filosu Konsolidasyonu",
+      aciklama: "Farklı tarihlerde farklı acentelerden kesilmiş 3 araç kaskonuzu 'Kurumsal Filo Poliçesi'ne dahil ederseniz (Hasarsızlıklar taşınarak) %15 blokaj indirimi alabilirsiniz. Hemen acentenizle görüşün.",
+      potansiyelTasarruf: 15400
+    }
+  ],
+  toplamTahminiTasarruf: 21100
+};
 

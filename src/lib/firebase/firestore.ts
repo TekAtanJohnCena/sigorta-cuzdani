@@ -15,14 +15,24 @@ import {
   DocumentSnapshot,
   Timestamp,
   setDoc,
+  runTransaction,
+  writeBatch,
 } from "firebase/firestore";
 
 const POLICIES_COLLECTION = "policies";
+const PORTFOLIO_METADATA_COLLECTION = "portfolioMetadata";
+
+// ============================================
+// TRANSACTIONAL POLICY CREATION
+// Ensures atomicity: Policy + Portfolio Metadata update
+// If either fails, both rollback
+// ============================================
 
 export async function savePolicyToFirestore(
   policyData: Record<string, unknown>,
   tenantId: string
 ) {
+  // Simple version (no transaction) — kept for backward compatibility
   const docRef = await addDoc(collection(db, POLICIES_COLLECTION), {
     ...policyData,
     tenantId,
@@ -30,6 +40,84 @@ export async function savePolicyToFirestore(
     updatedAt: Timestamp.now(),
   });
   return docRef.id;
+}
+
+/**
+ * ENTERPRISE-GRADE: Transactional policy creation
+ *
+ * Atomically creates a policy and updates portfolio metadata (count, last updated).
+ * If portfolio metadata update fails, the policy creation is rolled back.
+ *
+ * Use this for production B2B flows where consistency is critical.
+ */
+export async function savePolicyWithTransaction(
+  policyData: Record<string, unknown>,
+  tenantId: string
+): Promise<string> {
+  return await runTransaction(db, async (transaction) => {
+    // Step 1: Create new policy document reference
+    const policyRef = doc(collection(db, POLICIES_COLLECTION));
+
+    const policyDoc = {
+      ...policyData,
+      tenantId,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    };
+
+    // Step 2: Read current portfolio metadata
+    const metadataRef = doc(db, PORTFOLIO_METADATA_COLLECTION, tenantId);
+    const metadataSnap = await transaction.get(metadataRef);
+
+    const currentCount = metadataSnap.exists()
+      ? (metadataSnap.data().policyCount || 0)
+      : 0;
+
+    // Step 3: Write policy + update metadata atomically
+    transaction.set(policyRef, policyDoc);
+
+    transaction.set(
+      metadataRef,
+      {
+        tenantId,
+        policyCount: currentCount + 1,
+        lastPolicyAdded: Timestamp.now(),
+        lastUpdated: Timestamp.now(),
+      },
+      { merge: true }
+    );
+
+    return policyRef.id;
+  });
+}
+
+/**
+ * BATCH WRITE VERSION (Alternative)
+ *
+ * Use batch writes when you don't need to read existing data.
+ * Faster than transactions but doesn't support read-before-write.
+ */
+export async function savePolicyBatch(
+  policyData: Record<string, unknown>,
+  tenantId: string
+): Promise<string> {
+  const batch = writeBatch(db);
+
+  const policyRef = doc(collection(db, POLICIES_COLLECTION));
+
+  batch.set(policyRef, {
+    ...policyData,
+    tenantId,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
+  });
+
+  // If you have other writes (e.g., update tenant stats), add them here
+  // batch.update(tenantStatsRef, { policyCount: increment(1) });
+
+  await batch.commit();
+
+  return policyRef.id;
 }
 
 // PolicyDocument — Firestore'dan gelen dinamik tipler

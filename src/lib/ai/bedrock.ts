@@ -85,46 +85,79 @@ JSON şeması:
 }`;
 
 export async function extractPolicyFromPDF(pdfBuffer: Buffer): Promise<ExtractionResult> {
-  // 1. PDF'i metine çevir
-  console.log("[Bedrock] Extracting text from PDF...");
-  const data = await pdfParse(pdfBuffer);
-  const pdfText = data.text;
+  try {
+    // 1. PDF'i metine çevir
+    console.log("[Bedrock] Extracting text from PDF...");
+    const data = await pdfParse(pdfBuffer);
+    const pdfText = data.text;
 
-  if (!pdfText || pdfText.trim().length < 50) {
-    throw new Error("PDF metin içeriği okunamadı (taranmış görüntü olabilir veya şifreli olabilir)");
-  }
+    if (!pdfText || pdfText.trim().length < 50) {
+      throw new Error("PDF metin içeriği okunamadı (taranmış görüntü olabilir veya şifreli olabilir)");
+    }
 
-  // Claude Haiku token limiti optimizasyonu (Haiku 200k tokene kadar alabilir, ama gereksiz masraf olmasın diye ilk 15000 karakteri alıyoruz, genellikle poliçe ilk sayfalarda tüm datayı taşır)
-  const truncatedText = pdfText.slice(0, 15000);
-  console.log(`[Bedrock] PDF parsed: ${pdfText.length} chars (sending first ${truncatedText.length} to model)`);
+    // Claude Haiku token limiti optimizasyonu (Haiku 200k tokene kadar alabilir, ama gereksiz masraf olmasın diye ilk 15000 karakteri alıyoruz, genellikle poliçe ilk sayfalarda tüm datayı taşır)
+    const truncatedText = pdfText.slice(0, 15000);
+    console.log(`[Bedrock] PDF parsed: ${pdfText.length} chars (sending first ${truncatedText.length} to model)`);
 
-  const body = {
-    anthropic_version: "bedrock-2023-05-31",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: [
-      {
-        role: "user",
-        content: `Aşağıdaki Türk sigorta poliçesi metnini analiz et ve JSON formatında döndür:\n\n${truncatedText}`,
+    const body = {
+      anthropic_version: "bedrock-2023-05-31",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Aşağıdaki Türk sigorta poliçesi metnini analiz et ve JSON formatında döndür:\n\n${truncatedText}`,
+        },
+      ],
+    };
+
+    console.log(`[Bedrock] Calling model: ${MODEL_ID}`);
+    const command = new InvokeModelCommand({
+      modelId: MODEL_ID,
+      contentType: "application/json",
+      accept: "application/json",
+      body: JSON.stringify(body),
+    });
+
+    const response = await bedrock.send(command);
+    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    const text = responseBody.content?.[0]?.text ?? "";
+
+    console.log(`[Bedrock] Response processing...`);
+    const parsed = parseJsonResponse(text);
+    console.log(`[Bedrock] Complete! Confidence Score: ${parsed.guvenScore}`);
+
+    return { ...parsed, modelUsed: MODEL_ID };
+  } catch (error) {
+    console.error("[Bedrock] Extraction failed:", (error as Error).message);
+
+    // ========================================
+    // GRACEFUL FALLBACK: Return partial/empty data
+    // Client will handle showing manual entry form
+    // ========================================
+    return {
+      policeTipi: "diger",
+      policeNumarasi: null,
+      sigortaSirketi: null,
+      acenteAdi: null,
+      acenteNo: null,
+      baslangicTarihi: null,
+      bitisTarihi: null,
+      sigortaEttiren: { unvan: null, vergiNo: null, adres: null },
+      sigortali: { unvan: null, vergiNo: null, adres: null },
+      teminatlar: [],
+      primBilgileri: {
+        netPrim: null,
+        bsmv: null,
+        thgf: null,
+        toplamPrim: null,
+        paraBirimi: "TRY",
+        odemeSekli: null,
+        taksitSayisi: null,
       },
-    ],
-  };
-
-  console.log(`[Bedrock] Calling model: ${MODEL_ID}`);
-  const command = new InvokeModelCommand({
-    modelId: MODEL_ID,
-    contentType: "application/json",
-    accept: "application/json",
-    body: JSON.stringify(body),
-  });
-
-  const response = await bedrock.send(command);
-  const responseBody = JSON.parse(new TextDecoder().decode(response.body));
-  const text = responseBody.content?.[0]?.text ?? "";
-
-  console.log(`[Bedrock] Response processing...`);
-  const parsed = parseJsonResponse(text);
-  console.log(`[Bedrock] Complete! Confidence Score: ${parsed.guvenScore}`);
-
-  return { ...parsed, modelUsed: MODEL_ID };
+      ozelSartlar: [],
+      guvenScore: 0,
+      modelUsed: "fallback-error",
+    };
+  }
 }

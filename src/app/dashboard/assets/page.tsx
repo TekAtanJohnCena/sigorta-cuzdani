@@ -9,20 +9,14 @@ import { Policy, POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
 import { Asset, AssetCategory, ASSET_CATEGORY_LABELS, ASSET_CATEGORY_ICONS } from "@/types/asset";
 import { analyzeAssetPortfolio } from "@/lib/engines/assetMatchEngine";
 import { formatCurrency } from "@/lib/utils/currency";
-import { MOCK_POLICIES } from "@/lib/mockData";
-
-const MOCK_ASSETS: Asset[] = [
-  { id: "asset-001", tenantId: "tenant-001", category: "vehicle", name: "34 YT 2025", description: "2024 Model VW Transporter — Kurye Aracı", estimatedValue: 1_800_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-01-15T10:00:00Z", updatedAt: "2025-01-15T10:00:00Z" },
-  { id: "asset-002", tenantId: "tenant-001", category: "property", name: "Levent Merkez Ofis", description: "Büyükdere Cad. No:123, 3 katlı ofis", estimatedValue: 12_000_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-01-15T10:00:00Z", updatedAt: "2025-01-15T10:00:00Z" },
-  { id: "asset-003", tenantId: "tenant-001", category: "equipment", name: "Sunucu Odası Ekipmanları", description: "20 adet Dell PowerEdge + UPS + Rack", estimatedValue: 2_500_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-02-01T10:00:00Z", updatedAt: "2025-02-01T10:00:00Z" },
-  { id: "asset-004", tenantId: "tenant-001", category: "vehicle", name: "06 ABC 789", description: "2023 Model Ford Courier — Ankara Operasyon", estimatedValue: 1_200_000, currency: "TRY", linkedPolicyIds: [], createdAt: "2025-03-01T10:00:00Z", updatedAt: "2025-03-01T10:00:00Z" },
-];
 
 export default function AssetsPage() {
   const { appUser, loading: authLoading } = useAuth();
   const { isDemoMode } = useDemo();
   const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
   const [dbAssets, setDbAssets] = useState<Asset[]>([]);
+  const [mockPolicies, setMockPolicies] = useState<Policy[]>([]);
+  const [mockAssets, setMockAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Modal state
@@ -36,7 +30,14 @@ export default function AssetsPage() {
 
   useEffect(() => {
     async function load() {
-      if (isDemoMode) { setLoading(false); return; }
+      if (isDemoMode) {
+        // G-12: Lazy load mock data
+        const { MOCK_POLICIES, MOCK_ASSETS } = await import("@/lib/mockData");
+        setMockPolicies(MOCK_POLICIES);
+        setMockAssets(MOCK_ASSETS);
+        setLoading(false);
+        return;
+      }
       if (!appUser) { setLoading(false); return; }
       try {
         const [policiesData, assetsData] = await Promise.all([
@@ -54,8 +55,8 @@ export default function AssetsPage() {
     if (!authLoading) load();
   }, [appUser, authLoading, isDemoMode]);
 
-  const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
-  const assets = isDemoMode ? MOCK_ASSETS : dbAssets;
+  const policies = isDemoMode ? mockPolicies : dbPolicies;
+  const assets = isDemoMode ? mockAssets : dbAssets;
   const activePolicies = policies.filter(p => p.status === "active");
 
   const analysis = useMemo(() => {

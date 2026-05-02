@@ -5,87 +5,12 @@ import { formatCurrency } from "@/lib/utils/currency";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
 import { getLastAnalysisByTenant } from "@/lib/firebase/firestore";
-
-interface AIAnalysisConflict {
-  teminatAdi: string;
-  ilgiliPoliceler: string[];
-  aciklama: string;
-  tahminiBosaOdenenTutar: number;
-}
-
-interface AIAnalysisRisk {
-  eksikTeminat: string;
-  riskSeviyesi: "yuksek" | "orta";
-  ilgiliPoliceTipi: string;
-  aciklama: string;
-}
-
-interface AIAnalysisOptimization {
-  baslik: string;
-  aciklama: string;
-  potansiyelTasarruf?: number;
-}
-
-interface AIAnalysisResult {
-  ozet: string;
-  riskSkoru: number;
-  cakismalar: AIAnalysisConflict[];
-  riskAciklari: AIAnalysisRisk[];
-  optimizasyonOnerileri: AIAnalysisOptimization[];
-  toplamTahminiTasarruf: number;
-  limitUyarilari?: Array<{
-    policeTipi?: string;
-    mevcutLimit?: number;
-    onerilenLimit?: number;
-    aciklama?: string;
-  }>;
-}
-
-const MOCK_AI_ANALYSIS: AIAnalysisResult = {
-  ozet: "Portföyünüzde tespit edilen 7 poliçe Kapsamlı Risk Analizinden geçirilmiştir. Risk skorunuz iyi görünmekle birlikte, poliçeler arasında ciddi örtüşmeler mevcut. Özellikle elektronik donanım teminatlarınız çiftlenmiş durumda. Ayrıca, siber saldırı ve iş durması gibi modern felaket senaryolarına karşı büyük reasürans açıkları tespit ettim.",
-  riskSkoru: 72,
-  cakismalar: [
-    {
-      teminatAdi: "Elektronik Cihaz Koruması (Aşırı Teminat)",
-      ilgiliPoliceler: ["Kasko (Araç İçi Donanım)", "Yangın (İşyeri Demirbaş)"],
-      aciklama: "Araç kasko poliçenizdeki 'genişletilmiş donanım' teminatı, işyeri poliçenizdeki 'taşınabilir cihazlar' (görevli personeldeki) teminatı ile tam aynı kapsamda işliyor. Sigorta şirketini zengin ediyorsunuz, kaskodaki gereksiz ek klozu iptal edin.",
-      tahminiBosaOdenenTutar: 4500
-    },
-    {
-       teminatAdi: "Ferdi Kaza & Tedavi (Limit Aşımı)",
-       ilgiliPoliceler: ["Sağlık (Grup)", "Kasko"],
-       aciklama: "Çalışanlarınız için yapılmış Özel Sağlık Sigortası (TSS/ÖSS) halihazırda genişletilmiş ferdi kaza içeriyor. Kaskodaki yüksek limitli ek ferdi kaza (İMM dışı) teminatı tamamen izole bir hobi teminatıdır, boşa ödenmektedir.",
-       tahminiBosaOdenenTutar: 1200
-    }
-  ],
-  riskAciklari: [
-    {
-      eksikTeminat: "Siber Sorumluluk & KVKK Veri İhlali",
-      ilgiliPoliceTipi: "Bağımsız Siber Risk Poliçesi",
-      riskSeviyesi: "yuksek",
-      aciklama: "Dijital ayak izi olan bir işletmeniz var ancak ransomware (fidyecilik) veya KVKK müşteri verisi sızıntılarına karşı 1 TL bile korumanız yok. İlk veri sızıntısında uygulanacak idari para cezası işletme sermayenizi tüketebilir."
-    },
-    {
-      eksikTeminat: "Kar Kaybı (İş Durması)",
-      ilgiliPoliceTipi: "Yangın / İşyeri Poliçesi Ek Teminatı",
-      riskSeviyesi: "yuksek",
-      aciklama: "Yangın poliçeniz var ancak ofis yandığı için iş yapamadığınız, maaş ödemeye devam ettiğiniz aylardaki 'Faaliyet Durması Ciro Kaybı' klozunuz yok. Hasar sonrası sizi yangın değil, maaş yükü batırır."
-    }
-  ],
-  optimizasyonOnerileri: [
-    {
-      baslik: "Dağınık Araç Filosu Konsolidasyonu",
-      aciklama: "Farklı tarihlerde farklı acentelerden kesilmiş 3 araç kaskonuzu 'Kurumsal Filo Poliçesi'ne dahil ederseniz (Hasarsızlıklar taşınarak) %15 blokaj indirimi alabilirsiniz. Hemen acentenizle görüşün.",
-      potansiyelTasarruf: 15400
-    }
-  ],
-  toplamTahminiTasarruf: 21100
-};
+import type { AIAnalysisResult } from "@/lib/mockData";
 
 export default function AiAnalysisPage() {
   const { appUser, loading: authLoading } = useAuth();
   const { isDemoMode } = useDemo();
-  
+
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
@@ -126,10 +51,13 @@ export default function AiAnalysisPage() {
     setAiAnalysis(null);
     
     if (isDemoMode) {
-      setTimeout(() => {
-        setAiAnalysis(MOCK_AI_ANALYSIS);
-        setAnalyzing(false);
-      }, 2000); // Give user time to see the analysis pulse
+      // G-12: Lazy load mock data
+      import("@/lib/mockData").then(({ MOCK_AI_ANALYSIS }) => {
+        setTimeout(() => {
+          setAiAnalysis(MOCK_AI_ANALYSIS);
+          setAnalyzing(false);
+        }, 2000); // Give user time to see the analysis pulse
+      });
       return;
     }
 
@@ -245,7 +173,7 @@ export default function AiAnalysisPage() {
               
               {aiAnalysis.cakismalar?.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {aiAnalysis.cakismalar.map((c: AIAnalysisConflict, i: number) => (
+                  {aiAnalysis.cakismalar.map((c, i) => (
                     <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--warning-400)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                         <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{c.teminatAdi}</div>
@@ -278,7 +206,7 @@ export default function AiAnalysisPage() {
               
               {aiAnalysis.riskAciklari?.length > 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {aiAnalysis.riskAciklari.map((r: AIAnalysisRisk, i: number) => (
+                  {aiAnalysis.riskAciklari.map((r, i) => (
                     <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--danger-400)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                         <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{r.eksikTeminat}</div>
@@ -309,7 +237,7 @@ export default function AiAnalysisPage() {
                 </div>
                 
                 <div className="grid-2">
-                  {aiAnalysis.optimizasyonOnerileri.map((o: AIAnalysisOptimization, i: number) => (
+                  {aiAnalysis.optimizasyonOnerileri.map((o, i) => (
                     <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--primary-400)" }}>
                       <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem", marginBottom: "8px" }}>{o.baslik}</div>
                       <div style={{ fontSize: "0.95rem", color: "var(--text-secondary)", lineHeight: 1.6 }}>{o.aciklama}</div>
@@ -328,7 +256,7 @@ export default function AiAnalysisPage() {
                 </div>
                 
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                  {aiAnalysis.limitUyarilari.map((l: { policeTipi?: string; mevcutLimit?: number; onerilenLimit?: number; aciklama?: string }, i: number) => (
+                  {aiAnalysis.limitUyarilari.map((l, i) => (
                     <div key={i} style={{ padding: "1.25rem", backgroundColor: "white", borderRadius: "8px", border: "1px solid var(--neutral-200)", borderLeft: "4px solid var(--info-400)" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
                         <div style={{ fontWeight: 800, color: "var(--neutral-900)", fontSize: "1.1rem" }}>{l.policeTipi || "Poliçe"}</div>

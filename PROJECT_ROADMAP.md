@@ -97,17 +97,19 @@ tests/
 ## 🟡 **P1: HIGH PRIORITY (Pre-Launch)**
 
 ### 4. **Mock Data Consolidation**
-**Status:** 🟡 Partial (MOCK_POLICIES centralized)  
+**Status:** ✅ Completed  
 **Owner:** Frontend Team  
-**ETA:** 2 days
+**Completed:** May 3, 2026
 
-**Current scattered locations:**
-- `src/lib/mockData.ts` — MOCK_POLICIES, MOCK_CLAIMS ✅
-- `src/app/dashboard/assets/page.tsx` — MOCK_ASSETS (50 lines inline)
-- `src/app/dashboard/hr/page.tsx` — MOCK_EMPLOYEES (40 lines)
-- `src/app/dashboard/ai-analysis/page.tsx` — MOCK_AI_ANALYSIS (80 lines)
+**Consolidated locations:**
+- `src/lib/mockData.ts` — MOCK_POLICIES, MOCK_CLAIMS, MOCK_EMPLOYEES, MOCK_ASSETS, MOCK_AI_ANALYSIS ✅
+- All pages now use lazy loading with dynamic imports for mock data ✅
+- Bundle size optimization achieved through code splitting ✅
 
-**Action:** Move all to `src/lib/mockData.ts` + lazy load with dynamic imports
+**Implementation details:**
+- assets/page.tsx: Uses dynamic import in useEffect
+- hr/page.tsx: Uses dynamic import in useEffect
+- ai-analysis/page.tsx: Uses dynamic import + proper TypeScript types exported from mockData.ts
 
 ---
 

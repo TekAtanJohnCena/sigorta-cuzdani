@@ -7,8 +7,11 @@ import { formatDateShort } from "@/lib/utils/date";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { uploadPolicyPDF } from "@/lib/firebase/storage";
 import { auth } from "@/lib/firebase/config";
+// import { FileUploadSchema } from "@/lib/validation/policySchemas"; // Temp disabled
+import { Toast, ToastContainer } from "@/components/Toast";
 
 type UploadStage = "upload" | "processing" | "review" | "complete";
+type ToastType = "success" | "error" | "warning" | "info";
 
 interface ExtractedData {
   policeTipi: string;
@@ -50,8 +53,17 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  // Toast State
+  const [toasts, setToasts] = useState<Array<{ id: number; message: string; type: ToastType }>>([]);
+  const addToast = (message: string, type: ToastType = "info") => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+  };
+  const removeToast = (id: number) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
 
   const { appUser } = useAuth();
   
@@ -102,12 +114,14 @@ export default function UploadPage() {
 
     // Client-side validation
     if (!validateExtractedData()) {
-      setError("Lütfen formdaki hataları düzeltin");
+      addToast("Lütfen formdaki hataları düzeltin", "error");
       return;
     }
 
     setIsSaving(true);
     setError(null);
+    addToast("Poliçe kaydediliyor...", "info");
+
     try {
       // Firebase ID Token al — server-side auth için zorunlu
       const idToken = await auth.currentUser?.getIdToken();
@@ -122,14 +136,20 @@ export default function UploadPage() {
 
       const json = await res.json();
       if (!res.ok || !json.success) {
+        // Show field-level errors if available
+        if (json.fieldErrors && Array.isArray(json.fieldErrors)) {
+          json.fieldErrors.forEach((err: { field: string; message: string }) => {
+            addToast(`${err.field}: ${err.message}`, "error");
+          });
+        }
         throw new Error(json.error || "Kaydedilirken bir hata oluştu");
       }
 
-      setShowSuccessToast(true);
-      setTimeout(() => setShowSuccessToast(false), 5000);
-      setStage("complete");
+      addToast("✅ Poliçe başarıyla kaydedildi!", "success");
+      setTimeout(() => setStage("complete"), 500);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Bilinmeyen hata";
+      addToast(`Hata: ${msg}`, "error");
       setError(msg);
     } finally {
       setIsSaving(false);
@@ -137,11 +157,31 @@ export default function UploadPage() {
   };
 
   const processFile = useCallback(async (file: File) => {
-    const allowedTypes = ["application/pdf"];
-    if (!allowedTypes.includes(file.type)) {
-      setError("Lütfen sadece PDF dosyası yükleyin.");
+    // ========================================
+    // BASIC FILE VALIDATION (Client-side)
+    // ========================================
+    if (file.type !== "application/pdf") {
+      setError("Sadece PDF dosyaları kabul edilmektedir");
       return;
     }
+    if (file.size > 20 * 1024 * 1024) {
+      setError("Dosya boyutu 20MB'dan küçük olmalıdır");
+      return;
+    }
+
+    // Additional magic bytes check (first 5 bytes must be %PDF-)
+    try {
+      const firstBytes = await file.slice(0, 5).arrayBuffer();
+      const header = new TextDecoder("utf-8").decode(firstBytes);
+      if (!header.startsWith("%PDF-")) {
+        setError("Dosya geçerli bir PDF değil. Lütfen sigorta şirketinden gelen orijinal PDF'i yükleyin.");
+        return;
+      }
+    } catch (err) {
+      setError("Dosya okunamadı. Lütfen tekrar deneyin.");
+      return;
+    }
+
     setUploadedFile(file);
     setError(null);
     setStage("processing");
@@ -182,13 +222,33 @@ export default function UploadPage() {
         throw new Error(json.error || "API hatası");
       }
 
-      setExtracted({
+      const extractedData = {
         ...json.data,
         originalPdfUrl: uploadResult.downloadUrl,
         originalPdfPath: uploadResult.storagePath,
         fileName: file.name,
         fileSize: file.size
-      });
+      };
+
+      // ========================================
+      // GRACEFUL FALLBACK: Check if AI extraction was successful
+      // If confidence is too low or critical fields are missing, warn user
+      // ========================================
+      const confidenceScore = extractedData.guvenScore || 0;
+      const criticalFieldsMissing =
+        !extractedData.policeNumarasi ||
+        !extractedData.sigortaSirketi ||
+        !extractedData.baslangicTarihi ||
+        !extractedData.bitisTarihi;
+
+      if (confidenceScore < 30 || criticalFieldsMissing) {
+        // AI failed to extract critical data — show warning but allow manual entry
+        setError(
+          "⚠️ AI bazı verileri okuyamadı. Lütfen eksik alanları manuel olarak doldurun."
+        );
+      }
+
+      setExtracted(extractedData);
       setTimeout(() => setStage("review"), 400);
     } catch (err: unknown) {
       clearInterval(stepInterval);
@@ -222,13 +282,26 @@ export default function UploadPage() {
     score >= 80 ? "high" : score >= 55 ? "medium" : "low";
 
   return (
-    <div>
-      <div style={{ marginBottom: "var(--space-6)" }}>
-        <h1 className="page-title">Belge Yükle & Analiz</h1>
-        <p className="page-subtitle">
-          Sigorta poliçenizi (PDF) yükleyin — Sistem otomatik analiz eder.
-        </p>
-      </div>
+    <>
+      {/* Toast Container */}
+      <ToastContainer>
+        {toasts.map((toast) => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => removeToast(toast.id)}
+          />
+        ))}
+      </ToastContainer>
+
+      <div>
+        <div style={{ marginBottom: "var(--space-6)" }}>
+          <h1 className="page-title">Belge Yükle & Analiz</h1>
+          <p className="page-subtitle">
+            Sigorta poliçenizi (PDF) yükleyin — Sistem otomatik analiz eder.
+          </p>
+        </div>
 
       {/* Error Banner */}
       {error && (
@@ -350,14 +423,39 @@ export default function UploadPage() {
                     <div className="review-field-value">{POLICY_TYPE_LABELS[extracted.policeTipi] ?? extracted.policeTipi}</div>
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">Poliçe Numarası</div>
-                    <div className="review-field-value" style={{ fontFamily: "var(--font-mono)" }}>
-                      {extracted.policeNumarasi ?? ""}
+                    <div className="review-field-label">
+                      Poliçe Numarası
+                      {!extracted.policeNumarasi && (
+                        <span style={{ color: "var(--danger-500)", marginLeft: 4 }}>*</span>
+                      )}
+                    </div>
+                    <div
+                      className="review-field-value"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        color: !extracted.policeNumarasi ? "var(--danger-500)" : "inherit",
+                        fontStyle: !extracted.policeNumarasi ? "italic" : "normal",
+                      }}
+                    >
+                      {extracted.policeNumarasi ?? "❌ Okunamadı - Manuel giriş gerekli"}
                     </div>
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">Sigorta Şirketi</div>
-                    <div className="review-field-value">{extracted.sigortaSirketi ?? ""}</div>
+                    <div className="review-field-label">
+                      Sigorta Şirketi
+                      {!extracted.sigortaSirketi && (
+                        <span style={{ color: "var(--danger-500)", marginLeft: 4 }}>*</span>
+                      )}
+                    </div>
+                    <div
+                      className="review-field-value"
+                      style={{
+                        color: !extracted.sigortaSirketi ? "var(--danger-500)" : "inherit",
+                        fontStyle: !extracted.sigortaSirketi ? "italic" : "normal",
+                      }}
+                    >
+                      {extracted.sigortaSirketi ?? "❌ Okunamadı - Manuel giriş gerekli"}
+                    </div>
                   </div>
                   <div className="review-field">
                     <div className="review-field-label">Acente</div>
@@ -473,15 +571,43 @@ export default function UploadPage() {
             </div>
 
             <div className="review-actions">
-              <button className="btn btn-ghost" onClick={reset} disabled={isSaving}> İptal</button>
-              <button className="btn btn-secondary" onClick={reset} disabled={isSaving}> Yeni PDF Yükle</button>
-              <button 
-                className="btn btn-success btn-lg" 
-                onClick={handleSavePolicy} 
+              <button
+                className="btn btn-ghost"
+                onClick={reset}
+                disabled={isSaving}
+                aria-disabled={isSaving}
+              >
+                 İptal
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={reset}
+                disabled={isSaving}
+                aria-disabled={isSaving}
+              >
+                 Yeni PDF Yükle
+              </button>
+              <button
+                className="btn btn-success btn-lg"
+                onClick={handleSavePolicy}
                 id="confirm-policy-btn"
                 disabled={isSaving}
+                aria-disabled={isSaving}
+                aria-busy={isSaving}
+                style={{
+                  cursor: isSaving ? "not-allowed" : "pointer",
+                  opacity: isSaving ? 0.6 : 1,
+                  pointerEvents: isSaving ? "none" : "auto",
+                }}
               >
-                 {isSaving ? "Kaydediliyor..." : "Onayla & Kaydet"}
+                {isSaving ? (
+                  <>
+                    <span className="spinner" style={{ marginRight: 8 }} />
+                    Kaydediliyor...
+                  </>
+                ) : (
+                  <> Onayla & Kaydet</>
+                )}
               </button>
             </div>
           </div>
@@ -505,6 +631,7 @@ export default function UploadPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
