@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { extractPolicyFromPDF } from "@/lib/ai/bedrock";
+import { aiService } from "@/lib/ai/aiService";
 import { logger } from "@/lib/logger";
+import type { ExtractionResult } from "@/lib/ai/types";
 
 export const maxDuration = 60;
 
@@ -96,20 +97,32 @@ export async function POST(req: NextRequest) {
     });
 
     // ========================================
-    // AI EXTRACTION with Timeout Protection
+    // AI EXTRACTION with Unified aiService
+    // Automatic Gemini fallback enabled
     // ========================================
-    const EXTRACTION_TIMEOUT = 55000; // 55 seconds (Lambda timeout is 60s)
+    const response = await aiService.callAI<Buffer, ExtractionResult>({
+      operation: "extractPolicy",
+      input: buffer,
+      options: {
+        enableFallback: true,
+        timeout: 55000,
+        preferredProvider: "bedrock",
+      },
+    });
 
-    const extractionPromise = extractPolicyFromPDF(buffer);
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("AI extraction timeout")), EXTRACTION_TIMEOUT)
-    );
+    if (!response.success || !response.data) {
+      throw new Error(response.error?.message || "AI extraction failed");
+    }
 
-    const result = await Promise.race([extractionPromise, timeoutPromise]);
+    const result = response.data;
 
     logger.info("AI extraction completed", "upload", {
       confidenceScore: result.guvenScore,
       model: result.modelUsed,
+      provider: response.metadata.provider,
+      latencyMs: response.metadata.latencyMs,
+      fallbackUsed: response.metadata.fallbackUsed,
+      estimatedCostUSD: response.metadata.estimatedCostUSD,
     });
 
     return NextResponse.json({
@@ -118,6 +131,12 @@ export async function POST(req: NextRequest) {
       fileName: file.name,
       fileSize: file.size,
       modelUsed: result.modelUsed,
+      aiMetadata: {
+        provider: response.metadata.provider,
+        latencyMs: response.metadata.latencyMs,
+        fallbackUsed: response.metadata.fallbackUsed,
+        confidenceScore: response.metadata.confidenceScore,
+      },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {

@@ -2,18 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { getPoliciesByTenant, saveAnalysisResults, getCompanyProfile } from "@/lib/firebase/firestore";
 import { Policy, Coverage } from "@/types/policy";
-import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-import { PORTFOLIO_ANALYSIS_SYSTEM_PROMPT } from "@/lib/ai/analysisPrompts";
-
-const bedrock = new BedrockRuntimeClient({
-  region: process.env.AWS_REGION ?? "us-east-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
-  },
-});
-
-const MODEL_ID = process.env.BEDROCK_MODEL_ID ?? "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+import { aiService } from "@/lib/ai/aiService";
+import type { PortfolioAnalysisResult } from "@/lib/ai/types";
 
 export const maxDuration = 60;
 
