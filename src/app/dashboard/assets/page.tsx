@@ -43,7 +43,7 @@ export default function AssetsPage() {
           getPoliciesByTenant(appUser.tenantId),
           getAssetsByTenant(appUser.tenantId),
         ]);
-        setDbPolicies(policiesData as Policy[]);
+        setDbPolicies(policiesData as unknown as Policy[]);
         setDbAssets(assetsData);
       } catch (e) {
         console.error("Assets: Failed to load data", e);

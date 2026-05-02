@@ -42,7 +42,7 @@ export default function ClaimsPage() {
           getPoliciesByTenant(appUser.tenantId),
           getClaimsByTenant(appUser.tenantId),
         ]);
-        setDbPolicies(policiesData as Policy[]);
+        setDbPolicies(policiesData as unknown as Policy[]);
         setClaims(claimsData);
       } catch (e) {
         console.error(e);

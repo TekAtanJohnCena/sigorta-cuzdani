@@ -37,7 +37,7 @@ export default function FinancePage() {
       if (!appUser) return;
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setPolicies(data as Policy[]);
+        setPolicies(data as unknown as Policy[]);
       } catch (err) {
         console.error("Failed to load policies", err);
       } finally {

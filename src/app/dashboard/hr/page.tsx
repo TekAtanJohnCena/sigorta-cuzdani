@@ -43,7 +43,7 @@ export default function HRPage() {
           getPoliciesByTenant(appUser.tenantId),
           getEmployeesByTenant(appUser.tenantId),
         ]);
-        setDbPolicies(policiesData as Policy[]);
+        setDbPolicies(policiesData as unknown as Policy[]);
         setEmployees(empData);
       } catch (e) {
         console.error(e);

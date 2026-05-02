@@ -34,7 +34,7 @@ export default function RiskGapsPage() {
       if (!appUser) { setLoading(false); return; }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setDbPolicies(data as Policy[]);
+        setDbPolicies(data as unknown as Policy[]);
       } catch (e) {
         console.error(e);
       } finally {

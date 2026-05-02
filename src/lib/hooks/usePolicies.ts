@@ -65,7 +65,7 @@ export function usePolicies(tenantId: string | undefined | null, pageSize: numbe
 
     try {
       const data = await getPoliciesByTenant(tenantId);
-      setPolicies(data as Policy[]);
+      setPolicies(data as unknown as Policy[]);
     } catch (err: unknown) {
       const message =
         err instanceof Error

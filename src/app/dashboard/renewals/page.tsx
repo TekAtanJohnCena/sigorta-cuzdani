@@ -31,7 +31,7 @@ export default function RenewalsPage() {
       if (!appUser) { setLoading(false); return; }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setDbPolicies(data as Policy[]);
+        setDbPolicies(data as unknown as Policy[]);
       } catch (e) {
         console.error("Renewals: Failed to load policies", e);
       } finally {

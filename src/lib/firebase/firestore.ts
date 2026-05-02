@@ -32,12 +32,12 @@ export async function savePolicyToFirestore(
   return docRef.id;
 }
 
-// PolicyDocument artık Policy tipini extend ediyor — type safety için
-import type { Policy } from "@/types/policy";
-
-interface PolicyDocument extends Omit<Policy, 'id'> {
+// PolicyDocument — Firestore'dan gelen dinamik tipler
+interface PolicyDocument {
   id: string;
+  tenantId?: string;
   createdAt?: Timestamp | string | number;
+  updatedAt?: Timestamp | string | number;
   [key: string]: unknown;
 }
 

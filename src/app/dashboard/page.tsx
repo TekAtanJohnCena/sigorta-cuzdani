@@ -23,7 +23,7 @@ import { usePolicies } from "@/lib/hooks/usePolicies";
 export default function DashboardPage() {
   const { appUser, loading: authLoading } = useAuth();
 
-  const { isDemoMode } = useDemo();
+  const { isDemoMode, setIsDemoMode } = useDemo();
 
   // G-09: usePolicies hook — eski useEffect + dbPolicies state'inin yerini aldı
   const { policies: dbPolicies, loading, error } = usePolicies(

@@ -41,7 +41,7 @@ export default function CalendarPage() {
       }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setPolicies(data as Policy[]);
+        setPolicies(data as unknown as Policy[]);
       } catch (err) {
         console.error("Failed to load policies", err);
       } finally {
