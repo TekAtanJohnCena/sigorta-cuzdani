@@ -203,7 +203,7 @@ describe('POST /api/policies - Integration Tests', () => {
       policeTipi: 'kasko',
       policeNumarasi: 'TEST-001',
       sigortaSirketi: 'Test Sigorta',
-      baslangicTarihi: '01/01/2025', // Invalid format
+      baslangicTarihi: 'invalid-date-string', // Invalid format that Date() rejects
     };
 
     const req = new NextRequest('http://localhost:3000/api/policies', {
@@ -282,7 +282,7 @@ describe('POST /api/policies - Integration Tests', () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: 'Bearer valid-token-user-999-tenant999',
+        Authorization: 'Bearer valid-token-user-999',
       },
       body: JSON.stringify(payloadWithTenantId),
     });

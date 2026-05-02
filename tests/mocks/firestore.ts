@@ -194,9 +194,15 @@ export const mockVerifyIdToken = jest.fn(async (token: string) => {
     throw new Error('auth/id-token-expired');
   }
 
-  // Parse mock token format: "valid-token-{uid}-{tenantId}"
-  const parts = token.split('-');
-  const uid = parts[2] || 'test-uid';
+  // Parse mock token format: "valid-token-{uid}" or "Bearer valid-token-{uid}"
+  // Extract everything after "valid-token-"
+  const tokenWithoutBearer = token.replace('Bearer ', '');
+  const prefix = 'valid-token-';
+  if (!tokenWithoutBearer.startsWith(prefix)) {
+    throw new Error('Invalid token format');
+  }
+
+  const uid = tokenWithoutBearer.substring(prefix.length) || 'test-uid';
   const email = `${uid}@test.com`;
 
   return {
@@ -219,6 +225,15 @@ export const mockGetAuth = jest.fn(() => mockAdminAuth);
 export const mockAdminDoc = jest.fn((collectionName: string, docId: string) => ({
   _key: { path: { segments: [collectionName, docId] } },
   id: docId,
+  async get() {
+    const collection = getMockCollection(collectionName);
+    const data = collection.get(docId);
+    return {
+      exists: !!data,
+      data: () => data,
+      id: docId,
+    };
+  },
 }));
 
 export const mockAdminCollection = jest.fn((collectionName: string) => ({

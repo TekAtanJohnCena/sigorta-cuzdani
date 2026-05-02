@@ -111,8 +111,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, data: analysisResult });
   } catch (error) {
+    const body = await req.json().catch(() => ({}));
     logger.error("Portfolio analysis error", "api/ai/analyze-portfolio", {
       error: (error as Error).message,
+      tenantId: body.tenantId || 'unknown',
     });
     // İç hata detaylarını gizle
     return NextResponse.json(

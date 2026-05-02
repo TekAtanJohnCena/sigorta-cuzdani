@@ -218,6 +218,8 @@ export const POST = withAuth(async (req, { tenantId, uid }) => {
   } catch (error) {
     logger.error("Policy save failed", "api/policies", {
       error: (error as Error).message,
+      tenantId,
+      uid,
     });
     // İç hata detaylarını client'a gösterme (güvenlik için generic mesaj)
     return NextResponse.json(
