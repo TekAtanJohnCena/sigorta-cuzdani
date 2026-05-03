@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { formatCurrency } from "@/lib/utils/currency";
 import { POLICY_TYPE_LABELS, Policy } from "@/types/policy";
 import { daysUntil, formatDateShort } from "@/lib/utils/date";
 import Link from "next/link";
@@ -273,7 +275,7 @@ export default function DashboardPage() {
                       let cumPct = 0;
                       const segments = entries.map((count, idx) => {
                         const start = cumPct;
-                        cumPct += (count / stats.activePolicies) * 100;
+                        cumPct += ((count as number) / stats.activePolicies) * 100;
                         return `${colors[idx % colors.length]} ${Math.round(start)}% ${Math.round(cumPct)}%`;
                       });
                       return `conic-gradient(${segments.join(', ')})`;
@@ -293,7 +295,7 @@ export default function DashboardPage() {
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   {Object.entries(stats.typeCounts).map(([type, count], idx) => {
                     const colors = ["var(--primary-500)", "var(--accent-500)", "var(--success-500)", "var(--warning-500)", "var(--info-500)", "var(--danger-500)", "#8b5cf6", "#06b6d4"];
-                    const percentage = Math.round((count / stats.activePolicies) * 100);
+                    const percentage = Math.round(((count as number) / stats.activePolicies) * 100);
                     const policyType = type as keyof typeof POLICY_TYPE_LABELS;
                     return (
                       <div key={type} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -325,13 +327,13 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                {stats.expiringPolicies.slice(0, 2).map((p) => (
-                  <div key={`exp-${p.id}`} style={{ padding: "12px", border: "1px solid var(--danger-200)", borderRadius: "8px", background: "var(--danger-50)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                {stats.expiringPolicies.slice(0, 2).map((p: Record<string, unknown>) => (
+                  <div key={`exp-${p.id as string}`} style={{ padding: "12px", border: "1px solid var(--danger-200)", borderRadius: "8px", background: "var(--danger-50)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--danger-700)", fontWeight: 700, marginBottom: "2px" }}>Yenileme Yaklaşıyor ({daysUntil(p.endDate)} gün)</div>
-                      <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{p.insuranceCompany} {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS] || p.policyType}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--danger-700)", fontWeight: 700, marginBottom: "2px" }}>Yenileme Yaklaşıyor ({daysUntil(p.endDate as string)} gün)</div>
+                      <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{p.insuranceCompany as string} {POLICY_TYPE_LABELS[(p.policyType as string) as keyof typeof POLICY_TYPE_LABELS] || (p.policyType as string)}</div>
                     </div>
-                    <div style={{ fontSize: "0.9rem", color: "var(--text-tertiary)" }}>{formatDateShort(p.endDate)}</div>
+                    <div style={{ fontSize: "0.9rem", color: "var(--text-tertiary)" }}>{formatDateShort(p.endDate as string)}</div>
                   </div>
                 ))}
 

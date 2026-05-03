@@ -64,15 +64,15 @@ export async function GET(req: Request) {
     let skippedCount = 0;
 
     for (const policy of activePolicies) {
-      const daysLeft = daysUntil(policy.endDate);
+      const daysLeft = daysUntil(policy.endDate as string);
 
       if ([30, 15, 7].includes(daysLeft)) {
         logger.info("Policy reminder triggered", "automation/reminders", {
-          policyNumber: policy.policyNumber,
+          policyNumber: policy.policyNumber as string,
           daysLeft,
         });
 
-        const tenantUsers = await getUsersByTenant(policy.tenantId) as AppUser[];
+        const tenantUsers = await getUsersByTenant(policy.tenantId as string) as AppUser[];
         const targetUsers = tenantUsers.filter((u) => u.emailNotifications !== false);
 
         for (const user of targetUsers) {
@@ -81,13 +81,13 @@ export async function GET(req: Request) {
               userName: user.name,
               policyType:
                 POLICY_TYPE_LABELS[policy.policyType as keyof typeof POLICY_TYPE_LABELS] ||
-                policy.policyType,
-              company: policy.insuranceCompany,
+                (policy.policyType as string),
+              company: policy.insuranceCompany as string,
               daysLeft,
-              endDate: formatDateShort(policy.endDate),
+              endDate: formatDateShort(policy.endDate as string),
               dashboardUrl: `${
                 process.env.NEXT_PUBLIC_APP_URL || "https://app.sigortacuzdani.com"
-              }/dashboard/policies/${policy.id}`,
+              }/dashboard/policies/${policy.id as string}`,
             });
 
             await sendEmail({
