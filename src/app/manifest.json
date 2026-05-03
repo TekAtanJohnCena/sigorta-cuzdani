@@ -1,0 +1,26 @@
+{
+  "name": "Sigorta Cüzdanı - Kurumsal Sigorta Yönetim Platformu",
+  "short_name": "Sigorta Cüzdanı",
+  "description": "AI destekli kurumsal sigorta ve poliçe yönetim platformu. Otomatik analiz, vade takibi ve risk yönetimi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "finance", "productivity"],
+  "lang": "tr"
+}
