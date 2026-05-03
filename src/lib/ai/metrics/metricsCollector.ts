@@ -4,7 +4,7 @@
 // ============================================
 
 import { getFirestore, collection, addDoc, Timestamp } from "firebase/firestore";
-import { getClientApp } from "@/lib/firebase/config";
+import app from "@/lib/firebase/config";
 import type { AICallMetadata, AIMetricsDocument } from "../types";
 import { logger } from "@/lib/logger";
 
@@ -88,7 +88,6 @@ export class MetricsCollector {
     this.batchQueue = [];
 
     try {
-      const app = getClientApp();
       const db = getFirestore(app);
       const metricsCollection = collection(db, "aiMetrics");
 
