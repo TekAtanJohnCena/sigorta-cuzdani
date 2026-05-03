@@ -23,13 +23,15 @@ export interface CalibrationResult {
   originalResult: ExtractionResult;
   verified: boolean;
   needsManualReview: boolean;
+  isReliable: boolean; // TRUE if confidenceScore >= 85 and no critical flags remain
   flags: ConfidenceFlag[];
   verifiedFields?: Partial<ExtractionResult>;
   confidenceScore: number; // 0-100
+  businessReadyForB2B: boolean; // Alias for clarity in B2B context
 }
 
 /**
- * Critical fields that must have high confidence (>= 80%)
+ * Critical fields that must have high confidence (>= 85%) for B2B reliability
  */
 const CRITICAL_FIELDS = [
   "policyNumber",
@@ -42,9 +44,9 @@ const CRITICAL_FIELDS = [
 ] as const;
 
 /**
- * Minimum confidence threshold for critical fields
+ * Minimum confidence threshold for critical fields (B2B standard: 85%)
  */
-const CRITICAL_CONFIDENCE_THRESHOLD = 80;
+const CRITICAL_CONFIDENCE_THRESHOLD = 85;
 
 /**
  * Confidence Calibrator Class
@@ -67,13 +69,22 @@ export class ConfidenceCalibrator {
 
     // If no critical flags, result is verified
     if (criticalFlags.length === 0) {
-      logger.info("Calibration passed - no critical issues", "ConfidenceCalibrator");
+      const finalScore = extractionResult.confidenceScore || 100;
+      const isReliable = finalScore >= CRITICAL_CONFIDENCE_THRESHOLD;
+
+      logger.info("Calibration passed - no critical issues", "ConfidenceCalibrator", {
+        finalScore,
+        isReliable,
+      });
+
       return {
         originalResult: extractionResult,
         verified: true,
         needsManualReview: false,
+        isReliable,
+        businessReadyForB2B: isReliable,
         flags,
-        confidenceScore: extractionResult.confidenceScore || 100,
+        confidenceScore: finalScore,
       };
     }
 
@@ -98,10 +109,21 @@ export class ConfidenceCalibrator {
         flags
       );
 
+      const isReliable = newConfidenceScore >= CRITICAL_CONFIDENCE_THRESHOLD;
+      const remainingCriticalFlags = flags.filter((f) => f.severity === "CRITICAL").length;
+
+      logger.info("Secondary verification complete", "ConfidenceCalibrator", {
+        newConfidenceScore,
+        isReliable,
+        remainingCriticalFlags,
+      });
+
       return {
         originalResult: extractionResult,
         verified: newConfidenceScore >= CRITICAL_CONFIDENCE_THRESHOLD,
-        needsManualReview: newConfidenceScore < CRITICAL_CONFIDENCE_THRESHOLD,
+        needsManualReview: !isReliable || remainingCriticalFlags > 0,
+        isReliable: isReliable && remainingCriticalFlags === 0,
+        businessReadyForB2B: isReliable && remainingCriticalFlags === 0,
         flags,
         verifiedFields,
         confidenceScore: newConfidenceScore,
@@ -112,6 +134,8 @@ export class ConfidenceCalibrator {
         originalResult: extractionResult,
         verified: false,
         needsManualReview: true,
+        isReliable: false,
+        businessReadyForB2B: false,
         flags,
         confidenceScore: extractionResult.confidenceScore || 0,
       };

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/firebase/withAuth";
-import { db } from "@/lib/firebase/admin";
+import { db } from "@/lib/firebase/adminDb";
 
 /**
  * GET /api/admin/ai-stats
@@ -20,6 +20,16 @@ export const GET = withAuth(async (req: NextRequest, user) => {
   }
 
   try {
+    if (!db) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Firebase konfigürasyonu eksik",
+        },
+        { status: 500 }
+      );
+    }
+
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 

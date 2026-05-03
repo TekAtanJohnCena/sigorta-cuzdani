@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/firebase/withAuth";
-import { getAllPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { riskMiningEngine } from "@/lib/ai/engines/riskMiningEngine";
 import type { Policy } from "@/types/policy";
 import type { RiskAlert } from "@/lib/ai/types";
@@ -12,7 +12,7 @@ import type { RiskAlert } from "@/lib/ai/types";
  */
 export const GET = withAuth(async (req: NextRequest, user) => {
   try {
-    const policies = await getAllPoliciesByTenant(user.tenantId);
+    const policies = await getPoliciesByTenant(user.tenantId);
 
     if (!policies || policies.length === 0) {
       return NextResponse.json({

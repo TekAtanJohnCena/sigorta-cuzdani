@@ -12,45 +12,37 @@ const TYPE_CONFIG = {
   overlap: {
     icon: "🔄",
     label: "Çakışan Teminat",
-    color: "text-purple-700",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-200",
+    typeClass: "type-overlap",
   },
   gap: {
     icon: "⚠️",
     label: "Koruma Boşluğu",
-    color: "text-red-700",
-    bgColor: "bg-red-50",
-    borderColor: "border-red-200",
+    typeClass: "type-gap",
   },
   inefficiency: {
     icon: "💸",
     label: "Maliyet Verimsizliği",
-    color: "text-yellow-700",
-    bgColor: "bg-yellow-50",
-    borderColor: "border-yellow-200",
+    typeClass: "type-inefficiency",
   },
   concentration_risk: {
     icon: "🎯",
     label: "Konsantrasyon Riski",
-    color: "text-orange-700",
-    bgColor: "bg-orange-50",
-    borderColor: "border-orange-200",
+    typeClass: "type-concentration_risk",
   },
 } as const;
 
 const PRIORITY_CONFIG = {
   high: {
-    badge: "bg-red-600 text-white",
-    label: "YÜKSEK",
+    badgeClass: "badge-red",
+    label: "YÜKSEK ÖNCELİK",
   },
   medium: {
-    badge: "bg-yellow-600 text-white",
-    label: "ORTA",
+    badgeClass: "badge-amber",
+    label: "ORTA ÖNCELİK",
   },
   low: {
-    badge: "bg-blue-600 text-white",
-    label: "DÜŞÜK",
+    badgeClass: "badge-blue",
+    label: "DÜŞÜK ÖNCELİK",
   },
 } as const;
 
@@ -59,49 +51,43 @@ export function CrossPolicyInsightCard({ insight, onAction }: CrossPolicyInsight
   const priorityConfig = PRIORITY_CONFIG[insight.priority];
 
   return (
-    <div
-      className={`${typeConfig.bgColor} ${typeConfig.borderColor} border-l-4 rounded-lg p-4 md:p-6 mb-4 transition-all hover:shadow-lg`}
-    >
+    <div className={`ai-insight-card ${typeConfig.typeClass}`}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-2xl" role="img" aria-label={typeConfig.label}>
-            {typeConfig.icon}
-          </span>
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <span className={`${priorityConfig.badge} text-xs font-bold px-2 py-1 rounded uppercase`}>
-                {priorityConfig.label}
-              </span>
-              <span
-                className={`${typeConfig.color} bg-white bg-opacity-60 text-xs font-semibold px-2 py-1 rounded border ${typeConfig.borderColor}`}
-              >
-                {typeConfig.label}
-              </span>
-            </div>
-            <h3 className={`text-base md:text-lg font-bold ${typeConfig.color}`}>
-              {insight.title}
-            </h3>
+      <div className="ai-insight-header">
+        <span className="ai-insight-icon" role="img" aria-label={typeConfig.label}>
+          {typeConfig.icon}
+        </span>
+        <div className="ai-insight-content">
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "8px" }}>
+            <span className={`badge ${priorityConfig.badgeClass}`} style={{ fontSize: "0.7rem", letterSpacing: "0.05em" }}>
+              {priorityConfig.label}
+            </span>
+            <span className="badge badge-type" style={{ fontSize: "0.7rem" }}>
+              {typeConfig.label}
+            </span>
           </div>
+          <h3 className="ai-insight-title">
+            {insight.title}
+          </h3>
         </div>
       </div>
 
       {/* Description */}
-      <p className="text-sm md:text-base text-gray-800 leading-relaxed mb-4">
+      <p className="ai-insight-description">
         {insight.description}
       </p>
 
       {/* Affected Policies */}
       {insight.affectedPolicies && insight.affectedPolicies.length > 0 && (
-        <div className="mb-3">
-          <span className="text-xs font-semibold text-gray-600 block mb-1">
+        <div style={{ marginBottom: "16px" }}>
+          <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: "4px" }}>
             Etkilenen Poliçeler:
           </span>
-          <div className="flex flex-wrap gap-1">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
             {insight.affectedPolicies.map((policyId, idx) => (
               <span
                 key={idx}
-                className="text-xs bg-white bg-opacity-80 px-2 py-1 rounded border border-gray-300 font-mono"
+                style={{ fontSize: "0.75rem", backgroundColor: "var(--bg-primary)", padding: "4px 8px", borderRadius: "4px", border: "1px solid var(--border-light)", fontFamily: "monospace", color: "var(--text-secondary)" }}
               >
                 {policyId}
               </span>
@@ -111,23 +97,23 @@ export function CrossPolicyInsightCard({ insight, onAction }: CrossPolicyInsight
       )}
 
       {/* Financial Impact */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+      <div className="ai-grid-2" style={{ marginBottom: "16px" }}>
         {insight.potentialSavings !== undefined && insight.potentialSavings > 0 && (
-          <div className="p-3 bg-green-100 rounded-lg border border-green-300">
-            <span className="text-xs font-semibold text-green-700 block mb-1">
+          <div className="ai-value-card" style={{ backgroundColor: "var(--success-50)", borderColor: "var(--success-200)" }}>
+            <span className="ai-value-label" style={{ color: "var(--success-700)" }}>
               💰 Potansiyel Tasarruf
             </span>
-            <p className="text-lg font-bold text-green-800">
+            <p className="ai-value-amount" style={{ color: "var(--success-800)" }}>
               {insight.potentialSavings.toLocaleString("tr-TR")} TL
             </p>
           </div>
         )}
         {insight.riskExposure !== undefined && insight.riskExposure > 0 && (
-          <div className="p-3 bg-red-100 rounded-lg border border-red-300">
-            <span className="text-xs font-semibold text-red-700 block mb-1">
+          <div className="ai-value-card" style={{ backgroundColor: "var(--danger-50)", borderColor: "var(--danger-200)" }}>
+            <span className="ai-value-label" style={{ color: "var(--danger-700)" }}>
               ⚠️ Risk Tutarı
             </span>
-            <p className="text-lg font-bold text-red-800">
+            <p className="ai-value-amount" style={{ color: "var(--danger-800)" }}>
               {insight.riskExposure.toLocaleString("tr-TR")} TL
             </p>
           </div>
@@ -135,18 +121,17 @@ export function CrossPolicyInsightCard({ insight, onAction }: CrossPolicyInsight
       </div>
 
       {/* Recommendation */}
-      <div className="mb-4 p-3 bg-white bg-opacity-60 rounded-lg border border-gray-200">
-        <span className="text-xs font-semibold text-gray-600 block mb-1">💡 Öneri:</span>
-        <p className="text-sm text-gray-800">{insight.recommendation}</p>
+      <div style={{ marginBottom: "16px", padding: "12px", backgroundColor: "var(--bg-primary)", borderRadius: "8px", border: "1px solid var(--border-light)" }}>
+        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-secondary)", display: "block", marginBottom: "4px" }}>💡 Uzman Önerisi:</span>
+        <p style={{ fontSize: "0.9rem", color: "var(--text-primary)", margin: 0 }}>{insight.recommendation}</p>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-300">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", paddingTop: "12px", borderTop: "1px solid var(--border-light)" }}>
         {insight.type === "overlap" && (
           <button
             onClick={() => onAction?.("optimize_coverage")}
-            className="btn-primary text-sm px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: "var(--color-primary)" }}
+            className="btn btn-primary btn-sm"
           >
             ✂️ Teminatı Optimize Et
           </button>
@@ -154,8 +139,7 @@ export function CrossPolicyInsightCard({ insight, onAction }: CrossPolicyInsight
         {insight.type === "gap" && (
           <button
             onClick={() => onAction?.("close_gap")}
-            className="btn-primary text-sm px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: "var(--color-primary)" }}
+            className="btn btn-primary btn-sm"
           >
             🛡️ Boşluğu Kapat
           </button>
@@ -163,15 +147,14 @@ export function CrossPolicyInsightCard({ insight, onAction }: CrossPolicyInsight
         {insight.type === "concentration_risk" && (
           <button
             onClick={() => onAction?.("diversify")}
-            className="btn-primary text-sm px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: "var(--color-primary)" }}
+            className="btn btn-primary btn-sm"
           >
             🔀 Dağıtımı İyileştir
           </button>
         )}
         <button
           onClick={() => onAction?.("view_details")}
-          className="btn-secondary text-sm px-4 py-2 rounded-md border border-gray-400 hover:bg-white transition-colors"
+          className="btn btn-secondary btn-sm"
         >
           📊 Detayları Gör
         </button>

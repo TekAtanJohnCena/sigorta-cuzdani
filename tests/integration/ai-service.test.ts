@@ -59,7 +59,9 @@ describe("AI Service Integration Tests", () => {
 
       expect(result.verified).toBe(true);
       expect(result.needsManualReview).toBe(false);
-      expect(result.confidenceScore).toBeGreaterThanOrEqual(80);
+      expect(result.isReliable).toBe(true);
+      expect(result.businessReadyForB2B).toBe(true);
+      expect(result.confidenceScore).toBeGreaterThanOrEqual(85);
       expect(result.flags.filter((f) => f.severity === "CRITICAL")).toHaveLength(0);
     });
 
@@ -136,7 +138,7 @@ describe("AI Service Integration Tests", () => {
       expect(premiumFlags.length).toBeGreaterThan(0);
     });
 
-    it("should calculate weighted confidence score correctly", async () => {
+    it("should calculate weighted confidence score correctly and set B2B flags", async () => {
       const extractionResult: ExtractionResult = {
         policyNumber: "12345678",
         insuranceCompany: "Anadolu Sigorta",
@@ -155,15 +157,17 @@ describe("AI Service Integration Tests", () => {
           },
         ],
         policyType: "kasko",
-        confidenceScore: 85,
+        confidenceScore: 90,
         modelUsed: "claude-haiku-4.5",
       };
 
       const pdfText = "Mock PDF text";
       const result = await confidenceCalibrator.calibrate(extractionResult, pdfText);
 
-      expect(result.confidenceScore).toBeGreaterThanOrEqual(80);
+      expect(result.confidenceScore).toBeGreaterThanOrEqual(85);
       expect(result.confidenceScore).toBeLessThanOrEqual(100);
+      expect(result.isReliable).toBe(true);
+      expect(result.businessReadyForB2B).toBe(true);
     });
   });
 
@@ -503,6 +507,149 @@ describe("AI Service Integration Tests", () => {
 
       expect(result.coverageRatio).toBeGreaterThanOrEqual(0.8);
       expect(result.riskLevel).toBe("LOW");
+      expect(result.businessRiskExposureTRY).toBeDefined();
+      expect(result.b2bReadiness).toBeDefined();
+    });
+
+    it("should calculate Business Risk Exposure correctly", async () => {
+      const policies: Policy[] = [
+        {
+          id: "1",
+          tenantId: "test",
+          policyNumber: "POL001",
+          insuranceCompany: "Anadolu",
+          policyType: "isyeri",
+          startDate: "2024-01-01",
+          endDate: "2025-01-01",
+          premium: {
+            totalPremium: 10000,
+            currency: "TRY",
+            paymentType: "cash",
+          },
+          coverages: [
+            {
+              name: "Yangın",
+              amount: 1000000,
+              currency: "TRY",
+            },
+          ],
+          status: "active",
+          createdAt: "2024-01-01",
+          aiExtraction: {
+            extractedAt: "2024-01-01",
+            confidenceScore: 90,
+            manuallyReviewed: false,
+            modelUsed: "haiku-4.5",
+          },
+        },
+      ];
+
+      const companyAssets = {
+        realEstate: {
+          buildings: 5000000,
+          land: 2000000,
+        },
+        liabilities: {
+          employeeCount: 50,
+          annualRevenue: 10000000,
+        },
+      };
+
+      const result = await enhancedPortfolioAnalysisEngine.analyzeAssetProtection(
+        policies,
+        companyAssets
+      );
+
+      expect(result.businessRiskExposureTRY).toBeGreaterThan(0);
+      expect(result.b2bReadiness.isAdequate).toBe(false); // Missing mandatory coverages
+      expect(result.b2bReadiness.missingMandatoryCoverages.length).toBeGreaterThan(0);
+    });
+
+    it("should assess B2B compliance correctly", async () => {
+      const policies: Policy[] = [
+        {
+          id: "1",
+          tenantId: "test",
+          policyNumber: "POL001",
+          insuranceCompany: "Anadolu",
+          policyType: "isyeri",
+          startDate: "2024-01-01",
+          endDate: "2025-01-01",
+          premium: {
+            totalPremium: 50000,
+            currency: "TRY",
+            paymentType: "cash",
+          },
+          coverages: [
+            {
+              name: "Yangın",
+              amount: 5000000,
+              currency: "TRY",
+            },
+            {
+              name: "İşveren Mali Sorumluluk",
+              amount: 10000000,
+              currency: "TRY",
+            },
+          ],
+          status: "active",
+          createdAt: "2024-01-01",
+          aiExtraction: {
+            extractedAt: "2024-01-01",
+            confidenceScore: 95,
+            manuallyReviewed: false,
+            modelUsed: "haiku-4.5",
+          },
+        },
+        {
+          id: "2",
+          tenantId: "test",
+          policyNumber: "POL002",
+          insuranceCompany: "Anadolu",
+          policyType: "dask",
+          startDate: "2024-01-01",
+          endDate: "2025-01-01",
+          premium: {
+            totalPremium: 20000,
+            currency: "TRY",
+            paymentType: "cash",
+          },
+          coverages: [
+            {
+              name: "Deprem",
+              amount: 4000000,
+              currency: "TRY",
+            },
+          ],
+          status: "active",
+          createdAt: "2024-01-01",
+          aiExtraction: {
+            extractedAt: "2024-01-01",
+            confidenceScore: 95,
+            manuallyReviewed: false,
+            modelUsed: "haiku-4.5",
+          },
+        },
+      ];
+
+      const companyAssets = {
+        realEstate: {
+          buildings: 5000000,
+          land: 1000000,
+        },
+        liabilities: {
+          employeeCount: 20,
+          annualRevenue: 8000000,
+        },
+      };
+
+      const result = await enhancedPortfolioAnalysisEngine.analyzeAssetProtection(
+        policies,
+        companyAssets
+      );
+
+      expect(result.b2bReadiness.complianceScore).toBeGreaterThanOrEqual(65);
+      expect(result.b2bReadiness.missingMandatoryCoverages).toBeDefined();
     });
   });
 

@@ -13,7 +13,14 @@ export interface AssetProtectionAnalysis {
   totalCoverageLimit: number;
   coverageRatio: number; // totalCoverage / totalAssets (should be >= 0.8)
   underInsuranceGap: number; // Amount of under-insurance in TL
+  businessRiskExposureTRY: number; // Total uninsured risk exposure for company dashboard (B2B metric)
   riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+  b2bReadiness: {
+    isAdequate: boolean;
+    complianceScore: number; // 0-100
+    missingMandatoryCoverages: string[];
+    inflationAdjustmentNeeded: boolean;
+  };
   insights: CrossPolicyInsight[];
 }
 
@@ -67,6 +74,17 @@ export class EnhancedPortfolioAnalysisEngine {
     // Determine risk level
     const riskLevel = this.determineRiskLevel(coverageRatio);
 
+    // Calculate Business Risk Exposure (total uninsured risk)
+    const businessRiskExposureTRY = this.calculateBusinessRiskExposure(
+      totalAssetValue,
+      totalCoverageLimit,
+      policies,
+      companyAssets
+    );
+
+    // B2B Readiness Assessment
+    const b2bReadiness = this.assessB2BReadiness(policies, companyAssets, coverageRatio);
+
     // Generate insights
     const insights = this.generateAssetProtectionInsights(
       totalAssetValue,
@@ -81,7 +99,9 @@ export class EnhancedPortfolioAnalysisEngine {
       totalAssets: totalAssetValue,
       totalCoverage: totalCoverageLimit,
       coverageRatio: coverageRatio.toFixed(2),
+      businessRiskExposure: businessRiskExposureTRY,
       riskLevel,
+      b2bComplianceScore: b2bReadiness.complianceScore,
       insightCount: insights.length,
     });
 
@@ -90,7 +110,9 @@ export class EnhancedPortfolioAnalysisEngine {
       totalCoverageLimit,
       coverageRatio,
       underInsuranceGap,
+      businessRiskExposureTRY,
       riskLevel,
+      b2bReadiness,
       insights,
     };
   }
@@ -370,6 +392,124 @@ export class EnhancedPortfolioAnalysisEngine {
     }
 
     return dominant;
+  }
+
+  /**
+   * Calculate Business Risk Exposure (B2B metric)
+   * Total amount of uninsured risk the company is exposed to
+   */
+  private calculateBusinessRiskExposure(
+    totalAssets: number,
+    totalCoverage: number,
+    policies: Policy[],
+    companyAssets?: CompanyAssets
+  ): number {
+    // Base exposure: asset value minus coverage
+    let exposure = Math.max(0, totalAssets - totalCoverage);
+
+    // Add operational risk exposure from employee liability
+    if (companyAssets?.liabilities?.employeeCount) {
+      const employeeCount = companyAssets.liabilities.employeeCount;
+      const requiredLiability = employeeCount * 500000; // 500k TL per employee
+
+      const currentLiability = policies
+        .filter((p) => ["sorumluluk", "isyeri"].includes(p.policyType))
+        .reduce((sum, p) => {
+          const liability = p.coverages?.find((c) =>
+            c.name.toLowerCase().includes("işveren mali sorumluluk")
+          );
+          return sum + (liability?.amount || 0);
+        }, 0);
+
+      exposure += Math.max(0, requiredLiability - currentLiability);
+    }
+
+    // Add catastrophic event exposure (DASK gap)
+    if (companyAssets?.realEstate) {
+      const propertyValue =
+        (companyAssets.realEstate.buildings || 0) + (companyAssets.realEstate.land || 0);
+      const daskPolicies = policies.filter((p) => p.policyType === "dask");
+      const daskCoverage = daskPolicies.reduce(
+        (sum, p) => sum + (p.coverages?.reduce((cSum, c) => cSum + (c.amount || 0), 0) || 0),
+        0
+      );
+
+      exposure += Math.max(0, propertyValue * 0.8 - daskCoverage);
+    }
+
+    return exposure;
+  }
+
+  /**
+   * Assess B2B Readiness (compliance and adequacy for corporate clients)
+   */
+  private assessB2BReadiness(
+    policies: Policy[],
+    companyAssets?: CompanyAssets,
+    coverageRatio: number
+  ): {
+    isAdequate: boolean;
+    complianceScore: number;
+    missingMandatoryCoverages: string[];
+    inflationAdjustmentNeeded: boolean;
+  } {
+    let complianceScore = 100;
+    const missingMandatoryCoverages: string[] = [];
+    let inflationAdjustmentNeeded = false;
+
+    // Check for mandatory workplace coverages
+    const hasFire = policies.some(
+      (p) =>
+        (p.policyType === "yangin" || p.policyType === "isyeri") &&
+        p.coverages?.some((c) => c.name.toLowerCase().includes("yangın"))
+    );
+    if (!hasFire) {
+      missingMandatoryCoverages.push("Yangın Sigortası (Zorunlu)");
+      complianceScore -= 25;
+    }
+
+    const hasDASK = policies.some((p) => p.policyType === "dask");
+    if (!hasDASK && companyAssets?.realEstate) {
+      missingMandatoryCoverages.push("DASK - Zorunlu Deprem Sigortası");
+      complianceScore -= 25;
+    }
+
+    const hasEmployerLiability = policies.some(
+      (p) =>
+        p.coverages?.some((c) => c.name.toLowerCase().includes("işveren mali sorumluluk"))
+    );
+    if (!hasEmployerLiability && companyAssets?.liabilities?.employeeCount) {
+      missingMandatoryCoverages.push("İşveren Mali Sorumluluk (Zorunlu)");
+      complianceScore -= 25;
+    }
+
+    // Check for inflation adjustment need (policies older than 1 year)
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+    inflationAdjustmentNeeded = policies.some((p) => {
+      const createdDate = new Date(p.createdAt);
+      return createdDate < oneYearAgo;
+    });
+
+    if (inflationAdjustmentNeeded) {
+      complianceScore -= 10;
+    }
+
+    // Coverage ratio impact
+    if (coverageRatio < 0.8) {
+      complianceScore -= 15;
+    }
+
+    const isAdequate =
+      missingMandatoryCoverages.length === 0 && coverageRatio >= 0.8;
+
+    return {
+      isAdequate,
+      complianceScore: Math.max(0, complianceScore),
+      missingMandatoryCoverages,
+      inflationAdjustmentNeeded,
+    };
   }
 
   /**

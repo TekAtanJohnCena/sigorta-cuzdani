@@ -15,39 +15,39 @@ interface InsuranceHealthScoreProps {
 function getScoreConfig(score: number) {
   if (score >= 80) {
     return {
-      color: "text-green-600",
-      bgColor: "bg-green-100",
-      ringColor: "text-green-500",
+      colorClass: "ai-text-gradient-success",
+      badgeClass: "badge-green",
+      ringColor: "var(--success-500)",
       label: "Mükemmel",
       icon: "✅",
-      description: "Portföyünüz çok iyi durumda",
+      description: "Portföyünüz çok iyi durumda. Riskler optimize edilmiş.",
     };
   } else if (score >= 60) {
     return {
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
-      ringColor: "text-blue-500",
+      colorClass: "ai-text-gradient-success",
+      badgeClass: "badge-teal",
+      ringColor: "var(--accent-500)",
       label: "İyi",
       icon: "👍",
-      description: "Birkaç iyileştirme yapılabilir",
+      description: "Güvenli bölgedesiniz ancak bazı iyileştirmeler yapılabilir.",
     };
   } else if (score >= 40) {
     return {
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-100",
-      ringColor: "text-yellow-500",
+      colorClass: "ai-text-gradient-warning",
+      badgeClass: "badge-amber",
+      ringColor: "var(--warning-500)",
       label: "Orta",
       icon: "⚠️",
-      description: "Önemli eksiklikler tespit edildi",
+      description: "Dikkat! Önemli teminat eksiklikleri tespit edildi.",
     };
   } else {
     return {
-      color: "text-red-600",
-      bgColor: "bg-red-100",
-      ringColor: "text-red-500",
+      colorClass: "ai-text-gradient-danger",
+      badgeClass: "badge-red",
+      ringColor: "var(--danger-500)",
       label: "Düşük",
       icon: "🚨",
-      description: "Acil aksiyonlar gerekli",
+      description: "Kritik seviye. Acil aksiyon almanız gerekiyor.",
     };
   }
 }
@@ -55,113 +55,114 @@ function getScoreConfig(score: number) {
 export function InsuranceHealthScore({ score, breakdown }: InsuranceHealthScoreProps) {
   const config = getScoreConfig(score);
 
-  // Calculate stroke dasharray for circular progress
+  // Circular progress calculation
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
-  const progress = (score / 100) * circumference;
+  // Progress goes from circumference (0%) to 0 (100%) in strokeDashoffset
+  const progressOffset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="card p-6 mb-6">
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <span className="text-2xl">{config.icon}</span>
-        Sigorta Sağlık Skoru
-      </h2>
+    <div className="card mb-6">
+      <div className="card-header">
+        <h2 className="card-title" style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "1.25rem" }}>
+          <span>{config.icon}</span>
+          Sigorta Sağlık Skoru
+        </h2>
+      </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Circular Score Gauge */}
-        <div className="flex flex-col items-center justify-center">
-          <div className="relative w-48 h-48">
-            {/* Background circle */}
-            <svg className="w-full h-full transform -rotate-90">
+      <div className="ai-grid-2" style={{ alignItems: "center" }}>
+        {/* Score Gauge */}
+        <div className="ai-score-card">
+          <div style={{ position: "relative", width: "200px", height: "200px" }}>
+            <svg className="ai-score-ring" width="200" height="200" viewBox="0 0 200 200">
               <circle
-                cx="96"
-                cy="96"
+                className="ai-score-circle-bg"
+                cx="100"
+                cy="100"
                 r={radius}
-                stroke="currentColor"
-                strokeWidth="12"
+                strokeWidth="14"
                 fill="none"
-                className="text-gray-200"
               />
-              {/* Progress circle */}
               <circle
-                cx="96"
-                cy="96"
+                className="ai-score-circle-progress"
+                cx="100"
+                cy="100"
                 r={radius}
-                stroke="currentColor"
-                strokeWidth="12"
+                stroke={config.ringColor}
+                strokeWidth="14"
                 fill="none"
                 strokeDasharray={circumference}
-                strokeDashoffset={circumference - progress}
+                strokeDashoffset={progressOffset}
                 strokeLinecap="round"
-                className={`${config.ringColor} transition-all duration-1000 ease-out`}
               />
             </svg>
-            {/* Center text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={`text-5xl font-bold ${config.color}`}>{score}</span>
-              <span className="text-sm text-gray-500">/ 100</span>
+            <div className="ai-score-text-container">
+              <span className={`ai-score-value ${config.colorClass}`}>{score}</span>
+              <span className="ai-score-max">/ 100</span>
             </div>
           </div>
-          <div className={`mt-4 ${config.bgColor} ${config.color} px-4 py-2 rounded-full font-semibold`}>
+          
+          <div className={`badge ${config.badgeClass} ai-score-label`}>
             {config.label}
           </div>
-          <p className="text-sm text-gray-600 mt-2 text-center">{config.description}</p>
+          <p style={{ marginTop: "12px", color: "var(--text-secondary)", textAlign: "center", maxWidth: "250px", fontSize: "0.9rem" }}>
+            {config.description}
+          </p>
         </div>
 
         {/* Breakdown */}
         {breakdown && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">
-              Detaylı Analiz
+          <div>
+            <h3 style={{ fontSize: "0.85rem", fontWeight: 700, textTransform: "uppercase", color: "var(--text-tertiary)", letterSpacing: "0.05em", marginBottom: "12px" }}>
+              Detaylı Analiz Metrikleri
             </h3>
 
-            <div className="space-y-3">
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
               {/* Critical Issues */}
-              <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-600 text-lg">🚨</span>
-                  <span className="text-sm font-medium text-gray-700">Kritik Sorunlar</span>
+              <div className="ai-breakdown-item" style={{ backgroundColor: "var(--danger-50)", borderColor: "var(--danger-100)" }}>
+                <div className="ai-flex-start">
+                  <span style={{ fontSize: "1.2rem" }}>🚨</span>
+                  <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)" }}>Kritik Sorunlar</span>
                 </div>
-                <span className="text-2xl font-bold text-red-600">{breakdown.criticalIssues}</span>
+                <span className="ai-breakdown-value" style={{ color: "var(--danger-600)" }}>{breakdown.criticalIssues}</span>
               </div>
 
               {/* Warnings */}
-              <div className="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-yellow-600 text-lg">⚠️</span>
-                  <span className="text-sm font-medium text-gray-700">Uyarılar</span>
+              <div className="ai-breakdown-item" style={{ backgroundColor: "var(--warning-50)", borderColor: "var(--warning-100)" }}>
+                <div className="ai-flex-start">
+                  <span style={{ fontSize: "1.2rem" }}>⚠️</span>
+                  <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)" }}>Uyarılar</span>
                 </div>
-                <span className="text-2xl font-bold text-yellow-600">{breakdown.warningIssues}</span>
+                <span className="ai-breakdown-value" style={{ color: "var(--warning-600)" }}>{breakdown.warningIssues}</span>
               </div>
 
               {/* Coverage Gaps */}
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600 text-lg">📋</span>
-                  <span className="text-sm font-medium text-gray-700">Teminat Boşlukları</span>
+              <div className="ai-breakdown-item" style={{ backgroundColor: "var(--info-50)", borderColor: "var(--info-100)" }}>
+                <div className="ai-flex-start">
+                  <span style={{ fontSize: "1.2rem" }}>📋</span>
+                  <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)" }}>Teminat Boşlukları</span>
                 </div>
-                <span className="text-2xl font-bold text-blue-600">{breakdown.coverageGaps}</span>
+                <span className="ai-breakdown-value" style={{ color: "var(--info-600)" }}>{breakdown.coverageGaps}</span>
               </div>
 
               {/* Optimization Score */}
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-100">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-600 text-lg">💡</span>
-                  <span className="text-sm font-medium text-gray-700">Optimizasyon Fırsatları</span>
+              <div className="ai-breakdown-item" style={{ backgroundColor: "var(--success-50)", borderColor: "var(--success-100)" }}>
+                <div className="ai-flex-start">
+                  <span style={{ fontSize: "1.2rem" }}>💡</span>
+                  <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text-primary)" }}>Optimizasyon Fırsatları</span>
                 </div>
-                <span className="text-2xl font-bold text-green-600">{breakdown.optimization}</span>
+                <span className="ai-breakdown-value" style={{ color: "var(--success-600)" }}>{breakdown.optimization}</span>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Recommendation CTA */}
       {score < 70 && (
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-900">
+        <div style={{ marginTop: "24px", padding: "16px", backgroundColor: "var(--info-50)", border: "1px solid var(--info-200)", borderRadius: "8px" }}>
+          <p style={{ fontSize: "0.9rem", color: "var(--info-900)", margin: 0 }}>
             <strong>💡 AI Önerisi:</strong> Skorunuzu artırmak için aşağıdaki önerilere göz atın.
-            Kritik sorunları çözerek portföyünüzü güçlendirebilirsiniz.
+            Kritik sorunları çözerek ve çakışan poliçeleri optimize ederek prim maliyetlerinizi düşürebilirsiniz.
           </p>
         </div>
       )}

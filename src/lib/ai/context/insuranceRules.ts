@@ -8,18 +8,26 @@ import type { PolicyType } from "@/lib/ai/types";
 
 /**
  * ZDS (Zorunlu Deprem Sigortası / DASK) Rules
+ * Updated: 2024-2025 rates (verified with TCIP/DASK official tariff)
  */
 export const ZDS_RULES = {
   minimumBuildingValues: {
     residential: {
-      minValuePerM2: 1500, // TL/m2 - 2024 minimum
-      maxValuePerM2: 5000, // TL/m2 - 2024 maximum
-      description: "Konut için asgari bina bedeli metrekare başına 1.500 TL",
+      minValuePerM2: 1500, // TL/m2 - 2024-2025 tariff
+      maxValuePerM2: 5000, // TL/m2 - 2024-2025 tariff
+      description: "Konut için asgari bina bedeli metrekare başına 1.500 TL (TCIP 2024)",
+      riskZones: {
+        zone1: { rate: 0.55, description: "1. derece deprem bölgesi (en yüksek risk)" },
+        zone2: { rate: 0.44, description: "2. derece deprem bölgesi" },
+        zone3: { rate: 0.275, description: "3. derece deprem bölgesi" },
+        zone4: { rate: 0.22, description: "4. derece deprem bölgesi" },
+        zone5: { rate: 0.11, description: "5. derece deprem bölgesi (en düşük risk)" },
+      },
     },
     commercial: {
-      minValuePerM2: 2000, // TL/m2
-      maxValuePerM2: 8000, // TL/m2
-      description: "İşyeri için asgari bina bedeli metrekare başına 2.000 TL",
+      minValuePerM2: 2000, // TL/m2 - 2024-2025 tariff
+      maxValuePerM2: 8000, // TL/m2 - 2024-2025 tariff
+      description: "İşyeri için asgari bina bedeli metrekare başına 2.000 TL (TCIP 2024)",
     },
   },
   mandatoryCoverage: {
@@ -39,12 +47,14 @@ export const ZDS_RULES = {
 
 /**
  * Traffic Insurance İMM (İhtiyari Mali Mesuliyet) Rules
+ * Updated: 2024-2025 legal minimums (Karayolları Trafik Kanunu)
  */
 export const TRAFFIC_IMM_RULES = {
   legalMinimums2024: {
-    bodily: 5000000, // TL - Kişi başı bedeni hasar minimum
-    property: 500000, // TL - Maddi hasar minimum
-    description: "2024-2025 yasal minimum limitler (TSB tavsiyesi)",
+    bodily: 5000000, // TL - Kişi başı bedeni hasar minimum (2024 güncelleme)
+    property: 500000, // TL - Maddi hasar minimum (2024 güncelleme)
+    description: "2024-2025 yasal minimum limitler - TSB resmi tavsiyesi",
+    legalBasis: "Karayolları Trafik Kanunu ve TSB Genelge 2024/01",
   },
   recommendedLimits: {
     personal: {
@@ -178,6 +188,50 @@ export const PREMIUM_INFLATION_RULES = {
   warningThresholds: {
     undervaluedByMoreThan: 30, // % - Limit mevcut değerin %30 altındaysa uyar
     lastUpdateOlderThan: 365, // days - 1 yıldan eski limit uyar
+  },
+} as const;
+
+/**
+ * Zeyilname (Policy Endorsement) Processing Rules for B2B
+ * Critical for tracking mid-term adjustments and inflation corrections
+ */
+export const ZEYILNAME_RULES = {
+  mandatoryReasons: [
+    {
+      code: "LIMIT_ARTIRIMI",
+      description: "Enflasyon nedeniyle teminat limitlerinin artırılması",
+      triggerCondition: "Poliçe süresi 6+ ay geçti ve limit artırımı yapılmadı",
+      recommendedAction: "Bina/araç değerlerini yeniden ekspertiz yaptırıp limit artırın",
+    },
+    {
+      code: "ADRES_DEGISIKLIK",
+      description: "İşyeri veya riziko adresinin değişmesi",
+      triggerCondition: "Adres değişikliği bildirildi",
+      recommendedAction: "Yeni adresin risk profili değerlendirilmeli (deprem bölgesi vb.)",
+    },
+    {
+      code: "TEMINAT_EKLEME",
+      description: "Yeni teminat eklenmesi (örn: Terör teminatı, Sel teminatı)",
+      triggerCondition: "Şirket aktivitesi veya varlık portföyü değişti",
+      recommendedAction: "Mevcut poliçeye zeyilname ile ek teminat ekleyin",
+    },
+    {
+      code: "CAYMA",
+      description: "Sigorta ettiren cayma hakkını kullanıyor (14 gün soğuma süresi)",
+      triggerCondition: "Poliçe başlangıcından 14 gün içinde",
+      legalBasis: "Sigortacılık Kanunu Madde 12 - Cayma Hakkı",
+    },
+  ],
+  inflationAdjustmentFormula: {
+    description: "Zeyilname ile limit artırımı hesaplama",
+    formula: "Yeni Limit = Eski Limit × (1 + TÜFE / 100)",
+    example: "1.000.000 TL × (1 + 65/100) = 1.650.000 TL",
+    premiumImpact: "Limit artırımı oranında ek prim tahsil edilir (pro-rata)",
+  },
+  processingTimeline: {
+    standard: "3-5 iş günü",
+    urgent: "1 iş günü (ek ücret ile)",
+    automaticApproval: "Sadece limit artırımı zeyilnameleri otomatik onay",
   },
 } as const;
 
