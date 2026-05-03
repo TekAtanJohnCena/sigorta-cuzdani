@@ -488,19 +488,26 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
 
                 {/* Alert kartları - AISuggestionCard kullanımı */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-                  {analysisAlerts.map((alert) => (
+                  {analysisAlerts.map((alertItem) => (
                     <AISuggestionCard
-                      key={alert.id}
-                      alert={alert}
+                      key={alertItem.id}
+                      alert={{
+                        ...alertItem,
+                        category: "exclusion",
+                        affectedCoverages: [],
+                        regulatoryRisk: false,
+                        remediationSteps: [],
+                        confidenceScore: 0,
+                      } as any}
                       onAction={(actionType) => {
                         if (actionType === "contact_agent") {
-                          alert("📞 Acentenizle paylaşım özelliği yakında aktif olacak.");
+                          window.alert("📞 Acentenizle paylaşım özelliği yakında aktif olacak.");
                         } else if (actionType === "request_amendment") {
-                          alert("📝 Zeyilname talep sistemi geliştiriliyor.");
+                          window.alert("📝 Zeyilname talep sistemi geliştiriliyor.");
                         } else if (actionType === "increase_limit") {
-                          alert("📈 Limit artırma özelliği yakında eklenecek.");
+                          window.alert("📈 Limit artırma özelliği yakında eklenecek.");
                         } else if (actionType === "learn_more") {
-                          alert("📖 Detaylı bilgi sayfası hazırlanıyor.");
+                          window.alert("📖 Detaylı bilgi sayfası hazırlanıyor.");
                         }
                       }}
                     />

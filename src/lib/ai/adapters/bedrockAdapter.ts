@@ -13,8 +13,8 @@ import type {
   ExtractionResult,
   RiskAnalysisResult,
   PortfolioAnalysisResult,
-  AI_PRICING,
 } from "../types";
+import { AI_PRICING } from "../types";
 import { generateDomainContext } from "../context/insuranceRules";
 
 const bedrock = new BedrockRuntimeClient({

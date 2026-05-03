@@ -9,8 +9,8 @@ import type {
   AIOperation,
   AIRequestOptions,
   ExtractionResult,
-  AI_PRICING,
 } from "../types";
+import { AI_PRICING } from "../types";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 

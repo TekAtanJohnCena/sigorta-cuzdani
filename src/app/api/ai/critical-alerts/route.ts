@@ -52,6 +52,7 @@ export const GET = withAuth(async (req: NextRequest, user) => {
         p.coverages?.map((c) => ({
           name: c.name,
           amount: c.amount,
+          currency: c.currency || "TRY",
           deductible: c.deductible,
         })) || []
       );

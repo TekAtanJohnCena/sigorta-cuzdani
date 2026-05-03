@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     // Persist results to Firestore
     try {
-      await saveAnalysisResults(tenantId, analysisResult);
+      await saveAnalysisResults(tenantId, analysisResult as unknown as Record<string, unknown>);
     } catch (saveErr) {
       logger.warn("Failed to persist analysis", "api/ai/analyze-portfolio", {
         error: (saveErr as Error).message,
