@@ -156,6 +156,7 @@ export const WORKPLACE_MANDATORY = {
     },
     {
       coverage: "DASK (Zorunlu Deprem Sigortası)",
+      minLimit: 0,
       applicableTo: "Tüm bina sahipleri",
       description: "İşyeri binası için deprem sigortası",
     },

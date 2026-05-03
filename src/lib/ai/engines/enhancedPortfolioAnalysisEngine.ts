@@ -83,7 +83,7 @@ export class EnhancedPortfolioAnalysisEngine {
     );
 
     // B2B Readiness Assessment
-    const b2bReadiness = this.assessB2BReadiness(policies, companyAssets, coverageRatio);
+    const b2bReadiness = this.assessB2BReadiness(policies, coverageRatio, companyAssets);
 
     // Generate insights
     const insights = this.generateAssetProtectionInsights(
@@ -445,8 +445,8 @@ export class EnhancedPortfolioAnalysisEngine {
    */
   private assessB2BReadiness(
     policies: Policy[],
-    companyAssets?: CompanyAssets,
-    coverageRatio: number
+    coverageRatio: number,
+    companyAssets?: CompanyAssets
   ): {
     isAdequate: boolean;
     complianceScore: number;

@@ -22,8 +22,8 @@ class AIService {
 
   constructor() {
     this.providers = new Map([
-      ["bedrock", new BedrockAdapter()],
-      ["gemini", new GeminiAdapter()],
+      ["bedrock", new BedrockAdapter() as any],
+      ["gemini", new GeminiAdapter() as any],
     ]);
   }
 

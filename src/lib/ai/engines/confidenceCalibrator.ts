@@ -23,10 +23,10 @@ export interface CalibrationResult {
   originalResult: ExtractionResult;
   verified: boolean;
   needsManualReview: boolean;
-  isReliable: boolean; // TRUE if confidenceScore >= 85 and no critical flags remain
+  isReliable: boolean; // TRUE if guvenScore >= 85 and no critical flags remain
   flags: ConfidenceFlag[];
   verifiedFields?: Partial<ExtractionResult>;
-  confidenceScore: number; // 0-100
+  guvenScore: number; // 0-100
   businessReadyForB2B: boolean; // Alias for clarity in B2B context
 }
 
@@ -34,13 +34,13 @@ export interface CalibrationResult {
  * Critical fields that must have high confidence (>= 85%) for B2B reliability
  */
 const CRITICAL_FIELDS = [
-  "policyNumber",
-  "insuranceCompany",
-  "startDate",
-  "endDate",
-  "premium.totalPremium",
-  "premium.netPremium",
-  "policyType",
+  "policeNumarasi",
+  "sigortaSirketi",
+  "baslangicTarihi",
+  "bitisTarihi",
+  "primBilgileri.toplamPrim",
+  "primBilgileri.netPrim",
+  "policeTipi",
 ] as const;
 
 /**
@@ -61,7 +61,7 @@ export class ConfidenceCalibrator {
   ): Promise<CalibrationResult> {
     logger.info("Starting confidence calibration", "ConfidenceCalibrator", {
       modelUsed: extractionResult.modelUsed,
-      initialConfidence: extractionResult.confidenceScore,
+      initialConfidence: extractionResult.guvenScore,
     });
 
     const flags = this.analyzeConfidence(extractionResult);
@@ -69,7 +69,7 @@ export class ConfidenceCalibrator {
 
     // If no critical flags, result is verified
     if (criticalFlags.length === 0) {
-      const finalScore = extractionResult.confidenceScore || 100;
+      const finalScore = extractionResult.guvenScore || 100;
       const isReliable = finalScore >= CRITICAL_CONFIDENCE_THRESHOLD;
 
       logger.info("Calibration passed - no critical issues", "ConfidenceCalibrator", {
@@ -84,7 +84,7 @@ export class ConfidenceCalibrator {
         isReliable,
         businessReadyForB2B: isReliable,
         flags,
-        confidenceScore: finalScore,
+        guvenScore: finalScore,
       };
     }
 
@@ -126,7 +126,7 @@ export class ConfidenceCalibrator {
         businessReadyForB2B: isReliable && remainingCriticalFlags === 0,
         flags,
         verifiedFields,
-        confidenceScore: newConfidenceScore,
+        guvenScore: newConfidenceScore,
       };
     } catch (error) {
       logger.error("Secondary verification failed", "ConfidenceCalibrator", error);
@@ -137,7 +137,7 @@ export class ConfidenceCalibrator {
         isReliable: false,
         businessReadyForB2B: false,
         flags,
-        confidenceScore: extractionResult.confidenceScore || 0,
+        guvenScore: extractionResult.guvenScore || 0,
       };
     }
   }
@@ -149,10 +149,10 @@ export class ConfidenceCalibrator {
     const flags: ConfidenceFlag[] = [];
 
     // Check policy number
-    if (!result.policyNumber || result.policyNumber.length < 5) {
+    if (!result.policeNumarasi || result.policeNumarasi.length < 5) {
       flags.push({
-        field: "policyNumber",
-        currentValue: result.policyNumber,
+        field: "policeNumarasi",
+        currentValue: result.policeNumarasi,
         confidence: 40,
         reason: "Poliçe numarası eksik veya çok kısa",
         severity: "CRITICAL",
@@ -160,10 +160,10 @@ export class ConfidenceCalibrator {
     }
 
     // Check insurance company
-    if (!result.insuranceCompany || result.insuranceCompany.length < 3) {
+    if (!result.sigortaSirketi || result.sigortaSirketi.length < 3) {
       flags.push({
-        field: "insuranceCompany",
-        currentValue: result.insuranceCompany,
+        field: "sigortaSirketi",
+        currentValue: result.sigortaSirketi,
         confidence: 40,
         reason: "Sigorta şirketi adı eksik",
         severity: "CRITICAL",
@@ -171,20 +171,20 @@ export class ConfidenceCalibrator {
     }
 
     // Check dates
-    if (!this.isValidDate(result.startDate)) {
+    if (!this.isValidDate(result.baslangicTarihi)) {
       flags.push({
-        field: "startDate",
-        currentValue: result.startDate,
+        field: "baslangicTarihi",
+        currentValue: result.baslangicTarihi,
         confidence: 30,
         reason: "Başlangıç tarihi geçersiz format",
         severity: "CRITICAL",
       });
     }
 
-    if (!this.isValidDate(result.endDate)) {
+    if (!this.isValidDate(result.bitisTarihi)) {
       flags.push({
-        field: "endDate",
-        currentValue: result.endDate,
+        field: "bitisTarihi",
+        currentValue: result.bitisTarihi,
         confidence: 30,
         reason: "Bitiş tarihi geçersiz format",
         severity: "CRITICAL",
@@ -192,20 +192,20 @@ export class ConfidenceCalibrator {
     }
 
     // Check premium values
-    if (!result.premium?.totalPremium || result.premium.totalPremium <= 0) {
+    if (!result.primBilgileri?.toplamPrim || result.primBilgileri.toplamPrim <= 0) {
       flags.push({
-        field: "premium.totalPremium",
-        currentValue: result.premium?.totalPremium,
+        field: "primBilgileri.toplamPrim",
+        currentValue: result.primBilgileri?.toplamPrim,
         confidence: 20,
         reason: "Toplam prim değeri eksik veya geçersiz",
         severity: "CRITICAL",
       });
     }
 
-    if (!result.premium?.netPremium || result.premium.netPremium <= 0) {
+    if (!result.primBilgileri?.netPrim || result.primBilgileri.netPrim <= 0) {
       flags.push({
-        field: "premium.netPremium",
-        currentValue: result.premium?.netPremium,
+        field: "primBilgileri.netPrim",
+        currentValue: result.primBilgileri?.netPrim,
         confidence: 50,
         reason: "Net prim değeri eksik",
         severity: "WARNING",
@@ -213,20 +213,20 @@ export class ConfidenceCalibrator {
     }
 
     // Check policy type
-    if (!result.policyType || result.policyType === "diger") {
+    if (!result.policeTipi || result.policeTipi === "diger") {
       flags.push({
-        field: "policyType",
-        currentValue: result.policyType,
+        field: "policeTipi",
+        currentValue: result.policeTipi,
         confidence: 60,
         reason: "Poliçe tipi belirsiz veya genel kategori",
         severity: "WARNING",
       });
     }
 
-    // Check coverages
-    if (!result.coverages || result.coverages.length === 0) {
+    // Check teminatlar
+    if (!result.teminatlar || result.teminatlar.length === 0) {
       flags.push({
-        field: "coverages",
+        field: "teminatlar",
         currentValue: null,
         confidence: 50,
         reason: "Teminat listesi bulunamadı",
@@ -250,11 +250,11 @@ export class ConfidenceCalibrator {
     const verificationPrompt = `Sen bir Türk sigorta poliçesi doğrulama uzmanısın.
 
 ÖNCEKİ ÇIKARIM:
-- Poliçe No: ${originalResult.policyNumber || "BULUNAMADI"}
-- Şirket: ${originalResult.insuranceCompany || "BULUNAMADI"}
-- Başlangıç: ${originalResult.startDate || "BULUNAMADI"}
-- Bitiş: ${originalResult.endDate || "BULUNAMADI"}
-- Toplam Prim: ${originalResult.premium?.totalPremium || "BULUNAMADI"} ${originalResult.premium?.currency || ""}
+- Poliçe No: ${originalResult.policeNumarasi || "BULUNAMADI"}
+- Şirket: ${originalResult.sigortaSirketi || "BULUNAMADI"}
+- Başlangıç: ${originalResult.baslangicTarihi || "BULUNAMADI"}
+- Bitiş: ${originalResult.bitisTarihi || "BULUNAMADI"}
+- Toplam Prim: ${originalResult.primBilgileri?.toplamPrim || "BULUNAMADI"} ${originalResult.primBilgileri?.paraBirimi || ""}
 
 DÜŞÜK GÜVENİLİRLİK TESPİT EDİLEN ALANLAR: ${flaggedFields}
 
@@ -268,12 +268,12 @@ GÖREV:
 4. STRICT JSON formatında döndür:
 
 {
-  "policyNumber": "düzeltilmiş değer veya BULUNAMADI",
-  "insuranceCompany": "düzeltilmiş değer veya BULUNAMADI",
-  "startDate": "YYYY-MM-DD veya BULUNAMADI",
-  "endDate": "YYYY-MM-DD veya BULUNAMADI",
-  "totalPremium": sayısal değer veya null,
-  "netPremium": sayısal değer veya null
+  "policeNumarasi": "düzeltilmiş değer veya BULUNAMADI",
+  "sigortaSirketi": "düzeltilmiş değer veya BULUNAMADI",
+  "baslangicTarihi": "YYYY-MM-DD veya BULUNAMADI",
+  "bitisTarihi": "YYYY-MM-DD veya BULUNAMADI",
+  "toplamPrim": sayısal değer veya null,
+  "netPrim": sayısal değer veya null
 }
 
 SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
@@ -311,28 +311,32 @@ SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
     // Map to ExtractionResult format
     const verifiedFields: Partial<ExtractionResult> = {};
 
-    if (verified.policyNumber && verified.policyNumber !== "BULUNAMADI") {
-      verifiedFields.policyNumber = verified.policyNumber;
+    if (verified.policeNumarasi && verified.policeNumarasi !== "BULUNAMADI") {
+      verifiedFields.policeNumarasi = verified.policeNumarasi;
     }
 
-    if (verified.insuranceCompany && verified.insuranceCompany !== "BULUNAMADI") {
-      verifiedFields.insuranceCompany = verified.insuranceCompany;
+    if (verified.sigortaSirketi && verified.sigortaSirketi !== "BULUNAMADI") {
+      verifiedFields.sigortaSirketi = verified.sigortaSirketi;
     }
 
-    if (verified.startDate && verified.startDate !== "BULUNAMADI") {
-      verifiedFields.startDate = verified.startDate;
+    if (verified.baslangicTarihi && verified.baslangicTarihi !== "BULUNAMADI") {
+      verifiedFields.baslangicTarihi = verified.baslangicTarihi;
     }
 
-    if (verified.endDate && verified.endDate !== "BULUNAMADI") {
-      verifiedFields.endDate = verified.endDate;
+    if (verified.bitisTarihi && verified.bitisTarihi !== "BULUNAMADI") {
+      verifiedFields.bitisTarihi = verified.bitisTarihi;
     }
 
-    if (verified.totalPremium !== null || verified.netPremium !== null) {
-      verifiedFields.premium = {
-        ...originalResult.premium,
-        totalPremium: verified.totalPremium || originalResult.premium?.totalPremium || 0,
-        netPremium: verified.netPremium || originalResult.premium?.netPremium || 0,
-        currency: originalResult.premium?.currency || "TRY",
+    if (verified.toplamPrim !== null || verified.netPrim !== null) {
+      verifiedFields.primBilgileri = {
+        ...originalResult.primBilgileri,
+        toplamPrim: verified.toplamPrim || originalResult.primBilgileri?.toplamPrim || 0,
+        netPrim: verified.netPrim || originalResult.primBilgileri?.netPrim || 0,
+        paraBirimi: originalResult.primBilgileri?.paraBirimi || "TRY",
+        bsmv: 0,
+        thgf: 0,
+        odemeSekli: "pesin",
+        taksitSayisi: 1
       };
     }
 
@@ -356,11 +360,11 @@ SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
 
     // Critical fields weight: 15 points each
     const criticalFieldWeights = {
-      policyNumber: 15,
-      insuranceCompany: 15,
-      startDate: 15,
-      endDate: 15,
-      "premium.totalPremium": 15,
+      policeNumarasi: 15,
+      sigortaSirketi: 15,
+      baslangicTarihi: 15,
+      bitisTarihi: 15,
+      "primBilgileri.toplamPrim": 15,
     };
 
     // Check each critical field
@@ -382,11 +386,11 @@ SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
     }
 
     // Add remaining 25 points for optional fields
-    const hasValidCoverages = original.coverages && original.coverages.length > 0;
-    const hasValidPolicyType = original.policyType && original.policyType !== "diger";
+    const hasValidteminatlar = original.teminatlar && original.teminatlar.length > 0;
+    const hasValidpoliceTipi = original.policeTipi && original.policeTipi !== "diger";
 
-    totalScore += hasValidCoverages ? 15 : 0;
-    totalScore += hasValidPolicyType ? 10 : 0;
+    totalScore += hasValidteminatlar ? 15 : 0;
+    totalScore += hasValidpoliceTipi ? 10 : 0;
     totalWeight += 25;
 
     return Math.round((totalScore / totalWeight) * 100);
@@ -396,8 +400,8 @@ SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
    * Check if a field was successfully verified
    */
   private isFieldVerified(field: string, verified: Partial<ExtractionResult>): boolean {
-    if (field === "premium.totalPremium") {
-      return verified.premium?.totalPremium !== undefined && verified.premium.totalPremium > 0;
+    if (field === "primBilgileri.toplamPrim") {
+      return verified.primBilgileri?.toplamPrim !== undefined && verified.primBilgileri.toplamPrim !== null && verified.primBilgileri.toplamPrim > 0;
     }
 
     return (verified as any)[field] !== undefined && (verified as any)[field] !== null;
@@ -406,7 +410,7 @@ SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
   /**
    * Validate date format (YYYY-MM-DD)
    */
-  private isValidDate(dateString?: string): boolean {
+  private isValidDate(dateString?: string | null): boolean {
     if (!dateString) return false;
 
     const regex = /^\d{4}-\d{2}-\d{2}$/;
@@ -421,3 +425,4 @@ SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
  * Singleton instance
  */
 export const confidenceCalibrator = new ConfidenceCalibrator();
+

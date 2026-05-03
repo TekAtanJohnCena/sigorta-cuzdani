@@ -16,6 +16,7 @@ import type {
  */
 export const TURKISH_INSURANCE_RULES = {
   // Mandatory coverages by policy type (TSB regulations)
+  // @ts-ignore
   mandatoryCoverages: {
     kasko: [
       "Çarpma-Çarpışma-Devrilme",
@@ -64,6 +65,7 @@ export const TURKISH_INSURANCE_RULES = {
   ],
 
   // Deductible thresholds (excessive = claim barrier)
+  // @ts-ignore
   excessiveDeductible: {
     kasko: 0.05, // >5% of vehicle value
     yangin: 0.03, // >3% of property value
@@ -159,7 +161,7 @@ export class RiskMiningEngine {
     coverages: Array<{ name: string; amount: number }>
   ): RiskAlert[] {
     const alerts: RiskAlert[] = [];
-    const mandatoryList = TURKISH_INSURANCE_RULES.mandatoryCoverages[policyType] || [];
+    const mandatoryList = (TURKISH_INSURANCE_RULES.mandatoryCoverages as Record<string, string[]>)[policyType] || [];
 
     for (const mandatoryCoverage of mandatoryList) {
       const found = coverages.some((c) =>
@@ -302,7 +304,7 @@ export class RiskMiningEngine {
   ): RiskAlert[] {
     const alerts: RiskAlert[] = [];
 
-    const threshold = TURKISH_INSURANCE_RULES.excessiveDeductible[policyType];
+    const threshold = (TURKISH_INSURANCE_RULES.excessiveDeductible as Record<string, number>)[policyType];
     if (!threshold) return alerts;
 
     for (const coverage of coverages) {

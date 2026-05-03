@@ -14,44 +14,44 @@ describe("AI Service Integration Tests", () => {
   describe("ConfidenceCalibrator", () => {
     it("should pass calibration for high-confidence extraction", async () => {
       const extractionResult: ExtractionResult = {
-        policyNumber: "12345678",
+        policeNumarasi: "12345678",
         insuranceCompany: "Anadolu Sigorta",
         agencyName: "Test Acente",
         agencyCode: "001",
-        startDate: "2024-01-01",
-        endDate: "2025-01-01",
+        baslangicTarihi: "2024-01-01",
+        bitisTarihi: "2025-01-01",
         policyHolder: {
-          name: "Test Şirket A.Ş.",
+          isim: "Test Şirket A.Ş.",
           taxId: "1234567890",
           address: "İstanbul",
         },
         insured: {
-          name: "Test Şirket A.Ş.",
+          isim: "Test Şirket A.Ş.",
           taxId: "1234567890",
           address: "İstanbul",
         },
-        coverages: [
+        teminatlar: [
           {
-            name: "Çarpma-Çarpışma",
+            isim: "Çarpma-Çarpışma",
             amount: 500000,
-            currency: "TRY",
+            paraBirimi: "TRY",
             deductible: 2,
             deductibleType: "percentage",
           },
         ],
-        premium: {
-          netPremium: 10000,
+        primBilgileri: {
+          netPrim: 10000, bsmv: 0, thgf: 0,
           bsmv: 500,
           thgf: 100,
-          totalPremium: 10600,
-          currency: "TRY",
+          toplamPrim: 10600,
+          paraBirimi: "TRY",
           paymentType: "installment",
           installmentCount: 4,
         },
-        policyType: "kasko",
+        policeTipi: "kasko",
         specialConditions: [],
         confidenceScore: 95,
-        modelUsed: "claude-haiku-4.5",
+        model: "claude-haiku-4.5",
       };
 
       const pdfText = "Mock PDF text with policy details";
@@ -67,18 +67,18 @@ describe("AI Service Integration Tests", () => {
 
     it("should detect critical flags for missing policy number", async () => {
       const extractionResult: ExtractionResult = {
-        policyNumber: "",
+        policeNumarasi: "",
         insuranceCompany: "Anadolu Sigorta",
-        startDate: "2024-01-01",
-        endDate: "2025-01-01",
-        premium: {
-          netPremium: 10000,
-          totalPremium: 10600,
-          currency: "TRY",
+        baslangicTarihi: "2024-01-01",
+        bitisTarihi: "2025-01-01",
+        primBilgileri: {
+          netPrim: 10000, bsmv: 0, thgf: 0,
+          toplamPrim: 10600,
+          paraBirimi: "TRY",
         },
-        policyType: "kasko",
+        policeTipi: "kasko",
         confidenceScore: 60,
-        modelUsed: "claude-haiku-4.5",
+        model: "claude-haiku-4.5",
       };
 
       const pdfText = "Mock PDF text";
@@ -87,78 +87,78 @@ describe("AI Service Integration Tests", () => {
       expect(result.verified).toBe(false);
       const criticalFlags = result.flags.filter((f) => f.severity === "CRITICAL");
       expect(criticalFlags.length).toBeGreaterThan(0);
-      expect(criticalFlags.some((f) => f.field === "policyNumber")).toBe(true);
+      expect(criticalFlags.some((f) => f.field === "policeNumarasi")).toBe(true);
     });
 
     it("should detect critical flags for invalid dates", async () => {
       const extractionResult: ExtractionResult = {
-        policyNumber: "12345678",
+        policeNumarasi: "12345678",
         insuranceCompany: "Anadolu Sigorta",
-        startDate: "invalid-date",
-        endDate: "2025-13-45",
-        premium: {
-          totalPremium: 10000,
-          currency: "TRY",
+        baslangicTarihi: "invalid-date",
+        bitisTarihi: "2025-13-45",
+        primBilgileri: {
+          toplamPrim: 10000,
+          paraBirimi: "TRY",
         },
-        policyType: "kasko",
+        policeTipi: "kasko",
         confidenceScore: 50,
-        modelUsed: "claude-haiku-4.5",
+        model: "claude-haiku-4.5",
       };
 
       const pdfText = "Mock PDF text";
       const result = await confidenceCalibrator.calibrate(extractionResult, pdfText);
 
       const dateFlags = result.flags.filter(
-        (f) => (f.field === "startDate" || f.field === "endDate") && f.severity === "CRITICAL"
+        (f) => (f.field === "baslangicTarihi" || f.field === "bitisTarihi") && f.severity === "CRITICAL"
       );
       expect(dateFlags.length).toBeGreaterThan(0);
     });
 
     it("should detect missing premium as critical", async () => {
       const extractionResult: ExtractionResult = {
-        policyNumber: "12345678",
+        policeNumarasi: "12345678",
         insuranceCompany: "Anadolu Sigorta",
-        startDate: "2024-01-01",
-        endDate: "2025-01-01",
-        premium: {
-          totalPremium: 0,
-          currency: "TRY",
+        baslangicTarihi: "2024-01-01",
+        bitisTarihi: "2025-01-01",
+        primBilgileri: {
+          toplamPrim: 0,
+          paraBirimi: "TRY",
         },
-        policyType: "kasko",
+        policeTipi: "kasko",
         confidenceScore: 40,
-        modelUsed: "claude-haiku-4.5",
+        model: "claude-haiku-4.5",
       };
 
       const pdfText = "Mock PDF text";
       const result = await confidenceCalibrator.calibrate(extractionResult, pdfText);
 
       const premiumFlags = result.flags.filter(
-        (f) => f.field === "premium.totalPremium" && f.severity === "CRITICAL"
+        (f) => f.field === "premium.toplamPrim" && f.severity === "CRITICAL"
       );
       expect(premiumFlags.length).toBeGreaterThan(0);
     });
 
     it("should calculate weighted confidence score correctly and set B2B flags", async () => {
       const extractionResult: ExtractionResult = {
-        policyNumber: "12345678",
+        policeNumarasi: "12345678",
         insuranceCompany: "Anadolu Sigorta",
-        startDate: "2024-01-01",
-        endDate: "2025-01-01",
-        premium: {
-          netPremium: 10000,
-          totalPremium: 10600,
-          currency: "TRY",
+        baslangicTarihi: "2024-01-01",
+        bitisTarihi: "2025-01-01",
+        primBilgileri: {
+          netPrim: 10000, bsmv: 0, thgf: 0,
+          toplamPrim: 10600,
+          paraBirimi: "TRY",
         },
-        coverages: [
+        teminatlar: [
           {
-            name: "Test Coverage",
+            isim: "Test Coverage",
             amount: 100000,
-            currency: "TRY",
+            paraBirimi: "TRY",
           },
         ],
-        policyType: "kasko",
+        policeTipi: "kasko",
         confidenceScore: 90,
-        modelUsed: "claude-haiku-4.5",
+        model: "claude-haiku-4.5",
       };
 
       const pdfText = "Mock PDF text";
@@ -177,22 +177,22 @@ describe("AI Service Integration Tests", () => {
         {
           id: "1",
           tenantId: "test",
-          policyNumber: "POL001",
+          policeNumarasi: "POL001",
           insuranceCompany: "Anadolu",
-          policyType: "kasko",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 10000,
-            netPremium: 9000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "kasko",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 10000,
+            netPrim: 9000, bsmv: 0, thgf: 0,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Kasko",
+              isim: "Kasko",
               amount: 500000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -201,28 +201,28 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 95,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
         {
           id: "2",
           tenantId: "test",
-          policyNumber: "POL002",
+          policeNumarasi: "POL002",
           insuranceCompany: "Anadolu",
-          policyType: "isyeri",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 20000,
-            netPremium: 18000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "isyeri",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 20000,
+            netPrim: 18000, bsmv: 0, thgf: 0,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Yangın",
+              isim: "Yangın",
               amount: 2000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -231,7 +231,7 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
       ];
@@ -248,21 +248,21 @@ describe("AI Service Integration Tests", () => {
         {
           id: "1",
           tenantId: "test",
-          policyNumber: "POL001",
+          policeNumarasi: "POL001",
           insuranceCompany: "Anadolu",
-          policyType: "kasko",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 5000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "kasko",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 5000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Kasko",
+              isim: "Kasko",
               amount: 200000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -271,7 +271,7 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
       ];
@@ -304,21 +304,21 @@ describe("AI Service Integration Tests", () => {
         {
           id: "1",
           tenantId: "test",
-          policyNumber: "POL001",
+          policeNumarasi: "POL001",
           insuranceCompany: "Anadolu",
-          policyType: "isyeri",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 10000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "isyeri",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 10000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Yangın",
+              isim: "Yangın",
               amount: 500000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -327,7 +327,7 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
       ];
@@ -355,21 +355,21 @@ describe("AI Service Integration Tests", () => {
         {
           id: "1",
           tenantId: "test",
-          policyNumber: "POL001",
+          policeNumarasi: "POL001",
           insuranceCompany: "Anadolu Sigorta",
-          policyType: "kasko",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 10000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "kasko",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 10000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Kasko",
+              isim: "Kasko",
               amount: 500000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -378,27 +378,27 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
         {
           id: "2",
           tenantId: "test",
-          policyNumber: "POL002",
+          policeNumarasi: "POL002",
           insuranceCompany: "Anadolu Sigorta",
-          policyType: "isyeri",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 20000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "isyeri",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 20000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Yangın",
+              isim: "Yangın",
               amount: 2000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -407,27 +407,27 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
         {
           id: "3",
           tenantId: "test",
-          policyNumber: "POL003",
+          policeNumarasi: "POL003",
           insuranceCompany: "Anadolu Sigorta",
-          policyType: "saglik",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 15000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "saglik",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 15000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Sağlık",
+              isim: "Sağlık",
               amount: 1000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -436,7 +436,7 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
       ];
@@ -461,21 +461,21 @@ describe("AI Service Integration Tests", () => {
         {
           id: "1",
           tenantId: "test",
-          policyNumber: "POL001",
+          policeNumarasi: "POL001",
           insuranceCompany: "Anadolu",
-          policyType: "kasko",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 10000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "kasko",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 10000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Kasko",
+              isim: "Kasko",
               amount: 5000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -484,7 +484,7 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
       ];
@@ -516,21 +516,21 @@ describe("AI Service Integration Tests", () => {
         {
           id: "1",
           tenantId: "test",
-          policyNumber: "POL001",
+          policeNumarasi: "POL001",
           insuranceCompany: "Anadolu",
-          policyType: "isyeri",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 10000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "isyeri",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 10000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Yangın",
+              isim: "Yangın",
               amount: 1000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -539,7 +539,7 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 90,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
       ];
@@ -561,7 +561,7 @@ describe("AI Service Integration Tests", () => {
       );
 
       expect(result.businessRiskExposureTRY).toBeGreaterThan(0);
-      expect(result.b2bReadiness.isAdequate).toBe(false); // Missing mandatory coverages
+      expect(result.b2bReadiness.isAdequate).toBe(false); // Missing mandatory teminatlar
       expect(result.b2bReadiness.missingMandatoryCoverages.length).toBeGreaterThan(0);
     });
 
@@ -570,26 +570,26 @@ describe("AI Service Integration Tests", () => {
         {
           id: "1",
           tenantId: "test",
-          policyNumber: "POL001",
+          policeNumarasi: "POL001",
           insuranceCompany: "Anadolu",
-          policyType: "isyeri",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 50000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "isyeri",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 50000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Yangın",
+              isim: "Yangın",
               amount: 5000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
             {
-              name: "İşveren Mali Sorumluluk",
+              isim: "İşveren Mali Sorumluluk",
               amount: 10000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -598,27 +598,27 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 95,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
         {
           id: "2",
           tenantId: "test",
-          policyNumber: "POL002",
+          policeNumarasi: "POL002",
           insuranceCompany: "Anadolu",
-          policyType: "dask",
-          startDate: "2024-01-01",
-          endDate: "2025-01-01",
-          premium: {
-            totalPremium: 20000,
-            currency: "TRY",
-            paymentType: "cash",
+          policeTipi: "dask",
+          baslangicTarihi: "2024-01-01",
+          bitisTarihi: "2025-01-01",
+          primBilgileri: {
+            toplamPrim: 20000,
+            paraBirimi: "TRY",
+            odemeTipi: "pesin",
           },
-          coverages: [
+          teminatlar: [
             {
-              name: "Deprem",
+              isim: "Deprem",
               amount: 4000000,
-              currency: "TRY",
+              paraBirimi: "TRY",
             },
           ],
           status: "active",
@@ -627,7 +627,7 @@ describe("AI Service Integration Tests", () => {
             extractedAt: "2024-01-01",
             confidenceScore: 95,
             manuallyReviewed: false,
-            modelUsed: "haiku-4.5",
+            model: "haiku-4.5",
           },
         },
       ];
@@ -722,3 +722,4 @@ describe("AI Service Integration Tests", () => {
     });
   });
 });
+
