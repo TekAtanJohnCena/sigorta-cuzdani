@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { formatCurrency } from "@/lib/utils/currency";
-import { POLICY_TYPE_LABELS, Policy } from "@/types/policy";
+import { POLICY_TYPE_LABELS } from "@/types/policy";
 import { daysUntil, formatDateShort } from "@/lib/utils/date";
 import Link from "next/link";
 import { useDemo } from "@/lib/context/DemoContext";
@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const { isDemoMode, setIsDemoMode } = useDemo();
 
   // G-09: usePolicies hook — eski useEffect + dbPolicies state'inin yerini aldı
-  const { policies: dbPolicies, loading, error } = usePolicies(
+  const { policies: dbPolicies, loading } = usePolicies(
     isDemoMode ? null : appUser?.tenantId
   );
 
@@ -91,17 +91,6 @@ export default function DashboardPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
-        <div style={{ textAlign: "center", padding: "var(--space-8)", background: "var(--danger-50)", border: "1px solid var(--danger-200)", borderRadius: "var(--radius-lg)", maxWidth: 420 }}>
-          <div style={{ fontSize: "2rem", marginBottom: "var(--space-3)" }}>⚠️</div>
-          <div style={{ fontWeight: 700, color: "var(--danger-800)", marginBottom: "var(--space-2)" }}>Veriler Yüklenemedi</div>
-          <div style={{ fontSize: "var(--text-sm)", color: "var(--danger-700)" }}>Lütfen sayfayı yenileyip tekrar deneyin.</div>
-        </div>
-      </div>
-    );
-  }
 
   if (!isDemoMode && dbPolicies.length === 0) {
     return (
@@ -160,7 +149,7 @@ export default function DashboardPage() {
       icon: "🛡️",
       value: `${stats.riskScore}/100`,
       label: "Portföy Güvenlik Skoru",
-      sub: `${(stats as any).riskGrade} Sınıfı — ${(stats as any).riskLabel}`,
+      sub: `${stats.riskGrade as string} Sınıfı — ${stats.riskLabel as string}`,
       subColor: stats.riskScore >= 75 ? "var(--success-600)" : stats.riskScore >= 55 ? "var(--warning-600)" : "var(--danger-600)",
       gradient: stats.riskScore >= 75
         ? "linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)"

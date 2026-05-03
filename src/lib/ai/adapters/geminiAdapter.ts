@@ -29,7 +29,7 @@ export class GeminiAdapter implements AIAdapter {
     options?: AIRequestOptions
   ): Promise<TOutput> {
     if (operation === "extractPolicy") {
-      return this.extractPolicyWithFallback(input as any) as Promise<TOutput>;
+      return this.extractPolicyWithFallback(input as Record<string, unknown>) as Promise<TOutput>;
     }
 
     throw new Error(`Operation ${operation} not supported by GeminiAdapter yet`);
@@ -104,7 +104,7 @@ export class GeminiAdapter implements AIAdapter {
    */
   estimateCost(tokensInput: number, tokensOutput: number): number {
     // Use gemini-2.0-flash pricing (most commonly used fallback)
-    const pricing = (AI_PRICING.gemini as any)["gemini-2.0-flash"] || {
+    const pricing = (AI_PRICING.gemini as Record<string, unknown>)["gemini-2.0-flash"] || {
       inputPer1kTokens: 0.000075,
       outputPer1kTokens: 0.0003,
     };

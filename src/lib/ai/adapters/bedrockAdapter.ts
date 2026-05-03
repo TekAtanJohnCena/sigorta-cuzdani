@@ -4,7 +4,7 @@
 // ============================================
 
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-// @ts-ignore
+// @ts-expect-error - pdf-parse lacks TypeScript definitions
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import type {
   AIAdapter,
@@ -43,10 +43,10 @@ export class BedrockAdapter implements AIAdapter {
         return this.extractPolicy(input as Buffer) as Promise<TOutput>;
 
       case "analyzePortfolio":
-        return this.analyzePortfolio(input as any) as Promise<TOutput>;
+        return this.analyzePortfolio(input as Record<string, unknown>) as Promise<TOutput>;
 
       case "analyzeRisk":
-        return this.analyzeRisk(input as any) as Promise<TOutput>;
+        return this.analyzeRisk(input as Record<string, unknown>) as Promise<TOutput>;
 
       default:
         throw new Error(`Operation ${operation} not supported by BedrockAdapter`);
@@ -107,8 +107,8 @@ export class BedrockAdapter implements AIAdapter {
    * Detects overlaps, gaps, concentration risks, and optimization opportunities
    */
   private async analyzePortfolio(input: {
-    policies: any[];
-    companyProfile: any;
+    policies: Record<string, unknown>[];
+    companyProfile: Record<string, unknown>;
   }): Promise<PortfolioAnalysisResult> {
     const { policies, companyProfile } = input;
 
@@ -121,7 +121,7 @@ export class BedrockAdapter implements AIAdapter {
       baslangic: p.startDate,
       bitis: p.endDate,
       prim: p.premium,
-      teminatlar: p.coverages?.map((c: any) => ({
+      teminatlar: p.coverages?.map((c: Record<string, unknown>) => ({
         ad: c.name,
         limit: c.amount,
         paraBirimi: c.currency || "TRY",
@@ -244,7 +244,7 @@ JSON formatında döndür (SADECE JSON, açıklama yok).`,
    */
   estimateCost(tokensInput: number, tokensOutput: number): number {
     const pricing =
-      (AI_PRICING.bedrock as any)[MODEL_ID] ||
+      (AI_PRICING.bedrock as Record<string, unknown>)[MODEL_ID] ||
       AI_PRICING.bedrock["us.anthropic.claude-haiku-4-5-20251001-v1:0"];
 
     const inputCost = (tokensInput / 1000) * pricing.inputPer1kTokens;
@@ -259,7 +259,7 @@ JSON formatında döndür (SADECE JSON, açıklama yok).`,
 
   private getPolicyExtractionSystemPrompt(policyType?: string): string {
     // Inject domain-specific context based on detected policy type
-    const domainContext = policyType ? generateDomainContext(policyType as any) : "";
+    const domainContext = policyType ? generateDomainContext(policyType as Record<string, unknown>) : "";
 
     return `Sen bir Türk sigorta poliçesi analiz uzmanısın. Sana verilen poliçe metninden yapılandırılmış veri çıkaracaksın.
 

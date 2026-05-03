@@ -13,7 +13,6 @@ import type {
   AIAdapter,
   AIError,
   AICallMetadata,
-  AIOperation,
 } from "./types";
 
 class AIService {
@@ -22,8 +21,8 @@ class AIService {
 
   constructor() {
     this.providers = new Map([
-      ["bedrock", new BedrockAdapter() as any],
-      ["gemini", new GeminiAdapter() as any],
+      ["bedrock", new BedrockAdapter() as unknown as AIAdapter],
+      ["gemini", new GeminiAdapter() as unknown as AIAdapter],
     ]);
   }
 
@@ -229,10 +228,13 @@ class AIService {
    */
   private extractConfidenceScore(result: unknown): number | undefined {
     if (typeof result === "object" && result !== null) {
-      const obj = result as any;
+      const obj = result as Record<string, unknown>;
       if (typeof obj.guvenScore === "number") return obj.guvenScore;
       if (typeof obj.confidenceScore === "number") return obj.confidenceScore;
-      if (typeof obj.summary?.optimizationScore === "number") return obj.summary.optimizationScore;
+      if (typeof obj.summary === "object" && obj.summary !== null) {
+        const summary = obj.summary as Record<string, unknown>;
+        if (typeof summary.optimizationScore === "number") return summary.optimizationScore;
+      }
     }
     return undefined;
   }

@@ -3,18 +3,18 @@
 // Mocks Firebase Client SDK and Admin SDK
 // ============================================
 
-import { DocumentSnapshot, Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 // ============================================
 // Mock Data Store (in-memory)
 // ============================================
-const mockStore = new Map<string, Map<string, any>>();
+const mockStore = new Map<string, Map<string, Record<string, unknown>>>();
 
 export function resetMockStore() {
   mockStore.clear();
 }
 
-export function getMockCollection(collectionName: string): Map<string, any> {
+export function getMockCollection(collectionName: string): Map<string, Record<string, unknown>> {
   if (!mockStore.has(collectionName)) {
     mockStore.set(collectionName, new Map());
   }
@@ -25,7 +25,7 @@ export function getMockCollection(collectionName: string): Map<string, any> {
 // Mock Firebase Client SDK
 // ============================================
 
-export const mockAddDoc = jest.fn(async (collectionRef: any, data: any) => {
+export const mockAddDoc = jest.fn(async (collectionRef: Record<string, unknown>, data: Record<string, unknown>) => {
   const collectionName = collectionRef._key?.path?.segments?.[0] || 'policies';
   const collection = getMockCollection(collectionName);
   const id = `mock-doc-${Date.now()}-${Math.random()}`;
@@ -39,7 +39,7 @@ export const mockAddDoc = jest.fn(async (collectionRef: any, data: any) => {
   return { id };
 });
 
-export const mockGetDoc = jest.fn(async (docRef: any) => {
+export const mockGetDoc = jest.fn(async (docRef: Record<string, unknown>) => {
   const collectionName = docRef._key?.path?.segments?.[0] || 'policies';
   const docId = docRef._key?.path?.segments?.[1];
   const collection = getMockCollection(collectionName);
@@ -52,7 +52,7 @@ export const mockGetDoc = jest.fn(async (docRef: any) => {
   };
 });
 
-export const mockGetDocs = jest.fn(async (query: any) => {
+export const mockGetDocs = jest.fn(async (query: Record<string, unknown>) => {
   const collectionName = query._query?.path?.segments?.[0] || 'policies';
   const collection = getMockCollection(collectionName);
 
@@ -67,7 +67,7 @@ export const mockGetDocs = jest.fn(async (query: any) => {
   };
 });
 
-export const mockUpdateDoc = jest.fn(async (docRef: any, data: any) => {
+export const mockUpdateDoc = jest.fn(async (docRef: Record<string, unknown>, data: Record<string, unknown>) => {
   const collectionName = docRef._key?.path?.segments?.[0] || 'policies';
   const docId = docRef._key?.path?.segments?.[1];
   const collection = getMockCollection(collectionName);
@@ -80,7 +80,7 @@ export const mockUpdateDoc = jest.fn(async (docRef: any, data: any) => {
   });
 });
 
-export const mockDeleteDoc = jest.fn(async (docRef: any) => {
+export const mockDeleteDoc = jest.fn(async (docRef: Record<string, unknown>) => {
   const collectionName = docRef._key?.path?.segments?.[0] || 'policies';
   const docId = docRef._key?.path?.segments?.[1];
   const collection = getMockCollection(collectionName);
@@ -94,7 +94,7 @@ let transactionCommitted = false;
 let transactionRolledBack = false;
 
 export const mockTransaction = {
-  get: jest.fn(async (docRef: any) => {
+  get: jest.fn(async (docRef: Record<string, unknown>) => {
     const collectionName = docRef._key?.path?.segments?.[0] || 'portfolioMetadata';
     const docId = docRef._key?.path?.segments?.[1];
     const collection = getMockCollection(collectionName);
@@ -106,7 +106,7 @@ export const mockTransaction = {
       id: docId,
     };
   }),
-  set: jest.fn((docRef: any, data: any, options?: any) => {
+  set: jest.fn((docRef: Record<string, unknown>, data: Record<string, unknown>, options?: Record<string, unknown>) => {
     // Store operations for commit
     const collectionName = docRef._key?.path?.segments?.[0] || 'policies';
     const docId = docRef.id;
@@ -123,7 +123,7 @@ export const mockTransaction = {
   delete: jest.fn(),
 };
 
-export const mockRunTransaction = jest.fn(async (db: any, updateFunction: any) => {
+export const mockRunTransaction = jest.fn(async (db: Record<string, unknown>, updateFunction: (t: typeof mockTransaction) => Promise<unknown>) => {
   transactionCommitted = false;
   transactionRolledBack = false;
 
@@ -148,16 +148,16 @@ export function wasTransactionRolledBack() {
 // ============================================
 // Mock Batch Write
 // ============================================
-const batchOperations: any[] = [];
+const batchOperations: Record<string, unknown>[] = [];
 
 export const mockBatch = {
-  set: jest.fn((docRef: any, data: any) => {
+  set: jest.fn((docRef: Record<string, unknown>, data: Record<string, unknown>) => {
     batchOperations.push({ type: 'set', docRef, data });
   }),
-  update: jest.fn((docRef: any, data: any) => {
+  update: jest.fn((docRef: Record<string, unknown>, data: Record<string, unknown>) => {
     batchOperations.push({ type: 'update', docRef, data });
   }),
-  delete: jest.fn((docRef: any) => {
+  delete: jest.fn((docRef: Record<string, unknown>) => {
     batchOperations.push({ type: 'delete', docRef });
   }),
   commit: jest.fn(async () => {
@@ -270,7 +270,7 @@ export function seedMockUser(uid: string, tenantId: string, role = 'admin') {
   });
 }
 
-export function seedMockPolicy(tenantId: string, policyData: any) {
+export function seedMockPolicy(tenantId: string, policyData: Record<string, unknown>) {
   const policiesCollection = getMockCollection('policies');
   const id = `policy-${Date.now()}-${Math.random()}`;
 

@@ -1,5 +1,5 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
-// @ts-ignore
+// @ts-expect-error - pdf-parse lacks TypeScript definitions
 import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
 const bedrock = new BedrockRuntimeClient({

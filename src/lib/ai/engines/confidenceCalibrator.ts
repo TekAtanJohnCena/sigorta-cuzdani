@@ -13,7 +13,7 @@ const MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 export interface ConfidenceFlag {
   field: string;
-  currentValue: any;
+  currentValue: unknown;
   confidence: number;
   reason: string;
   severity: "CRITICAL" | "WARNING" | "INFO";
@@ -404,7 +404,7 @@ SADECE JSON döndür, başka hiçbir açıklama ekleme.`;
       return verified.primBilgileri?.toplamPrim !== undefined && verified.primBilgileri.toplamPrim !== null && verified.primBilgileri.toplamPrim > 0;
     }
 
-    return (verified as any)[field] !== undefined && (verified as any)[field] !== null;
+    return (verified as Record<string, unknown>)[field] !== undefined && (verified as Record<string, unknown>)[field] !== null;
   }
 
   /**

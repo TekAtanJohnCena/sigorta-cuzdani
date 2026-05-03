@@ -8,8 +8,9 @@ async function test() {
     const res = await extractPolicyFromPDF(buf);
     console.log('--- RESULT ---');
     console.log(JSON.stringify(res, null, 2));
-  } catch (err: any) {
-    console.log('ERROR:', err.message);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.log('ERROR:', msg);
   }
 }
 test();

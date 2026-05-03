@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { CrossPolicyInsight, InsightType, InsightPriority } from "@/lib/ai/types";
+import type { CrossPolicyInsight } from "@/lib/ai/types";
 
 interface CrossPolicyInsightCardProps {
   insight: CrossPolicyInsight;

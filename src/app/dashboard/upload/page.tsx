@@ -328,7 +328,7 @@ export default function UploadPage() {
           >
             <div className="dropzone-icon">📄</div>
             <div className="dropzone-title">PDF dosyanızı sürükleyin veya tıklayın</div>
-            <div className="dropzone-subtitle">Sigorta şirketinden gelen dijital veya taranmış poliçe PDF'leri</div>
+            <div className="dropzone-subtitle">Sigorta şirketinden gelen dijital veya taranmış poliçe PDF&apos;leri</div>
             <div className="dropzone-hint">Maks. 20MB · Sadece PDF formatı</div>
             <input type="file" id="file-input" accept="application/pdf" style={{ display: "none" }} onChange={handleFileSelect} />
           </div>
@@ -631,7 +631,7 @@ export default function UploadPage() {
           </div>
         </div>
       )}
-      </div>
+    </div>
     </>
   );
 }

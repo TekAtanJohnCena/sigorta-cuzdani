@@ -6,7 +6,7 @@ import { useDemo } from "@/lib/context/DemoContext";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { MOCK_POLICIES } from "@/lib/mockData";
-import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS, Policy } from "@/types/policy";
+import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort, daysUntil } from "@/lib/utils/date";
 import { TableSkeleton, CardSkeleton } from "@/components/SkeletonLoader";
@@ -21,8 +21,7 @@ function UrgencyBadge({ days }: { days: number }) {
 export default function RenewalsPage() {
   const { isDemoMode } = useDemo();
   const { appUser, loading: authLoading } = useAuth();
-  const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null);
-  const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
+  const [dbPolicies, setDbPolicies] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,9 +30,9 @@ export default function RenewalsPage() {
       if (!appUser) { setLoading(false); return; }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setDbPolicies(data as unknown as Policy[]);
-      } catch (e) {
-        console.error("Renewals: Failed to load policies", e);
+        setDbPolicies(data as unknown as Record<string, unknown>[]);
+      } catch {
+        console.error("Renewals: Failed to load policies");
       } finally {
         setLoading(false);
       }
@@ -175,10 +174,10 @@ export default function RenewalsPage() {
                 background: p.daysLeft <= 7 ? "var(--danger-50)" : p.daysLeft <= 30 ? "var(--warning-50)" : "var(--bg-secondary)",
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-                  <div style={{ fontSize: 28 }}>{POLICY_TYPE_ICONS[p.policyType]}</div>
+                  <div style={{ fontSize: 28 }}>{POLICY_TYPE_ICONS[p.policyType as keyof typeof POLICY_TYPE_ICONS]}</div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>
-                      {POLICY_TYPE_LABELS[p.policyType]} — {p.insuranceCompany}
+                      {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS]} — {p.insuranceCompany}
                     </div>
                     <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", marginTop: 2 }}>
                       {p.policyNumber} · Bitiş: {formatDateShort(p.endDate)}
@@ -229,7 +228,7 @@ export default function RenewalsPage() {
                 <tr key={p.id}>
                   <td>
                     <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
-                      {POLICY_TYPE_ICONS[p.policyType]} {POLICY_TYPE_LABELS[p.policyType]}
+                      {POLICY_TYPE_ICONS[p.policyType as keyof typeof POLICY_TYPE_ICONS]} {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS]}
                     </span>
                   </td>
                   <td style={{ color: "var(--text-secondary)" }}>{p.insuranceCompany}</td>

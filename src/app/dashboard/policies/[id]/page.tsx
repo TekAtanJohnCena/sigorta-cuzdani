@@ -498,7 +498,7 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                         regulatoryRisk: false,
                         remediationSteps: [],
                         confidenceScore: 0,
-                      } as any}
+                      } as Record<string, unknown>}
                       onAction={(actionType) => {
                         if (actionType === "contact_agent") {
                           window.alert("📞 Acentenizle paylaşım özelliği yakında aktif olacak.");

@@ -45,7 +45,7 @@ export default function LandingPage() {
           <div className="header-actions">
             {user ? (
               <Link href="/dashboard" className="btn btn-primary">
-                Dashboard'a Dön →
+                Dashboard&apos;a Dön →
               </Link>
             ) : (
               <>
@@ -68,7 +68,7 @@ export default function LandingPage() {
             <div className="hero-text">
               <div className="trust-badge">
                 <span className="stars">★★★★★</span>
-                Türkiye'nin Yeni Nesil Poliçe Yönetim Sistemi
+                Türkiye&apos;nin Yeni Nesil Poliçe Yönetim Sistemi
               </div>
               <h1 className="hero-title">
                 Kurumsal Sigorta Süreçlerinizi <span>Tek Panelde</span> Toplayın
@@ -82,7 +82,7 @@ export default function LandingPage() {
                 </Link>
                 {user && (
                   <Link href="/dashboard" className="btn btn-secondary btn-lg" style={{ background: "transparent", border: "1px solid var(--border-medium)", color: "var(--text-secondary)" }}>
-                    Dashboard'a Git →
+                    Dashboard&apos;a Git →
                   </Link>
                 )}
               </div>
@@ -167,7 +167,7 @@ export default function LandingPage() {
               <div className="f-card">
                 <div className="f-icon">⚡</div>
                 <h3>Anlık Veri Aktarımı</h3>
-                <p>Poliçe PDF'lerinizi sisteme yüklediğiniz anda akıllı asistanımız tüm verileri (şirket, prim, vadeler, şartlar) saniyeler içinde ayrıştırır ve yapılandırır.</p>
+                <p>Poliçe PDF&apos;lerinizi sisteme yüklediğiniz anda akıllı asistanımız tüm verileri (şirket, prim, vadeler, şartlar) saniyeler içinde ayrıştırır ve yapılandırır.</p>
               </div>
               <div className="f-card">
                 <div className="f-icon">🔔</div>

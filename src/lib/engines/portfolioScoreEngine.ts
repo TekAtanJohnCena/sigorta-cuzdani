@@ -35,8 +35,8 @@ function daysFromNow(dateStr: string): number {
 // 1. Teminat Yeterliliği: Kaç tane "olması gereken" tipte poliçe var?
 function calcCoverageAdequacy(policies: Policy[]): number {
   const existingTypes = new Set(policies.filter(p => p.status === 'active').map(p => p.policyType));
-  const covered = BASELINE_REQUIRED_TYPES.filter(t => existingTypes.has(t as any)).length;
-  const recCovered = BASELINE_RECOMMENDED_TYPES.filter(t => existingTypes.has(t as any)).length;
+  const covered = BASELINE_REQUIRED_TYPES.filter(t => existingTypes.has(t as string)).length;
+  const recCovered = BASELINE_RECOMMENDED_TYPES.filter(t => existingTypes.has(t as string)).length;
   
   // Zorunlu tipler 70 puan, önerilen tipler 30 puan
   const requiredScore = (covered / BASELINE_REQUIRED_TYPES.length) * 70;

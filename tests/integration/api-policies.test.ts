@@ -19,14 +19,14 @@ import {
 
 // Mock Firebase modules
 jest.mock('firebase/firestore', () => ({
-  addDoc: (...args: any[]) => require('../mocks/firestore').mockAddDoc(...args),
-  getDoc: (...args: any[]) => require('../mocks/firestore').mockGetDoc(...args),
-  getDocs: (...args: any[]) => require('../mocks/firestore').mockGetDocs(...args),
-  collection: jest.fn((db: any, name: string) => ({
+  addDoc: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockAddDoc(...args),
+  getDoc: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockGetDoc(...args),
+  getDocs: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockGetDocs(...args),
+  collection: jest.fn((db: Record<string, unknown>, name: string) => ({
     _key: { path: { segments: [name] } },
   })),
-  query: jest.fn((collection: any, ...constraints: any[]) => ({
-    _query: { path: collection._key.path },
+  query: jest.fn((collection: Record<string, unknown>, ...constraints: Record<string, unknown>[]) => ({
+    _query: { path: (collection as any)._key.path },
     constraints,
   })),
   where: jest.fn(),
@@ -35,20 +35,20 @@ jest.mock('firebase/firestore', () => ({
   Timestamp: {
     now: () => ({ toDate: () => new Date() }),
   },
-  runTransaction: (...args: any[]) => require('../mocks/firestore').mockRunTransaction(...args),
-  writeBatch: (...args: any[]) => require('../mocks/firestore').mockWriteBatch(...args),
+  runTransaction: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockRunTransaction(...args),
+  writeBatch: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockWriteBatch(...args),
 }));
 
 jest.mock('firebase-admin/auth', () => ({
-  getAuth: (...args: any[]) => require('../mocks/firestore').mockGetAuth(...args),
+  getAuth: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockGetAuth(...args),
 }));
 
 jest.mock('firebase-admin/firestore', () => ({
-  getFirestore: (...args: any[]) => require('../mocks/firestore').mockGetFirestore(...args),
+  getFirestore: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockGetFirestore(...args),
 }));
 
 jest.mock('@/lib/firebase/adminApp', () => ({
-  getAdminApp: (...args: any[]) => require('../mocks/firestore').mockGetAdminApp(...args),
+  getAdminApp: (...args: Record<string, unknown>[]) => require('../mocks/firestore').mockGetAdminApp(...args),
 }));
 
 jest.mock('@/lib/firebase/config', () => ({

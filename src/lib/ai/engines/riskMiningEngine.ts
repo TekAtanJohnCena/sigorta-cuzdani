@@ -16,7 +16,6 @@ import type {
  */
 export const TURKISH_INSURANCE_RULES = {
   // Mandatory coverages by policy type (TSB regulations)
-  // @ts-ignore
   mandatoryCoverages: {
     kasko: [
       "Çarpma-Çarpışma-Devrilme",
@@ -65,7 +64,6 @@ export const TURKISH_INSURANCE_RULES = {
   ],
 
   // Deductible thresholds (excessive = claim barrier)
-  // @ts-ignore
   excessiveDeductible: {
     kasko: 0.05, // >5% of vehicle value
     yangin: 0.03, // >3% of property value

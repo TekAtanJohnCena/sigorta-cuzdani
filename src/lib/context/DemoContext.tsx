@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 
 interface DemoContextType {
   isDemoMode: boolean;
@@ -23,14 +23,14 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     if (saved === "true") setIsDemoModeState(true);
   }, []);
 
-  const setIsDemoMode = (val: boolean) => {
+  const setIsDemoMode = useCallback((val: boolean) => {
     setIsDemoModeState(val);
     if (val) {
       localStorage.setItem(DEMO_STORAGE_KEY, "true");
     } else {
       localStorage.removeItem(DEMO_STORAGE_KEY);
     }
-  };
+  }, []);
 
   return (
     <DemoContext.Provider value={{ isDemoMode, setIsDemoMode }}>

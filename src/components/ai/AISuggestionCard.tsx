@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { RiskAlert, RiskSeverity } from "@/lib/ai/types";
+import type { RiskAlert } from "@/lib/ai/types";
 
 interface AISuggestionCardProps {
   alert: RiskAlert;

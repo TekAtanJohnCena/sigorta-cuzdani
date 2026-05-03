@@ -10,7 +10,7 @@ import {
   SECTOR_DATA,
   SECTOR_OPTIONS,
   getMissingCoverages,
-  SectorKey,
+  type SectorKey,
   COVERAGE_DETAILS,
 } from "@/lib/data/sectorInsurance";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -100,8 +100,6 @@ export default function RiskGapsPage() {
     if (!companyProfile || !companyProfile.annualRevenue) return [];
     return analyzeLimitAdequacy(policies, companyProfile);
   }, [policies, companyProfile]);
-
-  const criticalLimitCount = limitWarnings.filter(w => w.severity === 'critical').length;
 
   if (authLoading || loading) {
     return (

@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { deletePolicy } from "@/lib/firebase/firestore";
 import {
-  Policy,
   PolicyType,
   PolicyStatus,
   POLICY_TYPE_LABELS,
@@ -94,7 +93,7 @@ export default function PoliciesPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Bu poliçeyi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
-    
+
     if (isDemoMode) {
       alert("Demo modunda poliçe silinemez.");
       return;
@@ -103,7 +102,7 @@ export default function PoliciesPage() {
     try {
       await deletePolicy(id);
       refetch(); // hook ile listeyi tazele
-    } catch (err) {
+    } catch {
       alert("Silme işlemi başarısız oldu.");
     }
   };
