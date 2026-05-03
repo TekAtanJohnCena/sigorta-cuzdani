@@ -327,13 +327,13 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                {stats.expiringPolicies.slice(0, 2).map((p: Record<string, unknown>) => (
-                  <div key={`exp-${p.id as string}`} style={{ padding: "12px", border: "1px solid var(--danger-200)", borderRadius: "8px", background: "var(--danger-50)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                {stats.expiringPolicies.slice(0, 2).map((p) => (
+                  <div key={`exp-${p.id}`} style={{ padding: "12px", border: "1px solid var(--danger-200)", borderRadius: "8px", background: "var(--danger-50)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <div>
-                      <div style={{ fontSize: "0.85rem", color: "var(--danger-700)", fontWeight: 700, marginBottom: "2px" }}>Yenileme Yaklaşıyor ({daysUntil(p.endDate as string)} gün)</div>
-                      <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{p.insuranceCompany as string} {POLICY_TYPE_LABELS[(p.policyType as string) as keyof typeof POLICY_TYPE_LABELS] || (p.policyType as string)}</div>
+                      <div style={{ fontSize: "0.85rem", color: "var(--danger-700)", fontWeight: 700, marginBottom: "2px" }}>Yenileme Yaklaşıyor ({daysUntil(p.endDate)} gün)</div>
+                      <div style={{ fontSize: "0.95rem", color: "var(--text-primary)", fontWeight: 600 }}>{p.insuranceCompany} {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS] || p.policyType}</div>
                     </div>
-                    <div style={{ fontSize: "0.9rem", color: "var(--text-tertiary)" }}>{formatDateShort(p.endDate as string)}</div>
+                    <div style={{ fontSize: "0.9rem", color: "var(--text-tertiary)" }}>{formatDateShort(p.endDate)}</div>
                   </div>
                 ))}
 
