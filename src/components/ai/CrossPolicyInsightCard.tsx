@@ -152,12 +152,6 @@ export function CrossPolicyInsightCard({ insight, onAction }: CrossPolicyInsight
             🔀 Dağıtımı İyileştir
           </button>
         )}
-        <button
-          onClick={() => onAction?.("view_details")}
-          className="btn btn-secondary btn-sm"
-        >
-          📊 Detayları Gör
-        </button>
       </div>
     </div>
   );
