@@ -4,7 +4,7 @@
 // Rastgele sayı üretilmez — her sonuç formüle dayanır.
 // ============================================
 
-import { Policy } from '@/types/policy';
+import { Policy, PolicyType } from '@/types/policy';
 
 export interface ScoreBreakdown {
   coverageAdequacy: number;   // Teminat çeşitliliği (0-100)
@@ -23,8 +23,8 @@ export interface PortfolioScore {
 }
 
 // Minimum olması önerilen poliçe tipleri (genel şirket için)
-const BASELINE_REQUIRED_TYPES = ['yangin', 'saglik', 'dask', 'sorumluluk'];
-const BASELINE_RECOMMENDED_TYPES = ['kasko', 'trafik', 'nakliyat', 'muhendislik', 'ferdi_kaza'];
+const BASELINE_REQUIRED_TYPES: PolicyType[] = ['yangin', 'saglik', 'dask', 'sorumluluk'];
+const BASELINE_RECOMMENDED_TYPES: PolicyType[] = ['kasko', 'trafik', 'nakliyat', 'muhendislik', 'ferdi_kaza'];
 
 function daysFromNow(dateStr: string): number {
   return Math.ceil(
@@ -35,8 +35,8 @@ function daysFromNow(dateStr: string): number {
 // 1. Teminat Yeterliliği: Kaç tane "olması gereken" tipte poliçe var?
 function calcCoverageAdequacy(policies: Policy[]): number {
   const existingTypes = new Set(policies.filter(p => p.status === 'active').map(p => p.policyType));
-  const covered = BASELINE_REQUIRED_TYPES.filter(t => existingTypes.has(t as string)).length;
-  const recCovered = BASELINE_RECOMMENDED_TYPES.filter(t => existingTypes.has(t as string)).length;
+  const covered = BASELINE_REQUIRED_TYPES.filter(t => existingTypes.has(t)).length;
+  const recCovered = BASELINE_RECOMMENDED_TYPES.filter(t => existingTypes.has(t)).length;
   
   // Zorunlu tipler 70 puan, önerilen tipler 30 puan
   const requiredScore = (covered / BASELINE_REQUIRED_TYPES.length) * 70;

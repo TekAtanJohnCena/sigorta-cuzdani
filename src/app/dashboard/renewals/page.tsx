@@ -6,7 +6,7 @@ import { useDemo } from "@/lib/context/DemoContext";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getPoliciesByTenant } from "@/lib/firebase/firestore";
 import { MOCK_POLICIES } from "@/lib/mockData";
-import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
+import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS, type Policy } from "@/types/policy";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort, daysUntil } from "@/lib/utils/date";
 import { TableSkeleton, CardSkeleton } from "@/components/SkeletonLoader";
@@ -21,7 +21,7 @@ function UrgencyBadge({ days }: { days: number }) {
 export default function RenewalsPage() {
   const { isDemoMode } = useDemo();
   const { appUser, loading: authLoading } = useAuth();
-  const [dbPolicies, setDbPolicies] = useState<Record<string, unknown>[]>([]);
+  const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export default function RenewalsPage() {
       if (!appUser) { setLoading(false); return; }
       try {
         const data = await getPoliciesByTenant(appUser.tenantId);
-        setDbPolicies(data as unknown as Record<string, unknown>[]);
+        setDbPolicies(data as unknown as Policy[]);
       } catch {
         console.error("Renewals: Failed to load policies");
       } finally {

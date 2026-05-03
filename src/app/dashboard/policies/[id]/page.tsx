@@ -492,13 +492,16 @@ export default function PolicyDetailPage({ params }: { params: Promise<{ id: str
                     <AISuggestionCard
                       key={alertItem.id}
                       alert={{
-                        ...alertItem,
-                        category: "exclusion",
+                        id: alertItem.id,
+                        title: alertItem.title,
+                        description: alertItem.description,
+                        severity: alertItem.severity,
+                        category: "exclusion" as const,
                         affectedCoverages: [],
                         regulatoryRisk: false,
                         remediationSteps: [],
                         confidenceScore: 0,
-                      } as Record<string, unknown>}
+                      }}
                       onAction={(actionType) => {
                         if (actionType === "contact_agent") {
                           window.alert("📞 Acentenizle paylaşım özelliği yakında aktif olacak.");

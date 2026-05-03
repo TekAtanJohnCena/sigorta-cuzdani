@@ -301,7 +301,7 @@ export default function EmreAdminPage() {
               ].map(f => (
                 <div key={f.key}>
                   <label style={{ display: "block", fontSize: "0.75rem", fontWeight: 600, color: "#94a3b8", marginBottom: 4 }}>{f.label}</label>
-                  <input type={f.type} placeholder={f.placeholder} value={(form as Record<string, unknown>)[f.key]} required
+                  <input type={f.type} placeholder={f.placeholder} value={String((form as Record<string, unknown>)[f.key] || '')} required
                     onChange={e => setForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                     style={{ width: "100%", background: "#0f172a", border: "1.5px solid #334155", borderRadius: 8, padding: "0.625rem 0.875rem", color: "white", fontSize: "0.875rem", outline: "none", boxSizing: "border-box" }} />
                 </div>

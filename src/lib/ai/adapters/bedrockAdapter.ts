@@ -13,6 +13,7 @@ import type {
   ExtractionResult,
   RiskAnalysisResult,
   PortfolioAnalysisResult,
+  PolicyType,
 } from "../types";
 import { AI_PRICING } from "../types";
 import { generateDomainContext } from "../context/insuranceRules";
@@ -43,10 +44,10 @@ export class BedrockAdapter implements AIAdapter {
         return this.extractPolicy(input as Buffer) as Promise<TOutput>;
 
       case "analyzePortfolio":
-        return this.analyzePortfolio(input as Record<string, unknown>) as Promise<TOutput>;
+        return this.analyzePortfolio(input as { policies: Record<string, unknown>[]; companyProfile: Record<string, unknown> }) as Promise<TOutput>;
 
       case "analyzeRisk":
-        return this.analyzeRisk(input as Record<string, unknown>) as Promise<TOutput>;
+        return this.analyzeRisk(input as { policyText: string; policyType: string }) as Promise<TOutput>;
 
       default:
         throw new Error(`Operation ${operation} not supported by BedrockAdapter`);
@@ -121,21 +122,22 @@ export class BedrockAdapter implements AIAdapter {
       baslangic: p.startDate,
       bitis: p.endDate,
       prim: p.premium,
-      teminatlar: p.coverages?.map((c: Record<string, unknown>) => ({
+      teminatlar: (p.coverages as Record<string, unknown>[] | undefined)?.map((c: Record<string, unknown>) => ({
         ad: c.name,
         limit: c.amount,
         paraBirimi: c.currency || "TRY",
         muafiyet: c.deductible,
-      })),
+      })) || [],
       durum: p.status,
     }));
 
     // Build company context
     let companyContext = "Şirket profili bilinmiyor.";
     if (companyProfile) {
+      const revenue = typeof companyProfile.annualRevenue === "number" ? companyProfile.annualRevenue.toLocaleString("tr-TR") + " TL" : "Bilinmiyor";
       companyContext = `Şirket Profili:
 - Sektör: ${companyProfile.sector || "Bilinmiyor"}
-- Yıllık Ciro: ${companyProfile.annualRevenue ? companyProfile.annualRevenue.toLocaleString("tr-TR") + " TL" : "Bilinmiyor"}
+- Yıllık Ciro: ${revenue}
 - Çalışan Sayısı: ${companyProfile.employeeCount || "Bilinmiyor"}`;
     }
 
@@ -178,7 +180,7 @@ JSON formatında döndür (SADECE JSON, açıklama yok).`,
     // Enrich with calculated fields
     return {
       ...parsed,
-      tenantId: input.policies[0]?.tenantId || "unknown",
+      tenantId: String(input.policies[0]?.tenantId || "unknown"),
       analyzedAt: new Date().toISOString(),
       policyCount: policies.length,
     };
@@ -244,7 +246,7 @@ JSON formatında döndür (SADECE JSON, açıklama yok).`,
    */
   estimateCost(tokensInput: number, tokensOutput: number): number {
     const pricing =
-      (AI_PRICING.bedrock as Record<string, unknown>)[MODEL_ID] ||
+      (AI_PRICING.bedrock as Record<string, { inputPer1kTokens: number; outputPer1kTokens: number }>)[MODEL_ID] ||
       AI_PRICING.bedrock["us.anthropic.claude-haiku-4-5-20251001-v1:0"];
 
     const inputCost = (tokensInput / 1000) * pricing.inputPer1kTokens;
@@ -257,9 +259,9 @@ JSON formatında döndür (SADECE JSON, açıklama yok).`,
   // System Prompts (Centralized)
   // ============================================
 
-  private getPolicyExtractionSystemPrompt(policyType?: string): string {
+  private getPolicyExtractionSystemPrompt(policyType?: PolicyType): string {
     // Inject domain-specific context based on detected policy type
-    const domainContext = policyType ? generateDomainContext(policyType as Record<string, unknown>) : "";
+    const domainContext = policyType ? generateDomainContext(policyType) : "";
 
     return `Sen bir Türk sigorta poliçesi analiz uzmanısın. Sana verilen poliçe metninden yapılandırılmış veri çıkaracaksın.
 
