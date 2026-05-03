@@ -104,7 +104,10 @@ export default function UploadPage() {
       errors.toplamPrim = "Toplam prim sıfırdan büyük olmalıdır";
     }
 
-    setValidationErrors(errors);
+    // TODO: Display validation errors in UI
+    if (Object.keys(errors).length > 0) {
+      console.warn("Validation errors:", errors);
+    }
     return Object.keys(errors).length === 0;
   };
 
