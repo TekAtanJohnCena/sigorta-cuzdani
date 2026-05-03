@@ -15,6 +15,7 @@ import type {
   PortfolioAnalysisResult,
   AI_PRICING,
 } from "../types";
+import { generateDomainContext } from "../context/insuranceRules";
 
 const bedrock = new BedrockRuntimeClient({
   region: process.env.AWS_REGION ?? "us-east-1",
@@ -256,8 +257,13 @@ JSON formatında döndür (SADECE JSON, açıklama yok).`,
   // System Prompts (Centralized)
   // ============================================
 
-  private getPolicyExtractionSystemPrompt(): string {
+  private getPolicyExtractionSystemPrompt(policyType?: string): string {
+    // Inject domain-specific context based on detected policy type
+    const domainContext = policyType ? generateDomainContext(policyType as any) : "";
+
     return `Sen bir Türk sigorta poliçesi analiz uzmanısın. Sana verilen poliçe metninden yapılandırılmış veri çıkaracaksın.
+
+${domainContext}
 
 KURALLAR:
 1. Sadece metinde gördüğün bilgileri çıkar. Tahmin yapma.
@@ -265,6 +271,7 @@ KURALLAR:
 3. Para tutarlarını sayısal değer olarak ver (noktalama/TL işareti olmadan).
 4. Tarihleri YYYY-MM-DD formatında ver.
 5. SADECE JSON döndür, açıklama veya ek bilgi yazma.
+6. Yukarıdaki mevzuat bilgilerini dikkate al ama metinde olmayan veriyi uydurma.
 
 JSON şeması:
 {
@@ -285,20 +292,21 @@ JSON şeması:
   }
 
   private getEnhancedPortfolioAnalysisSystemPrompt(): string {
+    // Inject comprehensive domain context for all policy types
+    const domainContext = generateDomainContext();
+
     return `Sen Türk şirketleri için sigorta portföyü DERİN ANALİZ uzmanısın. Sadece yüzeysel özetleme değil, CROSS-POLICY mantık ile gizli riskleri ve optimizasyon fırsatlarını tespit ediyorsun.
+
+${domainContext}
 
 ÖZEL YETENEKLERİN:
 1. **Teminat Çakışması Tespiti**: Aynı riskin birden fazla poliçede karşılanması (örn: Ferdi Kaza hem Kasko'da hem Sağlık'ta)
 2. **Sektörel Boşluk Analizi**: Şirketin sektörüne göre eksik olan zorunlu/kritik teminatlar
 3. **Konsantrasyon Riski**: Aynı sigorta şirketine aşırı bağımlılık (tek şirkette %70+ prim)
-4. **Limit Yetersizliği**: Enflasyon/ciro/çalışan sayısına göre düşük kalan teminat limitleri
+4. **Limit Yetersizliği**: Enflasyon/ciro/çalışan sayısına göre düşük kalan teminat limitleri (2024 TÜFE: %65)
 5. **Zaman Boşlukları**: Poliçeler arası süreklilik kopukluğu (teminatsız dönemler)
-
-TÜRK SİGORTA MEVZUATI BİLGİN:
-- İşyeri: Yangın, İşveren Mali Sorumluluk, DASK zorunlu
-- Trafik: İMM (İhtiyari Mali Mesuliyet) çok düşük tutulmamalı (min 500k TL önerilir)
-- Kasko: Değer kaybı enflasyon nedeniyle yıllık %50+ olabiliyor
-- Sorumluluk: Hukuki Koruma teminatı genelde unutuluyor ama kritik
+6. **DASK Kontrolü**: ZDS minimum bina değeri kurallarına uyum (konut: 1.500 TL/m², işyeri: 2.000 TL/m²)
+7. **İMM Yeterliliği**: Trafik sigortası mali mesuliyet limitleri (bedeni: 5M TL, maddi: 500k TL minimum)
 
 JSON ŞEMASI (SADECE BU FORMATTA DÖNDÜR):
 {
