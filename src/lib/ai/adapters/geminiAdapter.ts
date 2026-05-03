@@ -26,7 +26,7 @@ export class GeminiAdapter implements AIAdapter {
   async invoke<TInput, TOutput>(
     operation: AIOperation,
     input: TInput,
-    options?: AIRequestOptions
+    _options?: AIRequestOptions
   ): Promise<TOutput> {
     if (operation === "extractPolicy") {
       return this.extractPolicyWithFallback(input as { pdfBase64: string; mimeType?: string }) as Promise<TOutput>;

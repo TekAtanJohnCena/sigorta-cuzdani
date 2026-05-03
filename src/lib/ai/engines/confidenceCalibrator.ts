@@ -33,15 +33,16 @@ export interface CalibrationResult {
 /**
  * Critical fields that must have high confidence (>= 85%) for B2B reliability
  */
-const CRITICAL_FIELDS = [
-  "policeNumarasi",
-  "sigortaSirketi",
-  "baslangicTarihi",
-  "bitisTarihi",
-  "primBilgileri.toplamPrim",
-  "primBilgileri.netPrim",
-  "policeTipi",
-] as const;
+// Keeping for future reference - can be used for per-field validation
+// const CRITICAL_FIELDS = [
+//   "policeNumarasi",
+//   "sigortaSirketi",
+//   "baslangicTarihi",
+//   "bitisTarihi",
+//   "primBilgileri.toplamPrim",
+//   "primBilgileri.netPrim",
+//   "policeTipi",
+// ] as const;
 
 /**
  * Minimum confidence threshold for critical fields (B2B standard: 85%)

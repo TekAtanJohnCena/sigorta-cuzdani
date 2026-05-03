@@ -37,7 +37,7 @@ export class BedrockAdapter implements AIAdapter {
   async invoke<TInput, TOutput>(
     operation: AIOperation,
     input: TInput,
-    options?: AIRequestOptions
+    _options?: AIRequestOptions
   ): Promise<TOutput> {
     switch (operation) {
       case "extractPolicy":

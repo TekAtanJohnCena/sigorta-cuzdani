@@ -53,7 +53,6 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // Toast State
   const [toasts, setToasts] = useState<Array<{ id: number; message: string; type: ToastType }>>([]);
@@ -177,7 +176,7 @@ export default function UploadPage() {
         setError("Dosya geçerli bir PDF değil. Lütfen sigorta şirketinden gelen orijinal PDF'i yükleyin.");
         return;
       }
-    } catch (err) {
+    } catch {
       setError("Dosya okunamadı. Lütfen tekrar deneyin.");
       return;
     }

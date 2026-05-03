@@ -6,7 +6,6 @@
 
 import { Policy, PolicyType, POLICY_TYPE_LABELS } from '@/types/policy';
 import { CompanyProfile } from '@/types/companyProfile';
-import { SECTOR_DATA } from '@/lib/data/sectorInsurance';
 
 export interface LimitWarning {
   policyType: PolicyType;

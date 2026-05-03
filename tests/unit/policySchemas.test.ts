@@ -3,6 +3,8 @@
 // Coverage Target: 100% for validation logic
 // ============================================
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import {
   PolicyCreateSchema,
   PolicyPartySchema,

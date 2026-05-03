@@ -8,7 +8,6 @@ import type {
   RiskAnalysisResult,
   PolicyType,
   RiskSeverity,
-  RiskCategory,
 } from "../types";
 
 /**

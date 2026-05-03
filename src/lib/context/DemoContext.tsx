@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
 
 interface DemoContextType {
   isDemoMode: boolean;
@@ -15,13 +15,14 @@ const DemoContext = createContext<DemoContextType>({
 const DEMO_STORAGE_KEY = "sigorta_cuzdani_demo_mode";
 
 export function DemoProvider({ children }: { children: ReactNode }) {
-  const [isDemoMode, setIsDemoModeState] = useState(false);
-
-  // localStorage'dan ilk değeri oku
-  useEffect(() => {
-    const saved = localStorage.getItem(DEMO_STORAGE_KEY);
-    if (saved === "true") setIsDemoModeState(true);
-  }, []);
+  // localStorage'dan ilk değeri oku (initialization sırasında)
+  const [isDemoMode, setIsDemoModeState] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(DEMO_STORAGE_KEY);
+      return saved === "true";
+    }
+    return false;
+  });
 
   const setIsDemoMode = useCallback((val: boolean) => {
     setIsDemoModeState(val);

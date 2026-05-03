@@ -14,7 +14,6 @@ import {
   COVERAGE_DETAILS,
 } from "@/lib/data/sectorInsurance";
 import { formatCurrency } from "@/lib/utils/currency";
-import { calculatePortfolioScore } from "@/lib/engines/portfolioScoreEngine";
 import { analyzeLimitAdequacy, LimitWarning } from "@/lib/engines/limitBenchmarkEngine";
 import { getCompanyProfile } from "@/lib/firebase/firestore";
 import { CompanyProfile } from "@/types/companyProfile";
@@ -66,7 +65,6 @@ export default function RiskGapsPage() {
   const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
   const activePolicies = policies.filter(p => p.status === "active");
   const existingTypes = activePolicies.map(p => p.policyType as string);
-  const portfolioScore = calculatePortfolioScore(policies);
 
   const sector = SECTOR_DATA[selectedSector];
 
