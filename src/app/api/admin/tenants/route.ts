@@ -81,11 +81,11 @@ export async function POST(req: NextRequest) {
           data: { uid: userRecord.uid },
           timestamp: new Date().toISOString(),
         });
-      } catch (error: unknown) {
+      } catch (err: unknown) {
         return NextResponse.json(
           {
             success: false,
-            error: (error as Error).message,
+            error: (err as Error).message,
             timestamp: new Date().toISOString(),
           },
           { status: 400 }

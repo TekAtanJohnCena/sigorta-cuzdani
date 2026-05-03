@@ -1,5 +1,5 @@
 // Jest setup file - runs before each test suite
-require('@testing-library/jest-dom')
+import '@testing-library/jest-dom';
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_FIREBASE_API_KEY = 'mock-api-key'

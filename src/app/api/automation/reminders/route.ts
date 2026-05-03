@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createHmac, timingSafeEqual } from "crypto";
+import { timingSafeEqual } from "crypto";
 import { getAllPolicies, getUsersByTenant } from "@/lib/firebase/firestore";
 import { daysUntil, formatDateShort } from "@/lib/utils/date";
 import { sendEmail } from "@/lib/mail/mailer";
@@ -45,7 +45,7 @@ function verifyCronSecret(authHeader: string | null): boolean {
 
 export async function GET(req: Request) {
   // ─── Güvenlik Kontrolü ─────────────────────────────────
-  const authHeader = req.headers ? (req as any).headers?.get?.("authorization") : null;
+  const authHeader = req.headers instanceof Headers ? req.headers.get("authorization") : null;
   if (!verifyCronSecret(authHeader)) {
     logger.warn("Unauthorized cron access attempt", "automation/reminders");
     return NextResponse.json(
@@ -57,7 +57,7 @@ export async function GET(req: Request) {
   logger.info("Daily reminder task started", "automation/reminders");
 
   try {
-    const policies = await getAllPolicies() as any[];
+    const policies = await getAllPolicies() as Array<Record<string, unknown>>;
     const activePolicies = policies.filter((p) => p.status === "active");
 
     let sentCount = 0;

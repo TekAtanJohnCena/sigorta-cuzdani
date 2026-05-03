@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { getPoliciesByTenant, saveAnalysisResults, getCompanyProfile } from "@/lib/firebase/firestore";
-import { Policy, Coverage } from "@/types/policy";
+import { Policy } from "@/types/policy";
 import { aiService } from "@/lib/ai/aiService";
 import type { PortfolioAnalysisResult } from "@/lib/ai/types";
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Load company profile for enriched analysis
-    let companyProfile: any = null;
+    let companyProfile: Record<string, unknown> | null = null;
     try {
       companyProfile = await getCompanyProfile(tenantId);
     } catch (e) {
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Call aiService with enhanced portfolio analysis
     const response = await aiService.callAI<
-      { policies: Policy[]; companyProfile: any },
+      { policies: Policy[]; companyProfile: Record<string, unknown> | null },
       PortfolioAnalysisResult
     >({
       operation: "analyzePortfolio",

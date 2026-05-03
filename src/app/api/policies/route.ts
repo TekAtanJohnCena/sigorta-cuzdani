@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { savePolicyToFirestore, getPoliciesByTenantPaginated } from "@/lib/firebase/firestore";
 import { Policy, PolicyStatus } from "@/types/policy";
 import { logger } from "@/lib/logger";

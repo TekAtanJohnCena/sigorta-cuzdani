@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 
 // 1. confidenceCalibrator.ts
 let cc = fs.readFileSync('src/lib/ai/engines/confidenceCalibrator.ts', 'utf8');
@@ -51,3 +51,5 @@ aiS = aiS.replace(/BedrockAdapter/g, 'any'); // Just cast adapter to any in Map 
 fs.writeFileSync('src/lib/ai/aiService.ts', aiS);
 
 console.log("Done");
+
+export {};

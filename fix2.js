@@ -1,4 +1,4 @@
-const fs = require('fs');
+import fs from 'fs';
 
 let tsTest = fs.readFileSync('tests/integration/ai-service.test.ts', 'utf8');
 
@@ -22,3 +22,5 @@ tsTest = tsTest.replace(/bsmv: 0, thgf: 0, bsmv: 0, thgf: 0,/g, 'bsmv: 0, thgf: 
 
 fs.writeFileSync('tests/integration/ai-service.test.ts', tsTest);
 console.log("Done");
+
+export {};

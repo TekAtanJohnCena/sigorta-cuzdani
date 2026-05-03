@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { DemoProvider } from "@/lib/context/DemoContext";
 import RightPanel from "@/components/RightPanel";
@@ -66,8 +66,6 @@ function DashboardLayoutInner({
   const { appUser, logout } = useAuth();
   const { isDemoMode } = useDemo();
   const [criticalAlertCount, setCriticalAlertCount] = useState<number>(0);
-
-  const currentQ = searchParams.get("q") || "";
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;

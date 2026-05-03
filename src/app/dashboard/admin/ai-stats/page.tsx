@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { formatCurrency } from "@/lib/utils/currency";
 
 interface AIStatsData {
   totalCalls: number;

@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-import { formatCurrency } from "@/lib/utils/currency";
 import { POLICY_TYPE_LABELS, Policy } from "@/types/policy";
 import { daysUntil, formatDateShort } from "@/lib/utils/date";
 import Link from "next/link";

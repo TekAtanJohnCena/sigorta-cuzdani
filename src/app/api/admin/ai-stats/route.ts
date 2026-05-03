@@ -100,7 +100,6 @@ export const GET = withAuth(async (req: NextRequest, user) => {
     }));
 
     // Top detected risks (from risk analysis operations)
-    const riskMap = new Map<string, number>();
     // This would require parsing stored risk alerts from Firestore
     // For now, return placeholder data
     const topRisks = [
