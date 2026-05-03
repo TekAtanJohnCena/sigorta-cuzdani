@@ -6,7 +6,7 @@
 
 import type { Policy } from "@/types/policy";
 import type { CrossPolicyInsight, InsightPriority } from "@/lib/ai/types";
-import { logger } from "@/lib/utils/logger";
+import { logger } from "@/lib/logger";
 
 export interface AssetProtectionAnalysis {
   totalAssetValue: number;

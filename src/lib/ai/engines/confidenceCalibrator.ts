@@ -6,7 +6,7 @@
 
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import type { ExtractionResult } from "@/lib/ai/types";
-import { logger } from "@/lib/utils/logger";
+import { logger } from "@/lib/logger";
 
 const bedrock = new BedrockRuntimeClient({ region: process.env.AWS_REGION || "us-east-1" });
 const MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
