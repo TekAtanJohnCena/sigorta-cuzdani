@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { useDemo } from "@/lib/context/DemoContext";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { MOCK_POLICIES } from "@/lib/mockData";
 import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS, type Policy } from "@/types/policy";
 import { formatCurrency } from "@/lib/utils/currency";

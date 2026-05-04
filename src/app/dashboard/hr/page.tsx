@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { getEmployeesByTenant, addEmployee, updateEmployee } from "@/lib/firebase/employees";
 import { Policy, POLICY_TYPE_LABELS } from "@/types/policy";
 import { Employee, InsuranceStatus, INSURANCE_STATUS_LABELS, INSURANCE_STATUS_COLORS, INSURANCE_STATUS_ICONS } from "@/types/employee";

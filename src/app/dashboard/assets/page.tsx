@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { getAssetsByTenant, createAsset, deleteAsset } from "@/lib/firebase/assets";
 import { Policy, POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
 import { Asset, AssetCategory, ASSET_CATEGORY_LABELS, ASSET_CATEGORY_ICONS } from "@/types/asset";

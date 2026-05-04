@@ -3,10 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
-import {
-  getAllTenants, createTenant, updateTenant, deleteTenant
-} from "@/lib/firebase/firestore";
-import { doc, setDoc, getFirestore } from "firebase/firestore";
+import { doc, setDoc, getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
+
+const db = getFirestore();
 
 interface Tenant {
   id: string;
@@ -61,8 +60,9 @@ export default function EmreAdminPage() {
   const loadTenants = useCallback(async () => {
     setTenantsLoading(true);
     try {
-      const data = await getAllTenants();
-      setTenants(data as Tenant[]);
+      const snapshot = await getDocs(collection(db, "tenants"));
+      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Tenant[];
+      setTenants(data);
     } finally {
       setTenantsLoading(false);
     }
@@ -113,12 +113,21 @@ export default function EmreAdminPage() {
       });
 
       // 3. Create tenant record with expiry
-      await createTenant({
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + parseInt(form.durationDays));
+
+      await addDoc(collection(db, "tenants"), {
         companyName: form.companyName,
         email: form.email,
-        packageType: form.packageType as "demo" | "monthly" | "yearly",
+        packageType: form.packageType,
         durationDays: parseInt(form.durationDays),
         notes: form.notes,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        isActive: true,
+        createdAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
       });
 
       setFormSuccess(`✅ ${form.companyName} başarıyla eklendi. Giriş: ${form.email}`);
@@ -134,14 +143,18 @@ export default function EmreAdminPage() {
   async function handleExtend(tenant: Tenant, days: number) {
     const newEnd = new Date();
     newEnd.setDate(newEnd.getDate() + days);
-    await updateTenant(tenant.id, { endDate: newEnd.toISOString(), isActive: true });
+    await updateDoc(doc(db, "tenants", tenant.id), {
+      endDate: newEnd.toISOString(),
+      isActive: true,
+      updatedAt: Timestamp.now(),
+    });
     loadTenants();
     setEditTenant(null);
   }
 
   async function handleDelete(id: string, name: string) {
     if (!confirm(`"${name}" şirketini silmek istediğinize emin misiniz?`)) return;
-    await deleteTenant(id);
+    await deleteDoc(doc(db, "tenants", id));
     loadTenants();
   }
 

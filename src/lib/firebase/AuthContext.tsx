@@ -6,7 +6,7 @@ import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { auth } from "./config";
 import { useRouter, usePathname } from "next/navigation";
 import { AppUser } from "@/types/user";
-import { checkTenantExpiry } from "./firestore";
+import { checkTenantExpiry } from "./firestore.client";
 
 interface AuthContextType {
   user: User | null;

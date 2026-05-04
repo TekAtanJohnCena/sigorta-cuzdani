@@ -1,26 +1,20 @@
-import { db } from "./config";
-import {
-  collection,
-  addDoc,
-  getDocs,
-  getDoc,
-  doc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  DocumentSnapshot,
-  Timestamp,
-  setDoc,
-  runTransaction,
-  writeBatch,
-} from "firebase/firestore";
+// ============================================
+// SERVER-SIDE ONLY Firestore Operations
+// Uses Firebase Admin SDK — bypasses security rules
+// NEVER import this file in client components
+// ============================================
+
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
+import { getAdminApp } from "./adminApp";
+
+// Initialize Admin SDK
+const adminDb = getFirestore(getAdminApp());
 
 const POLICIES_COLLECTION = "policies";
 const PORTFOLIO_METADATA_COLLECTION = "portfolioMetadata";
+const INSIGHTS_COLLECTION = "insights";
+const TENANTS_COLLECTION = "tenants";
+const COMPANY_PROFILES_COLLECTION = "companyProfiles";
 
 // ============================================
 // TRANSACTIONAL POLICY CREATION
@@ -33,11 +27,11 @@ export async function savePolicyToFirestore(
   tenantId: string
 ) {
   // Simple version (no transaction) — kept for backward compatibility
-  const docRef = await addDoc(collection(db, POLICIES_COLLECTION), {
+  const docRef = await adminDb.collection(POLICIES_COLLECTION).add({
     ...policyData,
     tenantId,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
   return docRef.id;
 }
@@ -54,41 +48,38 @@ export async function savePolicyWithTransaction(
   policyData: Record<string, unknown>,
   tenantId: string
 ): Promise<string> {
-  return await runTransaction(db, async (transaction) => {
-    // Step 1: Create new policy document reference
-    const policyRef = doc(collection(db, POLICIES_COLLECTION));
+  const policyRef = adminDb.collection(POLICIES_COLLECTION).doc();
+  const metadataRef = adminDb.collection(PORTFOLIO_METADATA_COLLECTION).doc(tenantId);
 
-    const policyDoc = {
-      ...policyData,
-      tenantId,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now(),
-    };
-
-    // Step 2: Read current portfolio metadata
-    const metadataRef = doc(db, PORTFOLIO_METADATA_COLLECTION, tenantId);
+  await adminDb.runTransaction(async (transaction) => {
     const metadataSnap = await transaction.get(metadataRef);
 
-    const currentCount = metadataSnap.exists()
-      ? (metadataSnap.data().policyCount || 0)
+    const currentCount = metadataSnap.exists
+      ? (metadataSnap.data()?.policyCount || 0)
       : 0;
 
-    // Step 3: Write policy + update metadata atomically
-    transaction.set(policyRef, policyDoc);
+    // Step 1: Write policy
+    transaction.set(policyRef, {
+      ...policyData,
+      tenantId,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
 
+    // Step 2: Update metadata atomically
     transaction.set(
       metadataRef,
       {
         tenantId,
         policyCount: currentCount + 1,
-        lastPolicyAdded: Timestamp.now(),
-        lastUpdated: Timestamp.now(),
+        lastPolicyAdded: FieldValue.serverTimestamp(),
+        lastUpdated: FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
-
-    return policyRef.id;
   });
+
+  return policyRef.id;
 }
 
 /**
@@ -101,19 +92,18 @@ export async function savePolicyBatch(
   policyData: Record<string, unknown>,
   tenantId: string
 ): Promise<string> {
-  const batch = writeBatch(db);
-
-  const policyRef = doc(collection(db, POLICIES_COLLECTION));
+  const batch = adminDb.batch();
+  const policyRef = adminDb.collection(POLICIES_COLLECTION).doc();
 
   batch.set(policyRef, {
     ...policyData,
     tenantId,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
 
   // If you have other writes (e.g., update tenant stats), add them here
-  // batch.update(tenantStatsRef, { policyCount: increment(1) });
+  // batch.update(tenantStatsRef, { policyCount: FieldValue.increment(1) });
 
   await batch.commit();
 
@@ -124,25 +114,26 @@ export async function savePolicyBatch(
 interface PolicyDocument {
   id: string;
   tenantId?: string;
-  createdAt?: Timestamp | string | number;
-  updatedAt?: Timestamp | string | number;
+  createdAt?: FirebaseFirestore.Timestamp | string | number;
+  updatedAt?: FirebaseFirestore.Timestamp | string | number;
   [key: string]: unknown;
 }
 
 export async function getPoliciesByTenant(tenantId: string): Promise<PolicyDocument[]> {
-  const q = query(
-    collection(db, POLICIES_COLLECTION),
-    where("tenantId", "==", tenantId)
-  );
-  const snap = await getDocs(q);
+  const snapshot = await adminDb
+    .collection(POLICIES_COLLECTION)
+    .where("tenantId", "==", tenantId)
+    .get();
+
   // Sort on client side to avoid requiring a composite index in Firestore
-  const docs: PolicyDocument[] = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const docs: PolicyDocument[] = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
   return docs.sort((a: PolicyDocument, b: PolicyDocument) => {
-    const aDate = a.createdAt instanceof Timestamp
-      ? a.createdAt.toDate()
+    const aDate = a.createdAt instanceof Object && 'toDate' in a.createdAt
+      ? (a.createdAt as FirebaseFirestore.Timestamp).toDate()
       : new Date(a.createdAt || 0);
-    const bDate = b.createdAt instanceof Timestamp
-      ? b.createdAt.toDate()
+    const bDate = b.createdAt instanceof Object && 'toDate' in b.createdAt
+      ? (b.createdAt as FirebaseFirestore.Timestamp).toDate()
       : new Date(b.createdAt || 0);
     return bDate.getTime() - aDate.getTime();
   });
@@ -156,7 +147,7 @@ export async function getPoliciesByTenant(tenantId: string): Promise<PolicyDocum
 export interface PaginatedPoliciesResult {
   policies: Record<string, unknown>[];
   /** Sonraki sayfa için cursor — null ise son sayfadayız */
-  nextCursor: DocumentSnapshot | null;
+  nextCursor: FirebaseFirestore.DocumentSnapshot | null;
   /** Bu sayfada dönen kayıt sayısı */
   count: number;
   /** Daha fazla kayıt var mı? */
@@ -174,25 +165,27 @@ export interface PaginatedPoliciesResult {
  */
 export async function getPoliciesByTenantPaginated(
   tenantId: string,
-  options: { pageSize?: number; cursor?: DocumentSnapshot | null } = {}
+  options: { pageSize?: number; cursor?: FirebaseFirestore.DocumentSnapshot | null } = {}
 ): Promise<PaginatedPoliciesResult> {
   const { pageSize = 25, cursor = null } = options;
 
   // pageSize + 1 çekerek hasMore'u hesaplıyoruz (ekstra sorgu yok)
   const fetchSize = pageSize + 1;
 
-  const constraints = [
-    where("tenantId", "==", tenantId),
-    orderBy("createdAt", "desc"),
-    limit(fetchSize),
-    ...(cursor ? [startAfter(cursor)] : []),
-  ];
+  let query = adminDb
+    .collection(POLICIES_COLLECTION)
+    .where("tenantId", "==", tenantId)
+    .orderBy("createdAt", "desc")
+    .limit(fetchSize);
 
-  const q = query(collection(db, POLICIES_COLLECTION), ...constraints);
-  const snap = await getDocs(q);
+  if (cursor) {
+    query = query.startAfter(cursor);
+  }
 
-  const hasMore = snap.docs.length > pageSize;
-  const docs = snap.docs.slice(0, pageSize);
+  const snapshot = await query.get();
+
+  const hasMore = snapshot.docs.length > pageSize;
+  const docs = snapshot.docs.slice(0, pageSize);
 
   return {
     policies: docs.map((d) => ({ id: d.id, ...d.data() })),
@@ -206,31 +199,32 @@ export async function getPoliciesByTenantPaginated(
  * Fetch all policies (for global automation tasks)
  */
 export async function getAllPolicies() {
-  const snap = await getDocs(collection(db, POLICIES_COLLECTION));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snapshot = await adminDb.collection(POLICIES_COLLECTION).get();
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 /**
  * Fetch all users belonging to a tenant
  */
 export async function getUsersByTenant(tenantId: string) {
-  const q = query(
-    collection(db, "users"),
-    where("tenantId", "==", tenantId)
-  );
-  const snap = await getDocs(q);
-  return snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  const snapshot = await adminDb
+    .collection("users")
+    .where("tenantId", "==", tenantId)
+    .get();
+  return snapshot.docs.map(d => ({ uid: d.id, ...d.data() }));
 }
 
 export async function getPolicyById(id: string, tenantId?: string) {
-  const snap = await getDoc(doc(db, POLICIES_COLLECTION, id));
-  if (!snap.exists()) return null;
+  const docRef = adminDb.collection(POLICIES_COLLECTION).doc(id);
+  const snap = await docRef.get();
+
+  if (!snap.exists) return null;
 
   const data = snap.data();
 
   // G-02: Tenant izolasyonu — eşleşmezse erişimi engelle
-  if (tenantId && data.tenantId !== tenantId) {
-    console.warn(`[SECURITY] Cross-tenant access blocked: requested=${tenantId}, actual=${data.tenantId}, policyId=${id}`);
+  if (tenantId && data?.tenantId !== tenantId) {
+    console.warn(`[SECURITY] Cross-tenant access blocked: requested=${tenantId}, actual=${data?.tenantId}, policyId=${id}`);
     return null;
   }
 
@@ -241,61 +235,64 @@ export async function updatePolicy(
   id: string,
   data: Record<string, unknown>
 ) {
-  await updateDoc(doc(db, POLICIES_COLLECTION, id), {
+  await adminDb.collection(POLICIES_COLLECTION).doc(id).update({
     ...data,
-    updatedAt: Timestamp.now(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
 }
 
 export async function deletePolicy(id: string, tenantId?: string) {
+  const docRef = adminDb.collection(POLICIES_COLLECTION).doc(id);
+
   // G-03: Önce dokümanı oku, tenant eşleşmesini doğrula
   if (tenantId) {
-    const snap = await getDoc(doc(db, POLICIES_COLLECTION, id));
-    if (!snap.exists()) {
+    const snap = await docRef.get();
+    if (!snap.exists) {
       throw new Error(`Poliçe bulunamadı: ${id}`);
     }
-    if (snap.data().tenantId !== tenantId) {
-      console.error(`[SECURITY] Unauthorized delete attempt: requested=${tenantId}, actual=${snap.data().tenantId}, policyId=${id}`);
+    if (snap.data()?.tenantId !== tenantId) {
+      console.error(`[SECURITY] Unauthorized delete attempt: requested=${tenantId}, actual=${snap.data()?.tenantId}, policyId=${id}`);
       throw new Error("Bu poliçeyi silme yetkiniz yok.");
     }
   }
-  await deleteDoc(doc(db, POLICIES_COLLECTION, id));
+  await docRef.delete();
 }
 
-// AI Insights Persistence
-const INSIGHTS_COLLECTION = "insights";
+// ============================================
+// AI INSIGHTS PERSISTENCE (Server-side Admin SDK)
+// Client-side write kapalı — sadece API route'larından yazılabilir
+// ============================================
 
 export async function saveAnalysisResults(
   tenantId: string,
   analysisData: Record<string, unknown>
 ): Promise<void> {
   // Use tenantId as doc ID to keep only the latest one per tenant (or we could use addDoc for history)
-  await setDoc(doc(db, INSIGHTS_COLLECTION, tenantId), {
+  await adminDb.collection(INSIGHTS_COLLECTION).doc(tenantId).set({
     ...analysisData,
     tenantId,
-    createdAt: Timestamp.now(),
+    createdAt: FieldValue.serverTimestamp(),
   });
 }
 
 export async function getLastAnalysisByTenant(tenantId: string) {
-  const snap = await getDoc(doc(db, INSIGHTS_COLLECTION, tenantId));
-  if (!snap.exists()) return null;
+  const snap = await adminDb.collection(INSIGHTS_COLLECTION).doc(tenantId).get();
+  if (!snap.exists) return null;
   return snap.data();
 }
 
 // ============================================
 // Tenant Management (for Super Admin /emre)
 // ============================================
-const TENANTS_COLLECTION = "tenants";
 
 export async function getAllTenants() {
-  const snap = await getDocs(collection(db, TENANTS_COLLECTION));
-  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  const snapshot = await adminDb.collection(TENANTS_COLLECTION).get();
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
 export async function getTenantById(tenantId: string) {
-  const snap = await getDoc(doc(db, TENANTS_COLLECTION, tenantId));
-  if (!snap.exists()) return null;
+  const snap = await adminDb.collection(TENANTS_COLLECTION).doc(tenantId).get();
+  if (!snap.exists) return null;
   return { id: snap.id, ...snap.data() };
 }
 
@@ -310,34 +307,34 @@ export async function createTenant(data: {
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + data.durationDays);
 
-  const docRef = await addDoc(collection(db, TENANTS_COLLECTION), {
+  const docRef = await adminDb.collection(TENANTS_COLLECTION).add({
     ...data,
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
     isActive: true,
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
   return docRef.id;
 }
 
 export async function updateTenant(id: string, data: Record<string, unknown>) {
-  await updateDoc(doc(db, TENANTS_COLLECTION, id), {
+  await adminDb.collection(TENANTS_COLLECTION).doc(id).update({
     ...data,
-    updatedAt: Timestamp.now(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
 }
 
 export async function deleteTenant(id: string) {
-  await deleteDoc(doc(db, TENANTS_COLLECTION, id));
+  await adminDb.collection(TENANTS_COLLECTION).doc(id).delete();
 }
 
 export async function checkTenantExpiry(tenantId: string): Promise<{ expired: boolean; endDate?: string }> {
   try {
-    const snap = await getDoc(doc(db, TENANTS_COLLECTION, tenantId));
-    if (!snap.exists()) return { expired: false }; // No record = old/admin user, allow access
+    const snap = await adminDb.collection(TENANTS_COLLECTION).doc(tenantId).get();
+    if (!snap.exists) return { expired: false }; // No record = old/admin user, allow access
     const data = snap.data();
-    if (!data.endDate) return { expired: false };
+    if (!data?.endDate) return { expired: false };
     const endDate = new Date(data.endDate);
     const now = new Date();
     return { expired: now > endDate, endDate: data.endDate };
@@ -351,21 +348,20 @@ export async function checkTenantExpiry(tenantId: string): Promise<{ expired: bo
 // Company Profile (Şirket Profili)
 // Limit Benchmarking & AI Analiz Zenginleştirme
 // ============================================
-const COMPANY_PROFILES_COLLECTION = "companyProfiles";
 
 export async function saveCompanyProfile(
   tenantId: string,
   profile: { sector: string; annualRevenue: number; employeeCount: number }
 ) {
-  await setDoc(doc(db, COMPANY_PROFILES_COLLECTION, tenantId), {
+  await adminDb.collection(COMPANY_PROFILES_COLLECTION).doc(tenantId).set({
     ...profile,
     tenantId,
-    updatedAt: Timestamp.now(),
+    updatedAt: FieldValue.serverTimestamp(),
   });
 }
 
 export async function getCompanyProfile(tenantId: string) {
-  const snap = await getDoc(doc(db, COMPANY_PROFILES_COLLECTION, tenantId));
-  if (!snap.exists()) return null;
+  const snap = await adminDb.collection(COMPANY_PROFILES_COLLECTION).doc(tenantId).get();
+  if (!snap.exists) return null;
   return snap.data() as { sector: string; annualRevenue: number; employeeCount: number; tenantId: string };
 }

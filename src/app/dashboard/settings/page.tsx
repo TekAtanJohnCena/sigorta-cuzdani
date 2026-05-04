@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
-import { saveCompanyProfile, getCompanyProfile } from "@/lib/firebase/firestore";
+import { saveCompanyProfile, getCompanyProfile } from "@/lib/firebase/firestore.client";
 import { SECTOR_OPTIONS, SectorKey } from "@/lib/data/sectorInsurance";
 
 export default function SettingsPage() {

@@ -7,7 +7,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { Policy } from "@/types/policy";
 
 // ─── Return Type ────────────────────────────────────────────────────────────

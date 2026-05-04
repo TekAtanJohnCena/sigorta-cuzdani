@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { deletePolicy } from "@/lib/firebase/firestore";
+import { deletePolicy } from "@/lib/firebase/firestore.client";
 import {
   PolicyType,
   PolicyStatus,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
-import { getPolicyById, deletePolicy } from "@/lib/firebase/firestore";
+import { getPolicyById, deletePolicy } from "@/lib/firebase/firestore.client";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
 import { MOCK_POLICIES } from "@/lib/mockData";

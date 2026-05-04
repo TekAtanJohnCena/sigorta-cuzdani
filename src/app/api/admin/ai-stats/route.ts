@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/firebase/withAuth";
-import { db } from "@/lib/firebase/adminDb";
+import { getFirestore } from "firebase-admin/firestore";
+import { getAdminApp } from "@/lib/firebase/adminApp";
 
 /**
  * GET /api/admin/ai-stats
@@ -20,16 +21,7 @@ export const GET = withAuth(async (req: NextRequest, user) => {
   }
 
   try {
-    if (!db) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Firebase konfigürasyonu eksik",
-        },
-        { status: 500 }
-      );
-    }
-
+    const db = getFirestore(getAdminApp());
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 

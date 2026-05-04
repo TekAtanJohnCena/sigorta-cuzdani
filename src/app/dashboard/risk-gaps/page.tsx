@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { Policy, POLICY_TYPE_LABELS } from "@/types/policy";
 import { useDemo } from "@/lib/context/DemoContext";
 import { MOCK_POLICIES } from "@/lib/mockData";
@@ -15,7 +15,7 @@ import {
 } from "@/lib/data/sectorInsurance";
 import { formatCurrency } from "@/lib/utils/currency";
 import { analyzeLimitAdequacy, LimitWarning } from "@/lib/engines/limitBenchmarkEngine";
-import { getCompanyProfile } from "@/lib/firebase/firestore";
+import { getCompanyProfile } from "@/lib/firebase/firestore.client";
 import { CompanyProfile } from "@/types/companyProfile";
 import Link from "next/link";
 

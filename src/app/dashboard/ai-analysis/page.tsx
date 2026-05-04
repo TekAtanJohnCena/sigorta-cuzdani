@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { formatCurrency } from "@/lib/utils/currency";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useDemo } from "@/lib/context/DemoContext";
-import { getLastAnalysisByTenant } from "@/lib/firebase/firestore";
+import { getLastAnalysisByTenant } from "@/lib/firebase/firestore.client";
 import type { AIAnalysisResult } from "@/lib/mockData";
 import { InsuranceHealthScore } from "@/components/ai/InsuranceHealthScore";
 import { CrossPolicyInsightCard } from "@/components/ai/CrossPolicyInsightCard";

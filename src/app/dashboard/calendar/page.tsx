@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { Policy } from "@/types/policy";
 import { CalendarEvent } from "@/types/finance";
 import { getMonthName, getDaysInMonth, getFirstDayOfMonth, formatDateShort } from "@/lib/utils/date";

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore";
+import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { Policy } from "@/types/policy";
 import { formatDateShort, getRelativeTime, daysUntil } from "@/lib/utils/date";
 import { useDemo } from "@/lib/context/DemoContext";
