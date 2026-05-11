@@ -28,7 +28,8 @@
     "nodemailer": "^8.0.5",
     "pdf-parse": "^1.1.1",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@edge-runtime/jest-environment": "^4.0.0",

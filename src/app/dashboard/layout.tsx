@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { DemoProvider } from "@/lib/context/DemoContext";
 import RightPanel from "@/components/RightPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { NotificationBell } from "@/components/notifications";
+import { OnboardingBanner } from "@/components/OnboardingBanner";
 import { useDemo } from "@/lib/context/DemoContext";
 
 interface NavItem {
@@ -205,9 +207,7 @@ function DashboardLayoutInner({
             </div>
 
             <div className="main-header-right">
-              <Link href="/dashboard/alerts" className="notification-bell" id="notifications-btn" style={{ textDecoration: 'none' }}>
-                🔔
-              </Link>
+              <NotificationBell />
               <Link href="/dashboard/upload" className="btn btn-primary btn-sm" id="upload-btn" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
                 📤 Belge Yükle
               </Link>
@@ -215,7 +215,10 @@ function DashboardLayoutInner({
           </header>
 
           <div className="main-with-panel">
-            <main className="main-body">{children}</main>
+            <main className="main-body">
+              <OnboardingBanner />
+              {children}
+            </main>
             <Suspense fallback={null}>
               <RightPanel />
             </Suspense>

@@ -3,7 +3,7 @@
    Premium B2B Insurance Dashboard
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 /* ============================================
    CSS Custom Properties (Design Tokens)
@@ -163,6 +163,16 @@
   --z-modal: 400;
   --z-toast: 500;
   --z-tooltip: 600;
+
+  /* ============================================
+     Landing Page Premium Tokens
+     ============================================ */
+  --font-display: 'Plus Jakarta Sans', var(--font-sans);
+  --landing-max-width: 1280px;
+  --landing-hero-gradient: linear-gradient(135deg, #0C1650 0%, #1E2D99 40%, #2A3FBF 100%);
+  --landing-glow-primary: rgba(59, 85, 230, 0.15);
+  --landing-glow-accent: rgba(20, 184, 166, 0.12);
+  --landing-card-border: rgba(226, 232, 240, 0.6);
 }
 
 /* ============================================
@@ -377,6 +387,21 @@ ul, ol {
 @keyframes progress-stripe {
   0% { background-position: 1rem 0; }
   100% { background-position: 0 0; }
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.05); }
+}
+
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Animation utility classes */

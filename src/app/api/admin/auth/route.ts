@@ -53,6 +53,22 @@ function recordFailedAttempt(ip: string) {
   }
 }
 
+/**
+ * Timing-safe string karşılaştırması.
+ * timingSafeEqual farklı uzunluklarda RangeError fırlatır,
+ * bu wrapper farklı uzunlukta input'larda da güvenli şekilde false döner.
+ */
+function safeCompare(input: string, expected: string): boolean {
+  const inputBuf = Buffer.from(input);
+  const expectedBuf = Buffer.from(expected);
+  if (inputBuf.length !== expectedBuf.length) {
+    // Farklı uzunluk → false, ama timing leak'i önlemek için dummy karşılaştırma
+    timingSafeEqual(expectedBuf, expectedBuf);
+    return false;
+  }
+  return timingSafeEqual(inputBuf, expectedBuf);
+}
+
 function createToken(username: string): string {
   const secret = process.env.ADMIN_TOKEN_SECRET || process.env.ADMIN_PASSWORD || "fallback-secret";
   const payload = `${TOKEN_VERSION}:${username}:${Date.now()}`;
@@ -122,14 +138,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Timing-safe string karşılaştırması (timing attack koruması)
-    const usernameMatch = timingSafeEqual(
-      Buffer.from(username || ""),
-      Buffer.from(adminUsername)
-    );
-    const passwordMatch = timingSafeEqual(
-      Buffer.from(password || ""),
-      Buffer.from(adminPassword)
-    );
+    // NOT: timingSafeEqual farklı uzunlukta buffer'larda RangeError fırlatır.
+    // safeCompare() bu durumu handle eder.
+    const usernameMatch = safeCompare(username || "", adminUsername);
+    const passwordMatch = safeCompare(password || "", adminPassword);
 
     if (!usernameMatch || !passwordMatch) {
       recordFailedAttempt(ip);

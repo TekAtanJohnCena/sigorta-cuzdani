@@ -12,7 +12,14 @@
       "Bash(cat)",
       "Bash(node /tmp/fix_tests.js)",
       "Bash(node *)",
-      "Bash(firebase deploy *)"
+      "Bash(firebase deploy *)",
+      "Bash(xargs grep -l \"collection\\\\|database\\\\|query\\\\|Firestore\")",
+      "Bash(mkdir -p \"C:/Users/Emre ERCAN/Desktop/sigorta-cuzdani/src/lib/engines/notificationEngine/channels\")",
+      "Bash(mkdir -p \"C:/Users/Emre ERCAN/Desktop/sigorta-cuzdani/src/lib/engines/notificationEngine/templates\")",
+      "Bash(npx next *)",
+      "Bash(curl *)",
+      "Bash(npm uninstall *)",
+      "Bash(gsutil cors *)"
     ]
   }
 }

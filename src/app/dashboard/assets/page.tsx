@@ -8,6 +8,7 @@ import { getAssetsByTenant, createAsset, deleteAsset } from "@/lib/firebase/asse
 import { Policy, POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
 import { Asset, AssetCategory, ASSET_CATEGORY_LABELS, ASSET_CATEGORY_ICONS } from "@/types/asset";
 import { analyzeAssetPortfolio } from "@/lib/engines/assetMatchEngine";
+import { BulkImportModal } from "@/components/assets/BulkImportModal";
 import { formatCurrency } from "@/lib/utils/currency";
 
 export default function AssetsPage() {
@@ -330,31 +331,12 @@ export default function AssetsPage() {
 
       {/* Excel Import Modal (Placeholder) */}
       {showImportModal && (
-        <div className="modal-backdrop" onClick={() => setShowImportModal(false)}>
-          <div className="modal" style={{ maxWidth: 520, width: "100%" }} onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">📥 Excel&apos;den İçe Aktar</div>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowImportModal(false)}>✕</button>
-            </div>
-            <div className="modal-body" style={{ textAlign: "center", padding: "var(--space-6) 0" }}>
-              <div style={{ fontSize: 48, marginBottom: "var(--space-4)" }}>📊</div>
-              <h3 style={{ fontWeight: 700, fontSize: "var(--text-lg)", marginBottom: "var(--space-2)" }}>Verilerinizi Tek Tıkla Aktarın</h3>
-              <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", marginBottom: "var(--space-6)", padding: "0 var(--space-4)" }}>
-                Araç filonuzu, bina ve cihaz kayıtlarınızı excel şablonumuza uygun olarak hazırlayıp buraya yükleyebilirsiniz.
-              </p>
-              
-              <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", padding: "0 var(--space-8)" }}>
-                <button className="btn btn-secondary">
-                  📄 Şablonu İndir (.xlsx)
-                </button>
-                <div style={{ border: "2px dashed var(--neutral-300)", borderRadius: "var(--radius-lg)", padding: "var(--space-8)", background: "var(--neutral-50)", cursor: "pointer" }}>
-                  <div style={{ color: "var(--primary-600)", fontWeight: 600 }}>Dosya Seçin veya Sürükleyin</div>
-                  <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginTop: 4 }}>Desteklenen formatlar: .xlsx, .csv</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <BulkImportModal
+          tenantId={appUser?.tenantId || "tenant-001"}
+          companyId={appUser?.tenantId || "tenant-001"}
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => { setShowImportModal(false); window.location.reload(); }}
+        />
       )}
     </div>
   );

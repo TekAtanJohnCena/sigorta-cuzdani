@@ -6,7 +6,6 @@ import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { auth } from "./config";
 import { useRouter, usePathname } from "next/navigation";
 import { AppUser } from "@/types/user";
-import { checkTenantExpiry } from "./firestore.client";
 
 interface AuthContextType {
   user: User | null;
@@ -60,8 +59,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             };
           }
           
-          // Check tenant subscription expiry
-          const expiryResult = await checkTenantExpiry(fetchedAppUser.tenantId);
+          // Check tenant subscription expiry (Server-Side to bypass Firestore rules safely)
+          const token = await currentUser.getIdToken();
+          const expiryRes = await fetch("/api/auth/check-expiry", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
+          });
+          
+          let expiryResult = { expired: true }; // Fail-closed default
+          if (expiryRes.ok) {
+            expiryResult = await expiryRes.json();
+          }
+
           if (expiryResult.expired) {
             await signOut(auth);
             setUser(null);

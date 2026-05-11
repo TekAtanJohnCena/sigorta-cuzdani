@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase/config";
-import { doc, setDoc, getFirestore, collection, getDocs, addDoc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 
-const db = getFirestore();
+// ─── NOT ──────────────────────────────────────────────────────────────────────
+// createUserWithEmailAndPassword KALDIRILDI (Sorun 5):
+//   - Otomatik sign-in yapıyordu → admin session bozuluyordu
+//   - Client-side'dan çağrılabilir → güvenlik açığı
+// Tüm tenant CRUD işlemleri artık /api/admin/tenants API'si üzerinden yapılıyor.
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface Tenant {
   id: string;
@@ -35,6 +37,20 @@ function daysLeft(endDate: string) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
+/** Token'ı sessionStorage'dan al */
+function getToken(): string {
+  if (typeof window === "undefined") return "";
+  return sessionStorage.getItem("emre_admin_token") || "";
+}
+
+/** Admin API istekleri için standart headers */
+function adminHeaders(): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    "x-admin-token": getToken(),
+  };
+}
+
 export default function EmreAdminPage() {
   const [authed, setAuthed] = useState(false);
   const [username, setUsername] = useState("");
@@ -57,12 +73,21 @@ export default function EmreAdminPage() {
   const [editTenant, setEditTenant] = useState<Tenant | null>(null);
   const [editDays, setEditDays] = useState("30");
 
+  // ── API: Tenant listesini çek (Sorun 7: artık server-side Admin SDK ile)
   const loadTenants = useCallback(async () => {
     setTenantsLoading(true);
     try {
-      const snapshot = await getDocs(collection(db, "tenants"));
-      const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as Tenant[];
-      setTenants(data);
+      const res = await fetch("/api/admin/tenants", {
+        headers: adminHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setTenants(data.data as Tenant[]);
+      } else {
+        console.error("Tenant yükleme hatası:", data.error);
+      }
+    } catch (err) {
+      console.error("loadTenants:", err);
     } finally {
       setTenantsLoading(false);
     }
@@ -73,6 +98,7 @@ export default function EmreAdminPage() {
     if (stored) { setAuthed(true); loadTenants(); }
   }, [loadTenants]);
 
+  // ── LOGIN (Sorun 4: Cookie + sessionStorage)
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoginLoading(true); setLoginError("");
@@ -85,6 +111,8 @@ export default function EmreAdminPage() {
       const data = await res.json();
       if (data.success) {
         sessionStorage.setItem("emre_admin_token", data.token);
+        // Cookie set — proxy/middleware token'ı görebilsin (Sorun 4)
+        document.cookie = `admin_token=${data.token}; path=/; max-age=14400; SameSite=Strict`;
         setAuthed(true);
         loadTenants();
       } else {
@@ -97,65 +125,82 @@ export default function EmreAdminPage() {
     }
   }
 
+  // ── LOGOUT
+  function handleLogout() {
+    sessionStorage.removeItem("emre_admin_token");
+    document.cookie = "admin_token=; path=/; max-age=0";
+    setAuthed(false);
+  }
+
+  // ── YENİ TENANT EKLE (Sorun 5 & 7: tamamen server-side, Admin SDK)
   async function handleAddTenant(e: React.FormEvent) {
     e.preventDefault();
     setFormError(""); setFormSuccess(""); setFormLoading(true);
     try {
-      // 1. Create Firebase Auth user
-      const cred = await createUserWithEmailAndPassword(auth, form.email, form.password);
-      const uid = cred.user.uid;
-
-      // 2. Create users doc
-      const db = getFirestore();
-      await setDoc(doc(db, "users", uid), {
-        uid, email: form.email, name: form.companyName,
-        role: "admin", tenantId: uid, createdAt: new Date().toISOString(),
+      const res = await fetch("/api/admin/tenants", {
+        method: "POST",
+        headers: adminHeaders(),
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          companyName: form.companyName,
+          packageType: form.packageType,
+          durationDays: parseInt(form.durationDays),
+          notes: form.notes,
+        }),
       });
-
-      // 3. Create tenant record with expiry
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setDate(endDate.getDate() + parseInt(form.durationDays));
-
-      await addDoc(collection(db, "tenants"), {
-        companyName: form.companyName,
-        email: form.email,
-        packageType: form.packageType,
-        durationDays: parseInt(form.durationDays),
-        notes: form.notes,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        isActive: true,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-      });
-
-      setFormSuccess(`✅ ${form.companyName} başarıyla eklendi. Giriş: ${form.email}`);
-      setForm({ companyName: "", email: "", password: "", packageType: "demo", durationDays: "7", notes: "" });
-      loadTenants();
-    } catch (err: unknown) {
-      setFormError((err as Error).message || "Hata oluştu.");
+      const data = await res.json();
+      if (data.success) {
+        setFormSuccess(`✅ ${form.companyName} başarıyla eklendi. Giriş: ${form.email}`);
+        setForm({ companyName: "", email: "", password: "", packageType: "demo", durationDays: "7", notes: "" });
+        loadTenants();
+      } else {
+        setFormError(data.error || "Hata oluştu.");
+      }
+    } catch {
+      setFormError("Sunucu hatası.");
     } finally {
       setFormLoading(false);
     }
   }
 
+  // ── SÜRE UZAT (Sorun 7: server-side API)
   async function handleExtend(tenant: Tenant, days: number) {
-    const newEnd = new Date();
-    newEnd.setDate(newEnd.getDate() + days);
-    await updateDoc(doc(db, "tenants", tenant.id), {
-      endDate: newEnd.toISOString(),
-      isActive: true,
-      updatedAt: Timestamp.now(),
-    });
-    loadTenants();
-    setEditTenant(null);
+    try {
+      const res = await fetch("/api/admin/tenants", {
+        method: "PUT",
+        headers: adminHeaders(),
+        body: JSON.stringify({ tenantId: tenant.id, durationDays: days }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadTenants();
+        setEditTenant(null);
+      } else {
+        alert("Hata: " + data.error);
+      }
+    } catch {
+      alert("Sunucu hatası.");
+    }
   }
 
+  // ── TENANT SİL (Sorun 7: server-side API)
   async function handleDelete(id: string, name: string) {
     if (!confirm(`"${name}" şirketini silmek istediğinize emin misiniz?`)) return;
-    await deleteDoc(doc(db, "tenants", id));
-    loadTenants();
+    try {
+      const res = await fetch(`/api/admin/tenants?tenantId=${id}`, {
+        method: "DELETE",
+        headers: adminHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        loadTenants();
+      } else {
+        alert("Hata: " + data.error);
+      }
+    } catch {
+      alert("Sunucu hatası.");
+    }
   }
 
   // ── LOGIN SCREEN ──
@@ -207,7 +252,7 @@ export default function EmreAdminPage() {
           </div>
         </div>
         <button
-          onClick={() => { sessionStorage.removeItem("emre_admin_token"); setAuthed(false); }}
+          onClick={handleLogout}
           style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 8, padding: "0.5rem 1rem", cursor: "pointer", fontSize: "0.875rem" }}>
           Çıkış Yap
         </button>

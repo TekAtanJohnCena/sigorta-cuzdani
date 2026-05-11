@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
 import { getClaimsByTenant, createClaim } from "@/lib/firebase/claims";
 import { Policy, POLICY_TYPE_LABELS, POLICY_TYPE_ICONS } from "@/types/policy";
-import { Claim, ClaimStatus, CLAIM_STATUS_LABELS, CLAIM_STATUS_COLORS, CLAIM_STATUS_ICONS, CLAIM_STATUS_ORDER } from "@/types/claim";
+import { Claim, ClaimStatus, CLAIM_STATUS_LABELS, CLAIM_STATUS_COLORS, CLAIM_STATUS_ICONS, CLAIM_STATUS_ORDER, VALID_CLAIM_TRANSITIONS } from "@/types/claim";
 import { useDemo } from "@/lib/context/DemoContext";
 import { CLAIM_REQUIREMENTS, DEFAULT_CLAIM_INFO } from "@/lib/data/claimRequirements";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -26,6 +26,13 @@ export default function ClaimsPage() {
   const [description, setDescription] = useState("");
   const [estimatedAmount, setEstimatedAmount] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // Detail & Upload state
+  const [detailClaim, setDetailClaim] = useState<Claim | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMsg, setUploadMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [transitioningId, setTransitioningId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     async function load() {
@@ -119,6 +126,67 @@ export default function ClaimsPage() {
     }
   }
 
+  async function handleTransition(claimId: string, targetStatus: ClaimStatus) {
+    setTransitioningId(claimId);
+
+    if (isDemoMode) {
+      setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: targetStatus } : c));
+      setTransitioningId(null);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/claims", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ claimId, action: "transition", targetStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: targetStatus } : c));
+      } else {
+        console.error("Claim transition failed:", data.error);
+        setUploadMsg({ type: "error", text: data.error?.message || "Durum degistirilemedi" });
+      }
+    } catch (err) {
+      console.error("Claim transition error:", err);
+      setUploadMsg({ type: "error", text: "Baglanti hatasi. Lutfen tekrar deneyin." });
+    } finally {
+      setTransitioningId(null);
+    }
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !detailClaim) return;
+
+    setUploading(true);
+    setUploadMsg(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("claimId", detailClaim.id);
+    formData.append("tenantId", appUser?.tenantId || "tenant-001");
+
+    try {
+      const res = await fetch("/api/claims", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (data.success) {
+        setUploadMsg({ type: "success", text: `"${data.data.fileName}" basariyla yuklendi.` });
+      } else {
+        console.error("Upload failed:", data.error);
+        setUploadMsg({ type: "error", text: data.error?.message || "Dosya yuklenemedi" });
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      setUploadMsg({ type: "error", text: "Baglanti hatasi. Lutfen tekrar deneyin." });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   if (authLoading || loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
@@ -192,7 +260,7 @@ export default function ClaimsPage() {
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
                   {statusClaims.map(claim => (
-                    <div key={claim.id} className="card" style={{ padding: "var(--space-4)", cursor: "default", borderLeft: `3px solid ${CLAIM_STATUS_COLORS[claim.status]}` }}>
+                    <div key={claim.id} className="card" style={{ padding: "var(--space-4)", cursor: "pointer", borderLeft: `3px solid ${CLAIM_STATUS_COLORS[claim.status]}`, opacity: transitioningId === claim.id ? 0.6 : 1, transition: "opacity 0.2s" }} onClick={() => setDetailClaim(claim)}>
                       <div style={{ fontSize: "1.2rem", marginBottom: "var(--space-2)" }}>
                         {POLICY_TYPE_ICONS[claim.policyType as keyof typeof POLICY_TYPE_ICONS] || "📋"}
                       </div>
@@ -216,6 +284,21 @@ export default function ClaimsPage() {
                       <div style={{ fontSize: 10, color: "var(--text-tertiary)", marginTop: "var(--space-2)" }}>
                         {formatDateShort(claim.claimDate)}
                       </div>
+                      {/* Status transition buttons */}
+                      {VALID_CLAIM_TRANSITIONS[claim.status]?.length > 0 && (
+                        <div style={{ display: "flex", gap: 4, marginTop: "var(--space-2)", flexWrap: "wrap" }} onClick={e => e.stopPropagation()}>
+                          {VALID_CLAIM_TRANSITIONS[claim.status].map(next => (
+                            <button
+                              key={next}
+                              disabled={transitioningId === claim.id}
+                              onClick={() => handleTransition(claim.id, next)}
+                              style={{ fontSize: 10, padding: "2px 8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-light)", background: "var(--bg-secondary)", cursor: transitioningId === claim.id ? "wait" : "pointer", color: "var(--text-secondary)", fontWeight: 600 }}
+                            >
+                              {transitioningId === claim.id ? "..." : `→ ${CLAIM_STATUS_LABELS[next]}`}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                   {statusClaims.length === 0 && (
@@ -231,6 +314,113 @@ export default function ClaimsPage() {
       )}
 
       {/* Yeni Hasar Modal */}
+      {/* Toast Message */}
+      {uploadMsg && (
+        <div style={{ position: "fixed", bottom: 24, right: 24, zIndex: 600, padding: "14px 20px", borderRadius: "var(--radius-md)", background: uploadMsg.type === "success" ? "var(--success-600)" : "var(--danger-600)", color: "white", fontWeight: 600, fontSize: 13, boxShadow: "0 8px 24px rgba(0,0,0,0.3)", display: "flex", alignItems: "center", gap: 10, maxWidth: 360 }}>
+          <span>{uploadMsg.type === "success" ? "✅" : "❌"}</span>
+          <span>{uploadMsg.text}</span>
+          <button onClick={() => setUploadMsg(null)} style={{ background: "none", border: "none", color: "white", cursor: "pointer", fontSize: 16, marginLeft: 8 }}>✕</button>
+        </div>
+      )}
+
+      {/* Claim Detail Modal */}
+      {detailClaim && (
+        <div className="modal-backdrop" onClick={() => { setDetailClaim(null); setUploadMsg(null); }}>
+          <div className="modal" style={{ maxWidth: 560, width: "100%" }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">
+                {CLAIM_STATUS_ICONS[detailClaim.status]} Hasar Detayi
+              </div>
+              <button className="btn btn-ghost btn-icon" onClick={() => { setDetailClaim(null); setUploadMsg(null); }}>✕</button>
+            </div>
+            <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-3)" }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 2 }}>Police</div>
+                  <div style={{ fontWeight: 700, fontSize: "var(--text-sm)" }}>{detailClaim.insuranceCompany}</div>
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>{detailClaim.policyNumber}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 2 }}>Durum</div>
+                  <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 99, fontSize: 12, fontWeight: 700, background: CLAIM_STATUS_COLORS[detailClaim.status], color: "white" }}>
+                    {CLAIM_STATUS_LABELS[detailClaim.status]}
+                  </span>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 2 }}>Olay Tarihi</div>
+                  <div style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>{formatDateShort(detailClaim.incidentDate)}</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 2 }}>Tahmini Tutar</div>
+                  <div style={{ fontWeight: 700, fontSize: "var(--text-sm)" }}>{detailClaim.estimatedAmount ? formatCurrency(detailClaim.estimatedAmount) : "—"}</div>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: 4 }}>Aciklama</div>
+                <p style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>{detailClaim.description}</p>
+              </div>
+
+              {/* File Upload Section */}
+              <div style={{ background: "var(--bg-secondary)", borderRadius: "var(--radius-md)", padding: "var(--space-4)", border: "1px solid var(--border-light)" }}>
+                <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", marginBottom: "var(--space-3)" }}>📎 Belge Yukle</div>
+                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp"
+                    onChange={handleFileUpload}
+                    style={{ display: "none" }}
+                    disabled={uploading}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    style={{
+                      padding: "8px 16px", borderRadius: "var(--radius-md)",
+                      border: "1px dashed var(--primary-300)", background: "var(--primary-50)",
+                      color: "var(--primary-700)", fontWeight: 600, fontSize: 13,
+                      cursor: uploading ? "wait" : "pointer",
+                    }}
+                  >
+                    {uploading ? "Yukleniyor..." : "📄 Dosya Sec (PDF/JPG)"}
+                  </button>
+                  <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>Maks. 10MB</span>
+                </div>
+                {uploading && (
+                  <div style={{ marginTop: "var(--space-2)", height: 4, borderRadius: 2, background: "var(--neutral-200)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: "60%", background: "var(--primary-500)", borderRadius: 2, animation: "pulse-glow 1s ease-in-out infinite" }} />
+                  </div>
+                )}
+              </div>
+
+              {/* Status Transitions */}
+              {VALID_CLAIM_TRANSITIONS[detailClaim.status]?.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginBottom: "var(--space-2)" }}>Durum Degistir:</div>
+                  <div style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
+                    {VALID_CLAIM_TRANSITIONS[detailClaim.status].map(next => (
+                      <button
+                        key={next}
+                        disabled={transitioningId === detailClaim.id}
+                        onClick={() => {
+                          handleTransition(detailClaim.id, next);
+                          setDetailClaim({ ...detailClaim, status: next });
+                        }}
+                        className="btn btn-secondary btn-sm"
+                        style={{ fontSize: 12 }}
+                      >
+                        {transitioningId === detailClaim.id ? "..." : `→ ${CLAIM_STATUS_LABELS[next]}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showNewModal && (
         <div className="modal-backdrop" onClick={() => setShowNewModal(false)}>
           <div className="modal" style={{ maxWidth: 640, width: "100%" }} onClick={e => e.stopPropagation()}>

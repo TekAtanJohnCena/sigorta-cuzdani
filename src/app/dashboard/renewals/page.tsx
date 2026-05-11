@@ -1,251 +1,76 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import Link from "next/link";
-import { useDemo } from "@/lib/context/DemoContext";
-import { useAuth } from "@/lib/firebase/AuthContext";
-import { getPoliciesByTenant } from "@/lib/firebase/firestore.client";
-import { MOCK_POLICIES } from "@/lib/mockData";
-import { POLICY_TYPE_LABELS, POLICY_TYPE_ICONS, type Policy } from "@/types/policy";
-import { formatCurrency } from "@/lib/utils/currency";
-import { formatDateShort, daysUntil } from "@/lib/utils/date";
-import { TableSkeleton, CardSkeleton } from "@/components/SkeletonLoader";
-
-function UrgencyBadge({ days }: { days: number }) {
-  if (days < 0) return <span style={{ background: "#450a0a", color: "#fca5a5", borderRadius: 99, padding: "3px 10px", fontSize: "0.75rem", fontWeight: 700 }}>Süresi Doldu</span>;
-  if (days <= 7) return <span style={{ background: "#450a0a", color: "#fca5a5", borderRadius: 99, padding: "3px 10px", fontSize: "0.75rem", fontWeight: 700 }}>🚨 {days} gün</span>;
-  if (days <= 30) return <span style={{ background: "#451a03", color: "#fdba74", borderRadius: 99, padding: "3px 10px", fontSize: "0.75rem", fontWeight: 700 }}>⚠️ {days} gün</span>;
-  return <span style={{ background: "#052e16", color: "#86efac", borderRadius: 99, padding: "3px 10px", fontSize: "0.75rem", fontWeight: 700 }}>✅ {days} gün</span>;
-}
-
 export default function RenewalsPage() {
-  const { isDemoMode } = useDemo();
-  const { appUser, loading: authLoading } = useAuth();
-  const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function load() {
-      if (isDemoMode) { setLoading(false); return; }
-      if (!appUser) { setLoading(false); return; }
-      try {
-        const data = await getPoliciesByTenant(appUser.tenantId);
-        setDbPolicies(data as unknown as Policy[]);
-      } catch {
-        console.error("Renewals: Failed to load policies");
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (!authLoading) load();
-  }, [appUser, authLoading, isDemoMode]);
-
-  const policies = isDemoMode ? MOCK_POLICIES : dbPolicies;
-
-  const renewalPolicies = useMemo(() => {
-    return policies
-      .filter(p => p.status === "active")
-      .map(p => ({ ...p, daysLeft: daysUntil(p.endDate) }))
-      .filter(p => p.daysLeft <= 90)
-      .sort((a, b) => a.daysLeft - b.daysLeft);
-  }, [policies]);
-
-  const allActivePolicies = useMemo(() => {
-    return policies
-      .filter(p => p.status === "active")
-      .map(p => ({ ...p, daysLeft: daysUntil(p.endDate) }))
-      .sort((a, b) => a.daysLeft - b.daysLeft);
-  }, [policies]);
-
-  if (authLoading || loading) {
-    return (
-      <div>
-        <div style={{ marginBottom: "var(--space-8)" }}>
-          <h1 className="page-title">🎯 Teklif & Yenileme Merkezi</h1>
-          <p className="page-subtitle">Yeni poliçe satın alın veya vadesi yaklaşan poliçelerinizi en iyi tekliflerle yenileyin.</p>
-        </div>
-        <div className="card" style={{ padding: "var(--space-6)", marginBottom: "var(--space-6)" }}>
-          <CardSkeleton />
-        </div>
-        <div className="card" style={{ padding: "var(--space-6)" }}>
-          <TableSkeleton rows={5} />
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      {/* Header */}
-      <div style={{ marginBottom: "var(--space-8)" }}>
-        <h1 className="page-title">🎯 Teklif & Yenileme Merkezi</h1>
-        <p className="page-subtitle">Yeni poliçe satın alın veya vadesi yaklaşan poliçelerinizi en iyi tekliflerle yenileyin.</p>
-      </div>
-
-      {/* Yeni Poliçe Al / Ürünler Grid */}
-      <div style={{ marginBottom: "var(--space-8)" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-4)" }}>
-          <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--text-primary)" }}>✨ Yeni Poliçe Teklifi Alın</h2>
-          <span style={{ fontSize: "var(--text-sm)", color: "var(--primary-600)", fontWeight: 600, cursor: "pointer" }}>Tüm Ürünleri Gör →</span>
-        </div>
-        
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", 
-          gap: "var(--space-4)" 
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "70vh" }}>
+      <div style={{ textAlign: "center", maxWidth: 520, padding: "var(--space-8)" }}>
+        {/* Animated Icon */}
+        <div style={{
+          width: 100, height: 100, borderRadius: "var(--radius-full)",
+          background: "linear-gradient(135deg, var(--primary-500), #7c3aed)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto var(--space-6)", fontSize: 44,
+          boxShadow: "0 20px 60px rgba(59, 85, 230, 0.3)",
+          animation: "pulse-glow 3s ease-in-out infinite",
         }}>
-          {/* Araç Sigortaları */}
-          <Link href="/dashboard/renewals/quote-engine?policyType=kasko" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none", position: "relative" }}>
-            <div style={{ position: "absolute", top: -8, right: -8, background: "var(--warning-500)", color: "white", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 99 }}>POPÜLER</div>
-            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🚗</div>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Kasko</div>
-          </Link>
-          
-          <Link href="/dashboard/renewals/quote-engine?policyType=trafik" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none" }}>
-            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🚥</div>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Trafik Sigortası</div>
-          </Link>
-
-          {/* Sağlık Sigortaları */}
-          <Link href="/dashboard/renewals/quote-engine?policyType=saglik" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none", position: "relative" }}>
-            <div style={{ position: "absolute", top: -8, right: -8, background: "var(--success-500)", color: "white", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 99 }}>YENİ</div>
-            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>⚕️</div>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Kurumsal Sağlık</div>
-          </Link>
-
-          {/* İşyeri ve Sorumluluk */}
-          <Link href="/dashboard/renewals/quote-engine?policyType=isyeri" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none" }}>
-            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🏢</div>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>İşyeri Sigortası</div>
-          </Link>
-
-          <Link href="/dashboard/renewals/quote-engine?policyType=sorumluluk" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none" }}>
-            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>⚖️</div>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--text-primary)" }}>Sorumluluk</div>
-          </Link>
-
-          <Link href="/dashboard/renewals/quote-engine?policyType=diger" className="card card-hover" style={{ padding: "var(--space-4)", textAlign: "center", textDecoration: "none", background: "var(--primary-50)", border: "1px dashed var(--primary-300)" }}>
-            <div style={{ fontSize: 36, marginBottom: "var(--space-2)" }}>🔍</div>
-            <div style={{ fontWeight: 700, fontSize: "var(--text-sm)", color: "var(--primary-700)" }}>Diğer Branşlar</div>
-          </Link>
-        </div>
-      </div>
-
-      {/* Savings Banner */}
-      <div style={{
-        background: "linear-gradient(135deg, var(--primary-600) 0%, #7c3aed 100%)",
-        borderRadius: "var(--radius-xl)", padding: "var(--space-6)", marginBottom: "var(--space-8)",
-        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "var(--space-4)"
-      }}>
-        <div>
-          <div style={{ fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.7)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 4 }}>Platformumuzun Etkisi</div>
-          <div style={{ fontSize: "var(--text-2xl)", fontWeight: 900, color: "white" }}>Ortalama %15 Prim Tasarrufu</div>
-          <div style={{ color: "rgba(255,255,255,0.8)", fontSize: "var(--text-sm)", marginTop: 4 }}>Platformumuzdaki şirketler yenileme döneminde piyasa karşılaştırması sayesinde ortalama %15 tasarruf ediyor.</div>
-        </div>
-        <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: "var(--radius-lg)", padding: "var(--space-4) var(--space-6)", textAlign: "center" }}>
-          <div style={{ fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.7)", fontWeight: 700, marginBottom: 4 }}>Yapay Zeka Destekli</div>
-          <div style={{ fontSize: "var(--text-xl)", fontWeight: 900, color: "white" }}>15 Şirket</div>
-          <div style={{ fontSize: "var(--text-xs)", color: "rgba(255,255,255,0.7)" }}>anlık karşılaştırma</div>
-        </div>
-      </div>
-
-      {/* Expiring Soon */}
-      <div className="card" style={{ marginBottom: "var(--space-8)" }}>
-        <div className="card-header">
-          <div className="card-title">⏰ 90 Gün İçinde Vadesini Dolduracak Poliçeler</div>
-          <span style={{ fontSize: "var(--text-xs)", background: "var(--danger-50)", color: "var(--danger-700)", padding: "2px 10px", borderRadius: 99, fontWeight: 700 }}>
-            {renewalPolicies.length} poliçe
-          </span>
+          🚀
         </div>
 
-        {renewalPolicies.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "var(--space-10)", color: "var(--text-tertiary)" }}>
-            <div style={{ fontSize: 48, marginBottom: "var(--space-3)" }}>🎉</div>
-            <div style={{ fontWeight: 600 }}>Önümüzdeki 90 gün içinde vadeye girecek poliçeniz yok.</div>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            {renewalPolicies.map(p => (
-              <div key={p.id} style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "var(--space-3)",
-                padding: "var(--space-4) var(--space-5)",
-                border: `1px solid ${p.daysLeft <= 7 ? "var(--danger-200)" : p.daysLeft <= 30 ? "var(--warning-200)" : "var(--border-light)"}`,
-                borderRadius: "var(--radius-lg)",
-                background: p.daysLeft <= 7 ? "var(--danger-50)" : p.daysLeft <= 30 ? "var(--warning-50)" : "var(--bg-secondary)",
-              }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-4)" }}>
-                  <div style={{ fontSize: 28 }}>{POLICY_TYPE_ICONS[p.policyType as keyof typeof POLICY_TYPE_ICONS]}</div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>
-                      {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS]} — {p.insuranceCompany}
-                    </div>
-                    <div style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)", marginTop: 2 }}>
-                      {p.policyNumber} · Bitiş: {formatDateShort(p.endDate)}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)", flexWrap: "wrap" }}>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 800, fontSize: "var(--text-lg)" }}>{formatCurrency(p.premium.totalPremium)}</div>
-                    <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>Mevcut yıllık prim</div>
-                  </div>
-                  <UrgencyBadge days={p.daysLeft} />
-                  <Link
-                    href={`/dashboard/renewals/quote-engine?policyId=${p.id}&policyType=${p.policyType}&currentPremium=${p.premium.totalPremium}&company=${encodeURIComponent(p.insuranceCompany)}`}
-                    style={{
-                      background: "linear-gradient(135deg, var(--primary-500), #7c3aed)",
-                      color: "white", borderRadius: "var(--radius-md)", padding: "var(--space-2) var(--space-5)",
-                      fontWeight: 700, fontSize: "var(--text-sm)", textDecoration: "none", whiteSpace: "nowrap"
-                    }}>
-                    🔍 Piyasadan Teklif Topla
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        {/* Title */}
+        <h1 style={{
+          fontSize: "var(--text-2xl)", fontWeight: 900,
+          background: "linear-gradient(135deg, var(--primary-600), #7c3aed)",
+          WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+          marginBottom: "var(--space-3)",
+        }}>
+          Teklif & Yenileme Motoru
+        </h1>
 
-      {/* All Active Policies */}
-      <div className="card">
-        <div className="card-header">
-          <div className="card-title">📋 Tüm Aktif Poliçeler</div>
+        <p style={{
+          fontSize: "var(--text-base)", color: "var(--text-secondary)",
+          lineHeight: 1.7, marginBottom: "var(--space-6)",
+        }}>
+          Yapay zeka destekli otomatik teklif toplama motorumuz gelistirme asamasindadir.
+          Poliçe vadeleriniz yaklastiginda piyasadaki en uygun teklifleri otomatik olarak
+          toplayip karsilastiracak.
+        </p>
+
+        {/* Features */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)",
+          marginBottom: "var(--space-8)", textAlign: "left",
+        }}>
+          {[
+            { icon: "🤖", text: "AI Destekli Piyasa Taramasi" },
+            { icon: "⚖️", text: "Otomatik Teklif Karsilastirma" },
+            { icon: "📊", text: "Teminat Baz Analizi" },
+            { icon: "🔔", text: "Vade Hatirlatma Entegrasyonu" },
+          ].map((f, i) => (
+            <div key={i} style={{
+              display: "flex", alignItems: "center", gap: "var(--space-3)",
+              padding: "var(--space-3) var(--space-4)",
+              background: "var(--bg-secondary)", borderRadius: "var(--radius-md)",
+              border: "1px solid var(--border-light)",
+            }}>
+              <span style={{ fontSize: 20 }}>{f.icon}</span>
+              <span style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-primary)" }}>{f.text}</span>
+            </div>
+          ))}
         </div>
-        <div style={{ overflowX: "auto" }}>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Poliçe Tipi</th>
-                <th>Sigorta Şirketi</th>
-                <th>Yıllık Prim</th>
-                <th>Vade Bitişi</th>
-                <th>Kalan Süre</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {allActivePolicies.map(p => (
-                <tr key={p.id}>
-                  <td>
-                    <span style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
-                      {POLICY_TYPE_ICONS[p.policyType as keyof typeof POLICY_TYPE_ICONS]} {POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS]}
-                    </span>
-                  </td>
-                  <td style={{ color: "var(--text-secondary)" }}>{p.insuranceCompany}</td>
-                  <td style={{ fontWeight: 700, fontFamily: "var(--font-mono)" }}>{formatCurrency(p.premium.totalPremium)}</td>
-                  <td style={{ color: "var(--text-secondary)" }}>{formatDateShort(p.endDate)}</td>
-                  <td><UrgencyBadge days={p.daysLeft} /></td>
-                  <td>
-                    <Link
-                      href={`/dashboard/renewals/quote-engine?policyId=${p.id}&policyType=${p.policyType}&currentPremium=${p.premium.totalPremium}&company=${encodeURIComponent(p.insuranceCompany)}`}
-                      style={{ color: "var(--primary-600)", fontWeight: 600, fontSize: "var(--text-sm)", textDecoration: "none" }}>
-                      Teklif Al →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        {/* Badge */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: "var(--space-2)",
+          padding: "var(--space-2) var(--space-5)",
+          background: "var(--primary-50)", border: "1px solid var(--primary-200)",
+          borderRadius: "var(--radius-full)", fontSize: "var(--text-sm)",
+          color: "var(--primary-700)", fontWeight: 700,
+        }}>
+          <span style={{
+            width: 8, height: 8, borderRadius: "50%",
+            background: "var(--primary-500)", animation: "pulse-glow 2s ease-in-out infinite",
+          }} />
+          Gelistirme Asamasinda — Yakin Zamanda Aktif
         </div>
       </div>
     </div>
