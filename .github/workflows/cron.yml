@@ -1,0 +1,15 @@
+name: Daily Expiry Check
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger expiry check
+        run: |
+          curl -X GET https://sigortacuzdani.net/api/notifications/check-expiry \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
