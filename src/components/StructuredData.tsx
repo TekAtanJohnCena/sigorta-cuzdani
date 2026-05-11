@@ -8,11 +8,6 @@ interface FAQItem {
   answer: string;
 }
 
-interface StructuredDataProps {
-  type?: 'Organization' | 'WebSite' | 'FAQPage' | 'BreadcrumbList';
-  data?: Record<string, unknown>;
-}
-
 export function OrganizationStructuredData() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://sigortacuzdani.net';
 

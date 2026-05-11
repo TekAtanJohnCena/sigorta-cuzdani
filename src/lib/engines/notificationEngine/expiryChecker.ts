@@ -29,7 +29,7 @@ function shouldNotify(daysLeft: number): boolean {
 
 export async function checkPolicyExpiries(
   tenantId: string,
-  companyId: string
+  _companyId: string
 ): Promise<ExpiryCheckResult[]> {
   logger.info('Checking policy expiries', 'ExpiryChecker', { tenantId });
 

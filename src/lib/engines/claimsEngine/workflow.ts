@@ -1,5 +1,4 @@
 import { ClaimStatus, VALID_CLAIM_TRANSITIONS, CLAIM_SLA_DAYS, ClaimSLA } from '@/types/claim';
-import { logger } from '@/lib/logger';
 
 export class ClaimWorkflowError extends Error {
   constructor(message: string, public code: string) {

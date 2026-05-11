@@ -1,5 +1,4 @@
 import { NotificationCategory, NotificationPriority, NotificationChannel } from '@/types/notification';
-import { PolicyType } from '@/types/policy';
 import { sendInAppNotification } from './channels/inApp';
 import { sendEmailNotification } from './channels/email';
 import { sendSmsNotification } from './channels/sms';

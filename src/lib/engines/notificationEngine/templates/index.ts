@@ -47,7 +47,6 @@ export function getClaimUpdateTemplate(payload: Record<string, unknown>): {
   body: string;
   actionUrl?: string;
 } {
-  const claimId = payload.claimId as string || '';
   const newStatus = payload.newStatus as string || '';
   const policyNumber = payload.policyNumber as string || '';
 

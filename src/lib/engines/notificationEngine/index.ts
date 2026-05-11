@@ -1,9 +1,9 @@
 import { checkPolicyExpiries } from './expiryChecker';
-import { processTrigger, TriggerEvent } from './triggers';
+import { processTrigger } from './triggers';
 import { logger } from '@/lib/logger';
 
 export { checkPolicyExpiries } from './expiryChecker';
-export { processTrigger, type TriggerEvent } from './triggers';
+export { processTrigger } from './triggers';
 
 export async function runScheduledExpiryCheck(tenantId: string, companyId: string): Promise<number> {
   logger.info(`Running scheduled expiry check`, 'NotificationEngine', { tenantId });

@@ -94,8 +94,8 @@ export async function getCompanyProfile(tenantId: string) {
  * Note: Will fail due to Firestore security rules - policies/insights have write: false
  */
 export async function saveCompanyProfile(
-  tenantId: string,
-  profile: { sector: string; annualRevenue: number; employeeCount: number }
+  _tenantId: string,
+  _profile: { sector: string; annualRevenue: number; employeeCount: number }
 ) {
   throw new Error("saveCompanyProfile: Client-side writes are disabled. Use /api/company-profile endpoint instead.");
 }
@@ -103,14 +103,14 @@ export async function saveCompanyProfile(
 /**
  * CLIENT-SIDE: Update policy (DEPRECATED - Use API instead)
  */
-export async function updatePolicy(id: string, data: Record<string, unknown>) {
+export async function updatePolicy(_id: string, _data: Record<string, unknown>) {
   throw new Error("updatePolicy: Client-side writes are disabled. Use /api/policies endpoint instead.");
 }
 
 /**
  * CLIENT-SIDE: Delete policy (DEPRECATED - Use API instead)
  */
-export async function deletePolicy(id: string, tenantId?: string) {
+export async function deletePolicy(_id: string, _tenantId?: string) {
   throw new Error("deletePolicy: Client-side writes are disabled. Use /api/policies endpoint instead.");
 }
 
