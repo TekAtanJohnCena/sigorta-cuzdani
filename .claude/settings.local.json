@@ -26,7 +26,8 @@
       "Bash(./scripts/cost-tracker.sh developer *)",
       "Bash(./scripts/cost-tracker.sh security-auditor *)",
       "Bash(pkill -f \"next dev\")",
-      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq npm*\")"
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq npm*\")",
+      "Bash(find *)"
     ]
   }
 }

@@ -365,3 +365,83 @@ export async function getCompanyProfile(tenantId: string) {
   if (!snap.exists) return null;
   return snap.data() as { sector: string; annualRevenue: number; employeeCount: number; tenantId: string };
 }
+
+// ============================================
+// POLICY COMPARISON & SHARE LINKS
+// ============================================
+
+import { nanoid } from "nanoid";
+
+const COMPARISONS_COLLECTION = "comparisons";
+const SHARE_LINKS_COLLECTION = "shareLinks";
+
+export async function saveComparison(
+  tenantId: string,
+  policyIds: string[],
+  metadata: { createdBy: string; title?: string; notes?: string }
+): Promise<string> {
+  const docRef = await adminDb.collection(COMPARISONS_COLLECTION).add({
+    tenantId,
+    policyIds,
+    ...metadata,
+    createdAt: new Date().toISOString(),
+  });
+  return docRef.id;
+}
+
+export async function createShareLink(
+  tenantId: string,
+  comparisonId: string,
+  policyIds: string[]
+): Promise<{ token: string; expiresAt: string }> {
+  const token = nanoid(10);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+
+  await adminDb.collection(SHARE_LINKS_COLLECTION).doc(token).set({
+    tenantId,
+    comparisonId,
+    policyIds,
+    createdAt: now.toISOString(),
+    expiresAt,
+    accessCount: 0,
+    isActive: true,
+  });
+
+  return { token, expiresAt };
+}
+
+export async function validateShareLink(token: string) {
+  const docRef = adminDb.collection(SHARE_LINKS_COLLECTION).doc(token);
+  const snap = await docRef.get();
+
+  if (!snap.exists) return null;
+  const data = snap.data()!;
+
+  if (new Date(data.expiresAt) < new Date()) {
+    await docRef.update({ isActive: false });
+    return null;
+  }
+
+  if (!data.isActive) return null;
+
+  await docRef.update({
+    accessCount: (data.accessCount || 0) + 1,
+    lastAccessedAt: new Date().toISOString(),
+  });
+
+  return data;
+}
+
+export async function getPoliciesByIds(
+  policyIds: string[],
+  tenantId: string
+): Promise<any[]> {
+  const snapshot = await adminDb
+    .collection(POLICIES_COLLECTION)
+    .where(FieldValue.documentId(), "in", policyIds)
+    .where("tenantId", "==", tenantId)
+    .get();
+
+  return snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+}

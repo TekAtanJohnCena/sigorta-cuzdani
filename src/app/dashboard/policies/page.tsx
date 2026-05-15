@@ -133,6 +133,9 @@ export default function PoliciesPage() {
           </p>
         </div>
         <div style={{ display: "flex", gap: "10px" }}>
+           <Link href="/dashboard/policies/compare" className="btn btn-secondary">
+             ⚖️ Karşılaştır
+           </Link>
            <button onClick={() => exportPoliciesToCSV(filteredPolicies)} className="btn btn-secondary" disabled={filteredPolicies.length === 0}>
              📥 Dışa Aktar (CSV)
            </button>
