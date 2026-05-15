@@ -49,6 +49,7 @@ const NAV_ITEMS: NavSection[] = [
   {
     section: "Yönetim",
     items: [
+      { href: "/dashboard/agents", icon: "🤖", label: "Agent Office", highlight: true },
       { href: "/dashboard/hr", icon: "👥", label: "Personel" },
       { href: "/dashboard/settings", icon: "⚙️", label: "Ayarlar" },
     ],
