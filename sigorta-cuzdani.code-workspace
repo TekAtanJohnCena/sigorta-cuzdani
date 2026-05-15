@@ -1,0 +1,18 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "pixelAgents.enabled": true,
+    "pixelAgents.logFile": "${workspaceFolder}/.claude/cost-tracking.log",
+    "pixelAgents.refreshInterval": 5000,
+    "pixelAgents.showNotifications": true
+  },
+  "extensions": {
+    "recommendations": [
+      "pixel-agents.agent-viewer"
+    ]
+  }
+}

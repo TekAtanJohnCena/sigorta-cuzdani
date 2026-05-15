@@ -1,0 +1,68 @@
+{
+  "agents": [
+    {
+      "id": "manager",
+      "name": "👔 Müdür",
+      "model": "Sonnet 4.5",
+      "role": "Raporlama & Yönetim",
+      "status": "active",
+      "logPattern": "Agent: manager"
+    },
+    {
+      "id": "architect",
+      "name": "🏗️ Mimar",
+      "model": "Sonnet 4.6",
+      "role": "Mimari Tasarım",
+      "status": "active",
+      "logPattern": "Agent: architect"
+    },
+    {
+      "id": "developer",
+      "name": "💻 Yazılımcı",
+      "model": "Sonnet 4.6",
+      "role": "Kod Geliştirme",
+      "status": "active",
+      "logPattern": "Agent: developer"
+    },
+    {
+      "id": "security-1",
+      "name": "🔒 Güvenlik 1",
+      "model": "Haiku 4.5",
+      "role": "Güvenlik İncelemesi",
+      "status": "active",
+      "logPattern": "Agent: security-auditor"
+    },
+    {
+      "id": "security-2",
+      "name": "🛡️ Güvenlik 2",
+      "model": "Haiku 4.5",
+      "role": "Penetrasyon Testi",
+      "status": "active",
+      "logPattern": "Agent: security-auditor-2"
+    },
+    {
+      "id": "tester",
+      "name": "🧪 QA Tester",
+      "model": "Haiku 4.5",
+      "role": "Kalite Kontrolü",
+      "status": "active",
+      "logPattern": "Agent: tester"
+    },
+    {
+      "id": "documentation",
+      "name": "📝 Dokümantasyon",
+      "model": "Haiku 4.5",
+      "role": "Dokümantasyon",
+      "status": "active",
+      "logPattern": "Agent: documentation"
+    }
+  ],
+  "logFile": ".claude/cost-tracking.log",
+  "logFormat": "{timestamp} | Agent: {agent} | Tokens: {tokens} | Task: {task}",
+  "settings": {
+    "refreshInterval": 5000,
+    "showInactiveAgents": false,
+    "notifyOnActivity": true,
+    "groupByRole": false
+  }
+}

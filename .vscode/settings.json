@@ -1,0 +1,55 @@
+{
+  "pixelAgents.enabled": true,
+  "pixelAgents.logFile": "${workspaceFolder}/.claude/cost-tracking.log",
+  "pixelAgents.agents": [
+    {
+      "id": "manager",
+      "name": "Müdür",
+      "emoji": "👔",
+      "model": "Sonnet 4.5",
+      "role": "Raporlama"
+    },
+    {
+      "id": "architect",
+      "name": "Mimar",
+      "emoji": "🏗️",
+      "model": "Sonnet 4.6",
+      "role": "Mimari"
+    },
+    {
+      "id": "developer",
+      "name": "Yazılımcı",
+      "emoji": "💻",
+      "model": "Sonnet 4.6",
+      "role": "Kod"
+    },
+    {
+      "id": "security-auditor",
+      "name": "Güvenlik 1",
+      "emoji": "🔒",
+      "model": "Haiku 4.5",
+      "role": "Güvenlik"
+    },
+    {
+      "id": "security-auditor-2",
+      "name": "Güvenlik 2",
+      "emoji": "🛡️",
+      "model": "Haiku 4.5",
+      "role": "Penetrasyon"
+    },
+    {
+      "id": "tester",
+      "name": "QA Tester",
+      "emoji": "🧪",
+      "model": "Haiku 4.5",
+      "role": "Test"
+    },
+    {
+      "id": "documentation",
+      "name": "Dokümantasyon",
+      "emoji": "📝",
+      "model": "Haiku 4.5",
+      "role": "Doküman"
+    }
+  ]
+}
