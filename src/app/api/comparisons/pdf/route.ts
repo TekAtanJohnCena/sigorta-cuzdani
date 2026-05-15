@@ -29,7 +29,7 @@ export const POST = withAuth(async (req, { tenantId }) => {
 
     logger.info("PDF generated", "api/comparisons/pdf", { tenantId, policyCount: policies.length });
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",

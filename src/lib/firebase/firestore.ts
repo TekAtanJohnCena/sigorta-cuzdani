@@ -436,10 +436,10 @@ export async function validateShareLink(token: string) {
 export async function getPoliciesByIds(
   policyIds: string[],
   tenantId: string
-): Promise<any[]> {
+): Promise<Record<string, unknown>[]> {
   const snapshot = await adminDb
     .collection(POLICIES_COLLECTION)
-    .where(FieldValue.documentId(), "in", policyIds)
+    .where("__name__", "in", policyIds)
     .where("tenantId", "==", tenantId)
     .get();
 

@@ -8,7 +8,7 @@ import { ComparisonTable } from "@/components/comparison/ComparisonTable";
 import { formatCurrency } from "@/lib/utils/currency";
 
 export default function ComparePage() {
-  const { appUser } = useAuth();
+  const { user, appUser } = useAuth();
   const { policies, loading } = usePolicies(appUser?.tenantId);
 
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -25,7 +25,7 @@ export default function ComparePage() {
 
     setIsComparing(true);
     try {
-      const token = await appUser?.getIdToken();
+      const token = await user?.getIdToken();
       const res = await fetch("/api/comparisons", {
         method: "POST",
         headers: {
@@ -42,7 +42,7 @@ export default function ComparePage() {
       } else {
         alert(data.error || "Karşılaştırma başarısız.");
       }
-    } catch (error) {
+    } catch {
       alert("Bir hata oluştu.");
     } finally {
       setIsComparing(false);
@@ -53,7 +53,7 @@ export default function ComparePage() {
     if (!comparisonId) return;
 
     try {
-      const token = await appUser?.getIdToken();
+      const token = await user?.getIdToken();
       const res = await fetch("/api/comparisons/share", {
         method: "POST",
         headers: {
@@ -69,14 +69,14 @@ export default function ComparePage() {
         navigator.clipboard.writeText(data.data.shareUrl);
         alert("Link kopyalandı! 24 saat geçerlidir.");
       }
-    } catch (error) {
+    } catch {
       alert("Link oluşturulamadı.");
     }
   };
 
   const handleExportPDF = async () => {
     try {
-      const token = await appUser?.getIdToken();
+      const token = await user?.getIdToken();
       const res = await fetch("/api/comparisons/pdf", {
         method: "POST",
         headers: {
@@ -97,7 +97,7 @@ export default function ComparePage() {
       } else {
         alert("PDF oluşturulamadı.");
       }
-    } catch (error) {
+    } catch {
       alert("Bir hata oluştu.");
     }
   };
