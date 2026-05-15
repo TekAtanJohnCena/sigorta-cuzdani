@@ -19,7 +19,14 @@
       "Bash(npx next *)",
       "Bash(curl *)",
       "Bash(npm uninstall *)",
-      "Bash(gsutil cors *)"
+      "Bash(gsutil cors *)",
+      "Bash(chmod +x *)",
+      "Bash(echo \"- Config files: $\\(find .claude -name \"*.json\")",
+      "Bash(./scripts/cost-tracker.sh architect *)",
+      "Bash(./scripts/cost-tracker.sh developer *)",
+      "Bash(./scripts/cost-tracker.sh security-auditor *)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq npm*\")"
     ]
   }
 }

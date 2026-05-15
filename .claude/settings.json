@@ -1,0 +1,63 @@
+{
+  "agents": {
+    "architect": {
+      "model": "claude-sonnet-4-6",
+      "description": "System architect - only plans, never codes",
+      "tools": ["Read", "Glob", "Grep", "EnterPlanMode", "ExitPlanMode"],
+      "promptCaching": true,
+      "maxTokens": 4096,
+      "systemPrompt": "You are a system architect. Your ONLY job is to:\n1. Analyze requirements\n2. Read existing code structure\n3. Create implementation plans\n4. NEVER write code directly\n\nOutput format: Step-by-step plan with file paths and function signatures."
+    },
+
+    "developer": {
+      "model": "claude-sonnet-4-6",
+      "description": "Code implementer - follows architect's plan",
+      "tools": ["Read", "Edit", "Write", "Bash"],
+      "promptCaching": true,
+      "maxTokens": 8192,
+      "systemPrompt": "You are a developer. Your ONLY job is:\n1. Read the architect's plan\n2. Implement EXACTLY what's planned\n3. Write clean, minimal code\n4. NO architectural decisions\n\nRules:\n- Only touch files mentioned in the plan\n- No extra features\n- No refactoring unless planned"
+    },
+
+    "security-auditor": {
+      "model": "claude-haiku-4-5-20251001",
+      "description": "Security & test reviewer - minimal context",
+      "tools": ["Read", "Grep", "Bash"],
+      "promptCaching": false,
+      "maxTokens": 2048,
+      "systemPrompt": "You are a security auditor using Haiku (cost-optimized).\n\nYour ONLY inputs:\n1. git diff output (changed lines only)\n2. Specific file paths IF needed\n\nCheck for:\n- SQL injection\n- XSS vulnerabilities\n- Exposed secrets\n- Insecure dependencies\n- Missing input validation\n\nOutput: PASS or FAIL with line numbers."
+    }
+  },
+
+  "workflows": {
+    "feature": {
+      "description": "Full feature development workflow",
+      "steps": [
+        {
+          "agent": "architect",
+          "action": "plan",
+          "output": "plan.md"
+        },
+        {
+          "agent": "developer",
+          "action": "implement",
+          "input": "plan.md"
+        },
+        {
+          "agent": "security-auditor",
+          "action": "audit",
+          "input": "git diff --cached"
+        }
+      ]
+    }
+  },
+
+  "costOptimization": {
+    "enablePromptCaching": true,
+    "maxContextSize": 50000,
+    "excludePatterns": [
+      "**/node_modules/**",
+      "**/.next/**",
+      "**/tests/**"
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+# Build outputs - ASLA context'e dahil etme
+.next/**
+out/**
+dist/**
+build/**
+*.log
+*.cache
+
+# Dependencies - Claude bunları okursa token bombası
+node_modules/**
+.pnpm-store/**
+
+# Tests - Sadece güvenlik ajanı gerektiğinde okur
+tests/**
+__tests__/**
+*.test.ts
+*.test.tsx
+*.spec.ts
+
+# Config boilerplate - Değişmedikçe gereksiz
+next.config.js
+jest.config.js
+tsconfig.json
+eslint.config.mjs
+postcss.config.mjs
+tailwind.config.ts
+
+# Git & IDE
+.git/**
+.vscode/**
+.idea/**
+*.swp
+
+# Documentation - Sadece CLAUDE.md ve AGENTS.md yeterli
+README.md
+CONTRIBUTING.md
+CHANGELOG.md
+
+# Open Design sistemi - Ayrı proje
+open-design/**
+
+# Environment files
+.env*
+!.env.example
+
+# Lock files - Sadece package.json yeter
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Media files - Binary'ler context'i şişirir
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+*.pdf
+*.woff
+*.woff2
+*.ttf
+*.eot
