@@ -4,33 +4,68 @@ import { useState, useEffect } from "react";
 
 interface AgentLog {
   timestamp: string;
-  agent: "architect" | "developer" | "security-auditor";
+  agent: "architect" | "developer" | "security-auditor" | "security-auditor-2" | "tester" | "documentation" | "manager";
   tokens: number;
   task: string;
   cached: boolean;
 }
 
 const AGENT_CONFIG = {
+  manager: {
+    name: "Müdür (Manager)",
+    emoji: "👔",
+    color: "#8B5CF6",
+    role: "Raporlama & Yönetim",
+    model: "Sonnet 4.5",
+    description: "Proje ilerlemesini takip eder, raporlar hazırlar, ekip koordinasyonu sağlar"
+  },
   architect: {
-    name: "Architect Agent",
+    name: "Mimar (Architect)",
     emoji: "🏗️",
     color: "#3B82F6",
-    role: "Planning & Design",
+    role: "Mimari Tasarım",
     model: "Sonnet 4.6",
+    description: "Sistem mimarisini planlar, teknik kararlar alır"
   },
   developer: {
-    name: "Developer Agent",
+    name: "Yazılımcı (Developer)",
     emoji: "💻",
     color: "#10B981",
-    role: "Implementation",
+    role: "Kod Geliştirme",
     model: "Sonnet 4.6",
+    description: "Kod yazar, feature'ları implement eder"
   },
   "security-auditor": {
-    name: "Security Auditor",
+    name: "Güvenlik Uzmanı 1",
     emoji: "🔒",
     color: "#EF4444",
-    role: "Security Review",
+    role: "Güvenlik İncelemesi",
     model: "Haiku 4.5",
+    description: "Güvenlik açıklarını tespit eder, audit yapar"
+  },
+  "security-auditor-2": {
+    name: "Güvenlik Uzmanı 2",
+    emoji: "🛡️",
+    color: "#F59E0B",
+    role: "Penetrasyon Testi",
+    model: "Haiku 4.5",
+    description: "İkinci göz, çapraz güvenlik kontrolü yapar"
+  },
+  tester: {
+    name: "Test Uzmanı (QA)",
+    emoji: "🧪",
+    color: "#EC4899",
+    role: "Kalite Kontrolü",
+    model: "Haiku 4.5",
+    description: "Test senaryoları yazar, bug bulur, quality assurance"
+  },
+  documentation: {
+    name: "Dokümantasyon Uzmanı",
+    emoji: "📝",
+    color: "#06B6D4",
+    role: "Dokümantasyon",
+    model: "Haiku 4.5",
+    description: "Kod dokümantasyonu, kullanım kılavuzları yazar"
   },
 };
 
@@ -40,9 +75,13 @@ export default function AgentsPage() {
     totalTokens: 0,
     totalCost: 0,
     cacheHitRate: 0,
+    managerCount: 0,
     architectCount: 0,
     developerCount: 0,
     securityCount: 0,
+    testerCount: 0,
+    documentationCount: 0,
+    totalAgents: 7,
   });
 
   useEffect(() => {
@@ -60,56 +99,95 @@ export default function AgentsPage() {
         const mockLogs: AgentLog[] = [
           {
             timestamp: "2026-05-15 22:00:00",
+            agent: "manager",
+            tokens: 800,
+            task: "Haftalık ilerleme raporu hazırlandı",
+            cached: false,
+          },
+          {
+            timestamp: "2026-05-15 22:02:00",
             agent: "architect",
             tokens: 3000,
-            task: "Policy Comparison Tool - Architecture Design",
+            task: "Policy Comparison Tool - Mimari tasarım",
             cached: false,
           },
           {
             timestamp: "2026-05-15 22:05:00",
             agent: "developer",
             tokens: 6500,
-            task: "Implement comparison API routes",
+            task: "Comparison API route'ları implement edildi",
             cached: false,
           },
           {
             timestamp: "2026-05-15 22:10:00",
             agent: "developer",
             tokens: 4200,
-            task: "Build comparison UI components",
+            task: "UI componentleri oluşturuldu",
             cached: false,
           },
           {
             timestamp: "2026-05-15 22:12:00",
             agent: "security-auditor",
-            tokens: 800,
-            task: "Audit tenant isolation in comparison feature",
+            tokens: 600,
+            task: "Tenant izolasyonu kontrol edildi",
+            cached: false,
+          },
+          {
+            timestamp: "2026-05-15 22:14:00",
+            agent: "security-auditor-2",
+            tokens: 550,
+            task: "Rate limiting güvenlik testi",
             cached: false,
           },
           {
             timestamp: "2026-05-15 22:15:00",
             agent: "developer",
             tokens: 1200,
-            task: "Fix TypeScript errors in PDF generator",
+            task: "TypeScript hataları düzeltildi",
             cached: true,
+          },
+          {
+            timestamp: "2026-05-15 22:16:00",
+            agent: "tester",
+            tokens: 450,
+            task: "API endpoint testleri yazıldı",
+            cached: false,
           },
           {
             timestamp: "2026-05-15 22:18:00",
             agent: "security-auditor",
+            tokens: 500,
+            task: "Final güvenlik onayı verildi",
+            cached: false,
+          },
+          {
+            timestamp: "2026-05-15 22:20:00",
+            agent: "documentation",
+            tokens: 400,
+            task: "API dokümantasyonu güncellendi",
+            cached: false,
+          },
+          {
+            timestamp: "2026-05-15 22:22:00",
+            agent: "manager",
             tokens: 600,
-            task: "Re-audit after fixes",
+            task: "Sprint tamamlandı raporu oluşturuldu",
             cached: false,
           },
         ];
 
         setLogs(mockLogs);
         setStats({
-          totalTokens: 16300,
-          totalCost: 0.049,
-          cacheHitRate: 16.7,
+          totalTokens: 18800,
+          totalCost: 0.045,
+          cacheHitRate: 9.1,
+          managerCount: 2,
           architectCount: 1,
           developerCount: 3,
-          securityCount: 2,
+          securityCount: 3,
+          testerCount: 1,
+          documentationCount: 1,
+          totalAgents: 7,
         });
       });
   }, []);
@@ -142,10 +220,10 @@ export default function AgentsPage() {
         </div>
 
         <div className="card" style={{ padding: 20, background: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", color: "white" }}>
-          <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Aktif Agent Sayısı</div>
-          <div style={{ fontSize: 32, fontWeight: 700 }}>3</div>
+          <div style={{ fontSize: 14, opacity: 0.9, marginBottom: 8 }}>Toplam Çalışan Sayısı</div>
+          <div style={{ fontSize: 32, fontWeight: 700 }}>7</div>
           <div style={{ fontSize: 12, opacity: 0.8, marginTop: 8 }}>
-            {stats.architectCount} Architect • {stats.developerCount} Developer • {stats.securityCount} Security
+            1 Müdür • 1 Mimar • 1 Yazılımcı • 2 Güvenlik • 1 QA • 1 Dokümantasyon
           </div>
         </div>
 
@@ -159,43 +237,69 @@ export default function AgentsPage() {
       </div>
 
       {/* Agent Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20, marginBottom: 32 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 32 }}>
         {Object.entries(AGENT_CONFIG).map(([key, config]) => {
           const agentLogs = logs.filter((log) => log.agent === key);
           const totalTokens = agentLogs.reduce((sum, log) => sum + log.tokens, 0);
+          const isActive = agentLogs.length > 0;
 
           return (
             <div
               key={key}
               className="card"
               style={{
-                padding: 24,
+                padding: 20,
                 borderLeft: `4px solid ${config.color}`,
+                opacity: isActive ? 1 : 0.6,
+                position: "relative",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                <div style={{ fontSize: 40 }}>{config.emoji}</div>
+              {isActive && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    width: 8,
+                    height: 8,
+                    borderRadius: "50%",
+                    background: "#10B981",
+                    boxShadow: "0 0 8px rgba(16, 185, 129, 0.6)",
+                  }}
+                  title="Aktif"
+                />
+              )}
+
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+                <div style={{ fontSize: 36 }}>{config.emoji}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: config.color }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: config.color }}>
                     {config.name}
                   </div>
-                  <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
-                    {config.role} • {config.model}
+                  <div style={{ fontSize: 12, color: "var(--text-secondary)", marginTop: 2 }}>
+                    {config.role}
+                  </div>
+                  <div style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 4 }}>
+                    {config.model}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 16, borderTop: "1px solid var(--border-light)" }}>
+              <div style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 12, lineHeight: 1.4 }}>
+                {config.description}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid var(--border-light)" }}>
                 <div>
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Görev Sayısı</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: config.color }}>
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>Görevler</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: config.color }}>
                     {agentLogs.length}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 12, color: "var(--text-secondary)" }}>Token Kullanımı</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: config.color }}>
-                    {totalTokens.toLocaleString()}
+                  <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>Token</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: config.color }}>
+                    {totalTokens > 0 ? totalTokens.toLocaleString() : "-"}
                   </div>
                 </div>
               </div>
