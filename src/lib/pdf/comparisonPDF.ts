@@ -1,9 +1,8 @@
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
-import { Policy } from "@/types/policy";
 import { formatCurrency } from "@/lib/utils/currency";
 import { formatDateShort } from "@/lib/utils/date";
 
-export async function generateComparisonPDF(policies: Policy[]): Promise<Uint8Array> {
+export async function generateComparisonPDF(policies: Record<string, unknown>[]): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([842, 595]); // A4 landscape
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -39,11 +38,11 @@ export async function generateComparisonPDF(policies: Policy[]): Promise<Uint8Ar
   yPosition -= 25;
 
   const rows = [
-    { label: "Police No", getValue: (p: Policy) => p.policyNumber },
-    { label: "Sirket", getValue: (p: Policy) => p.insuranceCompany },
-    { label: "Toplam Prim", getValue: (p: Policy) => formatCurrency(p.premium.totalPremium) },
-    { label: "Baslangic", getValue: (p: Policy) => formatDateShort(p.startDate) },
-    { label: "Bitis", getValue: (p: Policy) => formatDateShort(p.endDate) },
+    { label: "Police No", getValue: (p: Record<string, unknown>) => String(p.policyNumber || "-") },
+    { label: "Sirket", getValue: (p: Record<string, unknown>) => String(p.insuranceCompany || "-") },
+    { label: "Toplam Prim", getValue: (p: Record<string, unknown>) => formatCurrency((p.premium as { totalPremium?: number })?.totalPremium || 0) },
+    { label: "Baslangic", getValue: (p: Record<string, unknown>) => formatDateShort(p.startDate as string) },
+    { label: "Bitis", getValue: (p: Record<string, unknown>) => formatDateShort(p.endDate as string) },
   ];
 
   rows.forEach((row) => {
