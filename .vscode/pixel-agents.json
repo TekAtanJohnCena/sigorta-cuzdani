@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "agents": [
+    {
+      "id": "manager",
+      "name": "Müdür (Manager)",
+      "emoji": "👔",
+      "color": "#8B5CF6",
+      "role": "Raporlama & Yönetim",
+      "model": "Sonnet 4.5",
+      "description": "Proje ilerlemesini takip eder, raporlar hazırlar",
+      "active": true
+    },
+    {
+      "id": "architect",
+      "name": "Mimar (Architect)",
+      "emoji": "🏗️",
+      "color": "#3B82F6",
+      "role": "Mimari Tasarım",
+      "model": "Sonnet 4.6",
+      "description": "Sistem mimarisini planlar, teknik kararlar alır",
+      "active": true
+    },
+    {
+      "id": "developer",
+      "name": "Yazılımcı (Developer)",
+      "emoji": "💻",
+      "color": "#10B981",
+      "role": "Kod Geliştirme",
+      "model": "Sonnet 4.6",
+      "description": "Kod yazar, feature'ları implement eder",
+      "active": true
+    },
+    {
+      "id": "security-auditor",
+      "name": "Güvenlik Uzmanı 1",
+      "emoji": "🔒",
+      "color": "#EF4444",
+      "role": "Güvenlik İncelemesi",
+      "model": "Haiku 4.5",
+      "description": "Güvenlik açıklarını tespit eder, audit yapar",
+      "active": true
+    },
+    {
+      "id": "security-auditor-2",
+      "name": "Güvenlik Uzmanı 2",
+      "emoji": "🛡️",
+      "color": "#F59E0B",
+      "role": "Penetrasyon Testi",
+      "model": "Haiku 4.5",
+      "description": "İkinci göz, çapraz güvenlik kontrolü",
+      "active": true
+    },
+    {
+      "id": "tester",
+      "name": "Test Uzmanı (QA)",
+      "emoji": "🧪",
+      "color": "#EC4899",
+      "role": "Kalite Kontrolü",
+      "model": "Haiku 4.5",
+      "description": "Test senaryoları yazar, bug bulur",
+      "active": true
+    },
+    {
+      "id": "documentation",
+      "name": "Dokümantasyon Uzmanı",
+      "emoji": "📝",
+      "color": "#06B6D4",
+      "role": "Dokümantasyon",
+      "model": "Haiku 4.5",
+      "description": "Kod dokümantasyonu, kullanım kılavuzları yazar",
+      "active": true
+    }
+  ],
+  "logFile": ".claude/cost-tracking.log",
+  "settings": {
+    "refreshInterval": 5000,
+    "showInactiveAgents": true,
+    "notifyOnActivity": true
+  }
+}
