@@ -28,7 +28,9 @@
       "Bash(pkill -f \"next dev\")",
       "Bash(taskkill //F //IM node.exe //FI \"WINDOWTITLE eq npm*\")",
       "Bash(find *)",
-      "Bash(git rm *)"
+      "Bash(git rm *)",
+      "Bash(python -m json.tool)",
+      "Read(//tmp/**)"
     ]
   }
 }
