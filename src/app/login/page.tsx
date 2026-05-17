@@ -81,18 +81,18 @@ export default function LoginPage() {
       alignItems: "center",
       justifyContent: "center",
       background: "var(--background)",
-      padding: "var(--space-4)"
+      padding: "16px"
     }}>
       <div className="card" style={{
         maxWidth: 400,
         width: "100%",
-        padding: "var(--space-8)"
+        padding: "clamp(1.5rem, 5vw, 2rem)"
       }}>
         <div style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>
-          <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 800, marginBottom: "var(--space-2)" }}>
+          <h1 style={{ fontSize: "clamp(1.5rem, 5vw, 1.875rem)", fontWeight: 800, marginBottom: "var(--space-2)" }}>
             Sigorta Cüzdanı
           </h1>
-          <p style={{ color: "var(--text-secondary)" }}>
+          <p style={{ color: "var(--text-secondary)", fontSize: "clamp(0.875rem, 3vw, 1rem)" }}>
             Kurumsal panelinize giriş yapın
           </p>
         </div>

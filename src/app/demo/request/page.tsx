@@ -80,14 +80,14 @@ export default function DemoRequestPage() {
 
   if (isSuccess) {
     return (
-      <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, var(--primary-600), var(--accent-600))", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--space-4)" }}>
-        <div className="card" style={{ maxWidth: 600, width: "100%", padding: "var(--space-8)", textAlign: "center", animation: "fade-in 0.5s ease" }}>
-          <div style={{ fontSize: 64, marginBottom: "var(--space-4)" }}>✅</div>
-          <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 800, marginBottom: "var(--space-2)" }}>Demo Talebiniz Alındı!</h2>
-          <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-6)" }}>
+      <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, var(--primary-600), var(--accent-600))", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+        <div className="card" style={{ maxWidth: 600, width: "100%", padding: "clamp(1.5rem, 5vw, 2rem)", textAlign: "center", animation: "fade-in 0.5s ease" }}>
+          <div style={{ fontSize: "clamp(48px, 10vw, 64px)", marginBottom: "var(--space-4)" }}>✅</div>
+          <h2 style={{ fontSize: "clamp(1.25rem, 4vw, 1.875rem)", fontWeight: 800, marginBottom: "var(--space-2)" }}>Demo Talebiniz Alındı!</h2>
+          <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-6)", fontSize: "clamp(0.875rem, 2.5vw, 1rem)" }}>
             Sayın {formData.name}, demo toplantısı talebiniz başarıyla ekibimize iletilmiştir. {formData.date} saat {formData.time} için programınız oluşturuldu. Gerekli toplantı bağlantısı e-posta adresinize ({formData.email}) gönderilecektir.
           </p>
-          <Link href="/" className="btn btn-primary btn-lg">
+          <Link href="/" className="btn btn-primary btn-lg" style={{ width: "100%", maxWidth: "300px" }}>
             Ana Sayfaya Dön
           </Link>
         </div>
@@ -96,22 +96,22 @@ export default function DemoRequestPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, var(--primary-600), var(--accent-600))", display: "flex", alignItems: "center", justifyContent: "center", padding: "var(--space-6)" }}>
-      <div className="card" style={{ maxWidth: 640, width: "100%", margin: "0 auto", padding: "var(--space-8)" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, var(--primary-600), var(--accent-600))", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}>
+      <div className="card" style={{ maxWidth: 640, width: "100%", margin: "0 auto", padding: "clamp(1.5rem, 5vw, 2rem)" }}>
         
         <div style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", marginBottom: "var(--space-2)" }}>
-            <span style={{ fontSize: 28 }}>🛡️</span>
-            <span style={{ fontSize: 24, fontWeight: 800, color: "var(--primary-600)" }}>Sigorta Cüzdanı</span>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", marginBottom: "var(--space-2)", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "clamp(20px, 5vw, 28px)" }}>🛡️</span>
+            <span style={{ fontSize: "clamp(18px, 4vw, 24px)", fontWeight: 800, color: "var(--primary-600)" }}>Sigorta Cüzdanı</span>
           </div>
-          <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, color: "var(--text-primary)" }}>Bir Demo Planlayalım</h1>
-          <p style={{ color: "var(--text-secondary)", fontSize: "var(--text-sm)" }}>Ekibimizle kişiselleştirilmiş bir demo görüşmesi oluşturun</p>
+          <h1 style={{ fontSize: "clamp(1.25rem, 4vw, 1.875rem)", fontWeight: 700, color: "var(--text-primary)" }}>Bir Demo Planlayalım</h1>
+          <p style={{ color: "var(--text-secondary)", fontSize: "clamp(0.8125rem, 2.5vw, 0.875rem)" }}>Ekibimizle kişiselleştirilmiş bir demo görüşmesi oluşturun</p>
         </div>
 
         {/* Steps Indicator */}
-        <div style={{ display: "flex", justifyContent: "center", gap: "var(--space-4)", marginBottom: "var(--space-8)" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "clamp(12px, 3vw, 16px)", marginBottom: "var(--space-8)" }}>
           <div style={{ width: 32, height: 32, borderRadius: "50%", background: step >= 1 ? "var(--primary-600)" : "var(--neutral-200)", color: step >= 1 ? "white" : "var(--text-secondary)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>1</div>
-          <div style={{ width: 40, height: 2, background: step >= 2 ? "var(--primary-600)" : "var(--neutral-200)", alignSelf: "center" }} />
+          <div style={{ width: "clamp(30px, 8vw, 40px)", height: 2, background: step >= 2 ? "var(--primary-600)" : "var(--neutral-200)", alignSelf: "center" }} />
           <div style={{ width: 32, height: 32, borderRadius: "50%", background: step >= 2 ? "var(--primary-600)" : "var(--neutral-200)", color: step >= 2 ? "white" : "var(--text-secondary)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>2</div>
         </div>
 
@@ -120,7 +120,7 @@ export default function DemoRequestPage() {
             <div className="animate-fade-in">
               <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 600, marginBottom: "var(--space-4)", color: "var(--text-primary)" }}>Kişisel Bilgiler</h2>
               
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-4)" }}>
                 <div>
                   <label className="input-label">Ad Soyad *</label>
                   <input type="text" className="input" style={{ width: "100%" }} value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
@@ -131,7 +131,7 @@ export default function DemoRequestPage() {
                 </div>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-4)", marginBottom: "var(--space-4)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "var(--space-4)", marginBottom: "var(--space-4)" }}>
                 <div>
                   <label className="input-label">Şirket Adı *</label>
                   <input type="text" className="input" style={{ width: "100%" }} value={formData.company} onChange={e => setFormData({...formData, company: e.target.value})} required />
@@ -167,8 +167,8 @@ export default function DemoRequestPage() {
           {step === 2 && (
             <div className="animate-fade-in">
               <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 600, marginBottom: "var(--space-4)", color: "var(--text-primary)" }}>Tarih ve Saat Seçin</h2>
-              
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-6)", marginBottom: "var(--space-8)" }}>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "var(--space-6)", marginBottom: "var(--space-8)" }}>
                 {/* Date Selection */}
                 <div>
                   <label className="input-label">Tercih Edilen Tarih *</label>
@@ -177,7 +177,7 @@ export default function DemoRequestPage() {
                        const d = new Date(date);
                        const dayStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', weekday: 'short' });
                        return (
-                         <div 
+                         <div
                            key={date}
                            onClick={() => setFormData({...formData, date, time: ""})}
                            style={{
@@ -188,7 +188,8 @@ export default function DemoRequestPage() {
                              cursor: "pointer",
                              fontWeight: formData.date === date ? 600 : 400,
                              color: formData.date === date ? "var(--primary-700)" : "var(--text-primary)",
-                             textAlign: "center"
+                             textAlign: "center",
+                             fontSize: "clamp(0.875rem, 2.5vw, 1rem)"
                            }}
                          >
                            {dayStr}
@@ -202,14 +203,14 @@ export default function DemoRequestPage() {
                 <div>
                   <label className="input-label">Mevcut Saatler</label>
                   {!formData.date ? (
-                    <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text-tertiary)", background: "var(--neutral-50)", borderRadius: "var(--radius-md)", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ textAlign: "center", padding: "var(--space-6)", color: "var(--text-tertiary)", background: "var(--neutral-50)", borderRadius: "var(--radius-md)", minHeight: "200px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ fontSize: 24, marginBottom: 8 }}>📅</span>
-                      Önce bir tarih seçin
+                      <span style={{ fontSize: "clamp(0.875rem, 2.5vw, 1rem)" }}>Önce bir tarih seçin</span>
                     </div>
                   ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-2)", alignContent: "start" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(80px, 1fr))", gap: "var(--space-2)", alignContent: "start" }}>
                       {availableTimes.map(time => (
-                        <div 
+                        <div
                           key={time}
                           onClick={() => setFormData({...formData, time})}
                           style={{
@@ -220,7 +221,8 @@ export default function DemoRequestPage() {
                             color: formData.time === time ? "white" : "var(--text-primary)",
                             cursor: "pointer",
                             fontWeight: 600,
-                            textAlign: "center"
+                            textAlign: "center",
+                            fontSize: "clamp(0.875rem, 2.5vw, 1rem)"
                           }}
                         >
                           {time}
@@ -231,9 +233,9 @@ export default function DemoRequestPage() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <button type="button" className="btn btn-secondary btn-lg" onClick={prevStep}>← Önceki</button>
-                <button type="submit" className="btn btn-success btn-lg" disabled={isSubmitting || !formData.date || !formData.time}>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "var(--space-3)" }}>
+                <button type="button" className="btn btn-secondary btn-lg" onClick={prevStep} style={{ flex: "1 1 auto", minWidth: "120px" }}>← Önceki</button>
+                <button type="submit" className="btn btn-success btn-lg" disabled={isSubmitting || !formData.date || !formData.time} style={{ flex: "1 1 auto", minWidth: "180px" }}>
                   {isSubmitting ? "Gönderiliyor..." : "Demo Rezervasyonu Yap"}
                 </button>
               </div>

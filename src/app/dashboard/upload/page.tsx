@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { useState, useCallback } from "react";
-import { formatCurrency } from "@/lib/utils/currency";
-import { formatDateShort } from "@/lib/utils/date";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { uploadPolicyPDF } from "@/lib/firebase/storage";
 import { auth } from "@/lib/firebase/config";
@@ -548,9 +546,22 @@ export default function UploadPage() {
               </div>
 
               {/* Teminatlar */}
-              {extracted.teminatlar?.length > 0 && (
-                <div className="review-section">
+              <div className="review-section">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div className="review-section-title"> Teminatlar</div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setExtracted({
+                      ...extracted,
+                      teminatlar: [...(extracted.teminatlar || []), { teminatAdi: "", teminatTutari: 0, paraBirimi: "TRY", muafiyet: null, muafiyetTipi: null }]
+                    })}
+                    style={{ fontSize: "var(--text-sm)", padding: "4px 12px" }}
+                  >
+                    + Teminat Ekle
+                  </button>
+                </div>
+                {extracted.teminatlar?.length > 0 ? (
                   <div className="table-wrapper">
                     <table className="table">
                       <thead>
@@ -559,24 +570,95 @@ export default function UploadPage() {
                           <th>Tutar</th>
                           <th>Para Birimi</th>
                           <th>Muafiyet</th>
+                          <th style={{ width: 40 }}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {extracted.teminatlar.map((t, i) => (
                           <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{t.teminatAdi}</td>
-                            <td style={{ fontWeight: 700 }}>{formatCurrency(t.teminatTutari, (t.paraBirimi as "TRY" | "USD" | "EUR") ?? "TRY")}</td>
-                            <td><span className="badge badge-gray">{t.paraBirimi}</span></td>
-                            <td style={{ color: "var(--text-secondary)" }}>
-                              {t.muafiyet ? `${t.muafiyet}${t.muafiyetTipi === "yuzde" ? "%" : " ₺"}` : ""}
+                            <td>
+                              <input
+                                type="text"
+                                className="input"
+                                value={t.teminatAdi}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], teminatAdi: e.target.value };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                placeholder="Teminat adı"
+                                style={{ width: "100%", padding: "4px 8px", fontSize: "var(--text-sm)", fontWeight: 500 }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                className="input"
+                                value={t.teminatTutari || ""}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], teminatTutari: e.target.value ? parseFloat(e.target.value) : 0 };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                placeholder="0"
+                                step="0.01"
+                                style={{ width: "100%", padding: "4px 8px", fontSize: "var(--text-sm)", fontWeight: 700 }}
+                              />
+                            </td>
+                            <td>
+                              <select
+                                className="input"
+                                value={t.paraBirimi}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], paraBirimi: e.target.value };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                style={{ padding: "4px 8px", fontSize: "var(--text-sm)" }}
+                              >
+                                <option value="TRY">TRY</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                className="input"
+                                value={t.muafiyet ?? ""}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], muafiyet: e.target.value ? parseFloat(e.target.value) : null };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                placeholder="—"
+                                style={{ width: 80, padding: "4px 8px", fontSize: "var(--text-sm)" }}
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = extracted.teminatlar.filter((_, idx) => idx !== i);
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger-500)", fontSize: 16, padding: 4 }}
+                                title="Teminatı Kaldır"
+                              >
+                                ✕
+                              </button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div style={{ padding: "var(--space-4)", textAlign: "center", color: "var(--text-tertiary)", fontSize: "var(--text-sm)" }}>
+                    Teminat bulunamadı. Yukarıdaki butona tıklayarak ekleyin.
+                  </div>
+                )}
+              </div>
 
               {/* Prim Bilgileri */}
               {extracted.primBilgileri && (
