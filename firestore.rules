@@ -84,7 +84,12 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // 7. Varsayılan Güvenlik Duvarı (Fail-Closed)
+    // 7. Audit Logs (server-only)
+    match /auditLogs/{logId} {
+      allow read, write: if false;
+    }
+
+    // 8. Varsayılan Güvenlik Duvarı (Fail-Closed)
     // Yukarıda tanımlanmayan hiçbir koleksiyona erişim izni verme
     match /{document=**} {
       allow read, write: if false;

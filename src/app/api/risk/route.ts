@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { withAuth } from '@/lib/api/withAuth';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { tenantId, uid }) => {
   try {
     const body = await request.json();
-    const { tenantId, companyId, action } = body;
-
-    if (!tenantId) {
-      return NextResponse.json(
-        { success: false, error: { code: 'BAD_REQUEST', message: 'tenantId required' } },
-        { status: 400 }
-      );
-    }
+    const { companyId, action } = body;
 
     switch (action) {
       case 'assess': {
@@ -62,4 +56,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

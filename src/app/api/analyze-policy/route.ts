@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { logger } from "@/lib/logger";
+import { withAuth } from "@/lib/api/withAuth";
 import type {
   RiskAlert,
   RawAnalysisFromLLM,
@@ -106,11 +107,12 @@ function normalizeSeverity(value: unknown): RiskAlert["severity"] {
 
 // ─── Ana Handler ─────────────────────────────────────────────────────────────
 
-export async function POST(
-  req: NextRequest
-): Promise<NextResponse<AnalysisResponse | AnalysisErrorResponse>> {
+export const POST = withAuth(async (
+  req: NextRequest,
+  { tenantId, uid }
+): Promise<NextResponse<AnalysisResponse | AnalysisErrorResponse>> => {
   const requestId = randomUUID().slice(0, 8); // Kısa istek kimliği
-  logger.info("Policy risk analysis started", "analyze-policy", { requestId });
+  logger.info("Policy risk analysis started", "analyze-policy", { requestId, tenantId, uid });
 
   // 1. Input Validation ──────────────────────────────────────────────────────
   let policyText: string;
@@ -269,4 +271,4 @@ export async function POST(
     alerts,
     summary,
   });
-}
+});

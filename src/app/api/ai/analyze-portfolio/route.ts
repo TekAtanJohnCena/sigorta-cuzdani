@@ -4,17 +4,12 @@ import { getPoliciesByTenant, saveAnalysisResults, getCompanyProfile } from "@/l
 import { Policy } from "@/types/policy";
 import { aiService } from "@/lib/ai/aiService";
 import type { PortfolioAnalysisResult } from "@/lib/ai/types";
+import { withAuth } from "@/lib/api/withAuth";
 
 export const maxDuration = 60;
 
-export async function POST(req: NextRequest) {
+export const POST = withAuth(async (req: NextRequest, { tenantId, uid }) => {
   try {
-    const body = await req.json();
-    const tenantId = body.tenantId;
-
-    if (!tenantId || typeof tenantId !== "string" || tenantId.length > 128) {
-      return NextResponse.json({ error: "Geçersiz oturum bilgisi." }, { status: 401 });
-    }
 
     logger.info("Portfolio analysis started", "api/ai/analyze-portfolio", { tenantId });
 
@@ -88,10 +83,9 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    const body = await req.json().catch(() => ({}));
     logger.error("Portfolio analysis error", "api/ai/analyze-portfolio", {
       error: (error as Error).message,
-      tenantId: body.tenantId || 'unknown',
+      tenantId,
     });
     // İç hata detaylarını gizle
     return NextResponse.json(
@@ -99,4 +93,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
