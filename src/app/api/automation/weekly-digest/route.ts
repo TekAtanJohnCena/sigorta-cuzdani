@@ -49,11 +49,12 @@ export async function GET(request: NextRequest) {
 
     const adminDb = getFirestore(getAdminApp());
 
-    // --- Fetch all active tenants ---
-    const tenantsSnapshot = await adminDb.collection('tenants').where('status', '==', 'active').get();
+    // --- Fetch unique tenantIds from users collection ---
+    const usersSnapshot = await adminDb.collection('users').get();
+    const tenantIds = [...new Set(usersSnapshot.docs.map(d => d.data().tenantId).filter(Boolean))];
 
-    if (tenantsSnapshot.empty) {
-      logger.info('No active tenants found', 'WeeklyDigest');
+    if (tenantIds.length === 0) {
+      logger.info('No tenants found', 'WeeklyDigest');
       return NextResponse.json({
         success: true,
         data: {
@@ -72,20 +73,15 @@ export async function GET(request: NextRequest) {
       byTenant: [] as { tenantId: string; companyId: string; emailsSent: number }[],
     };
 
-    for (const tenantDoc of tenantsSnapshot.docs) {
-      const tenantData = tenantDoc.data();
-      const tenantId = tenantDoc.id;
-      const companyId = tenantData.companyId || tenantId;
-
+    for (const tenantId of tenantIds) {
       try {
-        const emailsSent = await sendWeeklyDigest(tenantId, companyId);
+        const emailsSent = await sendWeeklyDigest(tenantId, tenantId);
 
         summary.tenantsProcessed++;
         summary.totalEmailsSent += emailsSent;
-        summary.byTenant.push({ tenantId, companyId, emailsSent });
+        summary.byTenant.push({ tenantId, companyId: tenantId, emailsSent });
       } catch (tenantError) {
         logger.error(`Failed to send weekly digest for tenant: ${tenantId}`, 'WeeklyDigest', tenantError);
-        // Continue with next tenant even if one fails
       }
     }
 
