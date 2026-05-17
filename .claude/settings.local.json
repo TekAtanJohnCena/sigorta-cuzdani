@@ -32,7 +32,11 @@
       "Bash(python -m json.tool)",
       "Read(//tmp/**)",
       "Bash(timeout 3 bash .pixel-agents/agents/manager.sh)",
-      "Bash(bash *)"
+      "Bash(bash *)",
+      "Bash(cat .vscode/settings.json)",
+      "Bash(ls .vscode/)",
+      "Bash(cat .editorconfig)",
+      "Bash(git checkout *)"
     ]
   }
 }
