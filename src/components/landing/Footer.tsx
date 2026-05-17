@@ -52,6 +52,9 @@ export default function Footer() {
         <div className="lp-footer__bottom">
           <p>© 2026 Sigorta Cüzdanı A.Ş. Tüm hakları saklıdır.</p>
           <div style={{ display: "flex", gap: "24px" }}>
+            <Link href="/kvkk" style={{ color: "var(--text-tertiary)", transition: "color 150ms" }}>
+              KVKK Politikası
+            </Link>
             <Link href="/login" style={{ color: "var(--text-tertiary)", transition: "color 150ms" }}>
               Kullanım Koşulları
             </Link>

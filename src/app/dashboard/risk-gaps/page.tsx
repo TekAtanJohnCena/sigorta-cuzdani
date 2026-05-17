@@ -20,12 +20,13 @@ import { CompanyProfile } from "@/types/companyProfile";
 import Link from "next/link";
 
 export default function RiskGapsPage() {
-  const { appUser, loading: authLoading } = useAuth();
+  const { appUser, user, loading: authLoading } = useAuth();
   const { isDemoMode } = useDemo();
   const [dbPolicies, setDbPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSector, setSelectedSector] = useState<SectorKey>("teknoloji");
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -99,6 +100,51 @@ export default function RiskGapsPage() {
     return analyzeLimitAdequacy(policies, companyProfile);
   }, [policies, companyProfile]);
 
+  const handleDownloadPDF = async () => {
+    if (!user || !appUser) return;
+
+    setDownloadingPDF(true);
+    try {
+      const idToken = await user.getIdToken();
+
+      const response = await fetch("/api/risk/pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({
+          sectorLabel: sector.label,
+          coverageScore: coveragePct,
+          criticalCount,
+          warningCount,
+          gaps: missingCoverages,
+          totalPolicies: activePolicies.length,
+          estimatedMissingCost,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("PDF oluşturulamadı");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Risk_Raporu_${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("PDF download failed:", error);
+      alert("PDF indirilemedi. Lütfen tekrar deneyin.");
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
@@ -115,7 +161,22 @@ export default function RiskGapsPage() {
           <h1 className="page-title">🎯 Risk Açığı Analizi</h1>
           <p className="page-subtitle">Sektörünüzde bulunması gereken ama eksik olan sigorta teminatları</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <button
+            onClick={handleDownloadPDF}
+            disabled={downloadingPDF || isDemoMode}
+            className="btn btn-primary"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              opacity: downloadingPDF || isDemoMode ? 0.6 : 1,
+              cursor: downloadingPDF || isDemoMode ? "not-allowed" : "pointer",
+            }}
+            title={isDemoMode ? "Demo modunda PDF indirme devre dışı" : ""}
+          >
+            📄 {downloadingPDF ? "İndiriliyor..." : "PDF Rapor İndir"}
+          </button>
           <label style={{ fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-secondary)" }}>Sektör:</label>
           <select
             className="input"
