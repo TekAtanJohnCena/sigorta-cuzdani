@@ -5,10 +5,14 @@ import { useAuth } from "@/lib/firebase/AuthContext";
 import { getFirestore, doc, updateDoc } from "firebase/firestore";
 import { saveCompanyProfile, getCompanyProfile } from "@/lib/firebase/firestore.client";
 import { SECTOR_OPTIONS, SectorKey } from "@/lib/data/sectorInsurance";
+import { usePolicies } from "@/lib/hooks/usePolicies";
+import { getEmployeesByTenant } from "@/lib/firebase/employees";
+import { POLICY_TYPE_LABELS } from "@/types/policy";
 
 export default function SettingsPage() {
   const { appUser } = useAuth();
-  
+  const { policies, loading: policiesLoading } = usePolicies(appUser?.tenantId);
+
   // Profil
   const [companyName, setCompanyName] = useState("");
   const [userName, setUserName] = useState("");
@@ -21,6 +25,9 @@ export default function SettingsPage() {
   const [employeeCount, setEmployeeCount] = useState("");
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState({ text: "", type: "" });
+
+  // Veri Dışa Aktarma
+  const [exporting, setExporting] = useState<"policies" | "employees" | null>(null);
   
   // Bildirim Ayarları
   const [notifications, setNotifications] = useState([
@@ -65,6 +72,102 @@ export default function SettingsPage() {
 
   const toggleNotification = (id: string) => {
     setNotifications(notifications.map(n => n.id === id ? { ...n, checked: !n.checked } : n));
+  };
+
+  const handleExportPolicies = async () => {
+    if (!appUser) return;
+    setExporting("policies");
+    try {
+      const headers = [
+        "Poliçe No",
+        "Sigorta Şirketi",
+        "Poliçe Tipi",
+        "Acente",
+        "Başlangıç Tarihi",
+        "Bitiş Tarihi",
+        "Net Prim (TL)",
+        "Toplam Prim (TL)",
+        "Durum",
+        "Poliçe Sahibi",
+        "Sigortalı"
+      ];
+
+      const rows = policies.map(p => [
+        p.policyNumber,
+        p.insuranceCompany,
+        POLICY_TYPE_LABELS[p.policyType] || p.policyType,
+        p.agencyName,
+        new Date(p.startDate).toLocaleDateString("tr-TR"),
+        new Date(p.endDate).toLocaleDateString("tr-TR"),
+        p.premium.netPremium.toFixed(2),
+        p.premium.totalPremium.toFixed(2),
+        p.status === "active" ? "Aktif" : p.status === "expired" ? "Süresi Dolmuş" : p.status === "cancelled" ? "İptal" : "İnceleme Bekliyor",
+        p.policyHolder.name,
+        p.insured.name
+      ]);
+
+      const csv = [headers.join(","), ...rows.map(r => r.map(cell => `"${cell}"`).join(","))].join("\n");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `policeler_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setMessage({ text: `${policies.length} adet poliçe başarıyla dışa aktarıldı.`, type: "success" });
+    } catch (err: unknown) {
+      setMessage({ text: "Dışa aktarma başarısız: " + (err as Error).message, type: "error" });
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportEmployees = async () => {
+    if (!appUser) return;
+    setExporting("employees");
+    try {
+      const employees = await getEmployeesByTenant(appUser.tenantId);
+
+      const headers = [
+        "Ad Soyad",
+        "TC Kimlik",
+        "Doğum Tarihi",
+        "Departman",
+        "Pozisyon",
+        "İşe Giriş Tarihi",
+        "Durum",
+        "Sigorta Durumu",
+        "Sigorta Başlangıç Tarihi"
+      ];
+
+      const rows = employees.map(e => [
+        e.fullName,
+        e.tcKimlik || "-",
+        e.birthDate ? new Date(e.birthDate).toLocaleDateString("tr-TR") : "-",
+        e.department,
+        e.position,
+        new Date(e.startDate).toLocaleDateString("tr-TR"),
+        e.isActive ? "Aktif" : "Pasif",
+        e.insuranceStatus === "covered" ? "Kapsam Altında" : e.insuranceStatus === "pending_addition" ? "Ekleme Bekliyor" : e.insuranceStatus === "pending_removal" ? "Çıkarma Bekliyor" : "Kapsamda Değil",
+        e.insuranceCoverageStartDate ? new Date(e.insuranceCoverageStartDate).toLocaleDateString("tr-TR") : "-"
+      ]);
+
+      const csv = [headers.join(","), ...rows.map(r => r.map(cell => `"${cell}"`).join(","))].join("\n");
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `calisanlar_${new Date().toISOString().split("T")[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      setMessage({ text: `${employees.length} adet çalışan başarıyla dışa aktarıldı.`, type: "success" });
+    } catch (err: unknown) {
+      setMessage({ text: "Dışa aktarma başarısız: " + (err as Error).message, type: "error" });
+    } finally {
+      setExporting(null);
+    }
   };
 
   if (!appUser) return <div style={{ padding: "var(--space-6)" }}>Yükleniyor...</div>;
@@ -256,6 +359,56 @@ export default function SettingsPage() {
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginTop: "var(--space-2)" }}>
                * Bildirim tercihleri yerel olarak kaydedilir ve güncel sürümlerde e-posta entegrasyonu ile aktifleşecektir.
             </div>
+          </div>
+        </div>
+
+        {/* Veri Yönetimi */}
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: "var(--space-2)" }}>
+            📦 Veri Yönetimi
+          </div>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)", marginBottom: "var(--space-5)", lineHeight: 1.5 }}>
+            Tüm verilerinizi CSV formatında dışa aktarabilirsiniz. Excel ile açılabilir, vendor lock-in riski yoktur.
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-3) var(--space-4)", borderRadius: "var(--radius-md)", background: "var(--neutral-50)" }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>Poliçe Verileri</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)" }}>
+                  {policiesLoading ? "Yükleniyor..." : `${policies.length} adet poliçe kayıtlı`}
+                </div>
+              </div>
+              <button
+                className="btn btn-secondary"
+                onClick={handleExportPolicies}
+                disabled={policiesLoading || policies.length === 0 || exporting === "policies"}
+                style={{ fontSize: "var(--text-sm)" }}
+              >
+                {exporting === "policies" ? "Dışa aktarılıyor..." : "CSV İndir"}
+              </button>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "var(--space-3) var(--space-4)", borderRadius: "var(--radius-md)", background: "var(--neutral-50)" }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: "var(--text-sm)" }}>Çalışan Verileri</div>
+                <div style={{ fontSize: "var(--text-xs)", color: "var(--text-secondary)" }}>
+                  Tüm personel ve sigorta kapsamı bilgileri
+                </div>
+              </div>
+              <button
+                className="btn btn-secondary"
+                onClick={handleExportEmployees}
+                disabled={exporting === "employees"}
+                style={{ fontSize: "var(--text-sm)" }}
+              >
+                {exporting === "employees" ? "Dışa aktarılıyor..." : "CSV İndir"}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginTop: "var(--space-4)", padding: "var(--space-3)", background: "var(--neutral-50)", borderRadius: "var(--radius-md)" }}>
+            💡 <strong>Enterprise Uyumluluk:</strong> CSV dosyaları UTF-8 BOM ile kodlanmıştır, Türkçe karakterler Excel&apos;de doğru görünür.
           </div>
         </div>
       </div>
