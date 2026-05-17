@@ -34,7 +34,7 @@ export default function DemoRequestPage() {
     setStep(1);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.date || !formData.time) {
       alert("Lütfen tarih ve saat seçin.");
@@ -42,11 +42,29 @@ export default function DemoRequestPage() {
     }
 
     setIsSubmitting(true);
-    // Simulate API call to send email
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    try {
+      const response = await fetch('/api/demo-request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error?.message || 'Demo talebi gönderilemedi');
+      }
+
       setIsSuccess(true);
-    }, 1500);
+    } catch (error) {
+      console.error('Demo request failed:', error);
+      alert(error instanceof Error ? error.message : 'Bir hata oluştu. Lütfen daha sonra tekrar deneyin.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const availableDates = Array.from({ length: 7 }).map((_, i) => {

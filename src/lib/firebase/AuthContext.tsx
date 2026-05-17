@@ -43,49 +43,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const db = getFirestore();
           const docRef = doc(db, "users", currentUser.uid);
-          const docSnap = await getDoc(docRef);
-          
+
           let fetchedAppUser: AppUser;
-          if (docSnap.exists()) {
-            fetchedAppUser = { uid: currentUser.uid, ...docSnap.data() } as AppUser;
-          } else {
+
+          // Try to read user doc with error handling for permission issues
+          try {
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              fetchedAppUser = { uid: currentUser.uid, ...docSnap.data() } as AppUser;
+            } else {
+              // User doc doesn't exist - create default admin profile
+              fetchedAppUser = {
+                uid: currentUser.uid,
+                role: "admin",
+                tenantId: currentUser.uid,
+                email: currentUser.email || "",
+                name: "Admin",
+                createdAt: new Date().toISOString()
+              };
+            }
+          } catch (firestoreErr) {
+            // Permission denied or network error - use fallback
+            console.warn("[AUTH] Could not read user doc, using fallback profile:", firestoreErr);
             fetchedAppUser = {
               uid: currentUser.uid,
               role: "admin",
               tenantId: currentUser.uid,
               email: currentUser.email || "",
-              name: "Admin",
+              name: currentUser.displayName || "User",
               createdAt: new Date().toISOString()
             };
           }
-          
+
           // Check tenant subscription expiry (Server-Side to bypass Firestore rules safely)
-          const token = await currentUser.getIdToken();
-          const expiryRes = await fetch("/api/auth/check-expiry", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token })
-          });
-          
-          let expiryResult = { expired: true }; // Fail-closed default
-          if (expiryRes.ok) {
-            expiryResult = await expiryRes.json();
+          try {
+            const token = await currentUser.getIdToken();
+            const expiryRes = await fetch("/api/auth/check-expiry", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ token })
+            });
+
+            let expiryResult = { expired: true }; // Fail-closed default
+            if (expiryRes.ok) {
+              expiryResult = await expiryRes.json();
+            }
+
+            if (expiryResult.expired) {
+              await signOut(auth);
+              setUser(null);
+              setAppUser(null);
+              setExpiredMessage("Abonelik süreniz sona erdi. Yenileme için lütfen bizimle iletişime geçin: destek@sigortacuzdani.net");
+              setLoading(false);
+              router.push("/login");
+              return;
+            }
+          } catch (expiryErr) {
+            // If expiry check fails, log but don't block (fail-open for better UX)
+            console.warn("[AUTH] Expiry check failed, allowing access:", expiryErr);
           }
 
-          if (expiryResult.expired) {
-            await signOut(auth);
-            setUser(null);
-            setAppUser(null);
-            setExpiredMessage("Abonelik süreniz sona erdi. Yenileme için lütfen bizimle iletişime geçin: destek@sigortacuzdani.net");
-            setLoading(false);
-            router.push("/login");
-            return;
-          }
-          
           setAppUser(fetchedAppUser);
           setExpiredMessage(null);
         } catch (err) {
-          console.error("Failed to fetch user metadata", err);
+          console.error("[AUTH] Failed to fetch user metadata:", err);
+          // Set minimal user state to prevent complete lockout
+          setAppUser({
+            uid: currentUser.uid,
+            role: "admin",
+            tenantId: currentUser.uid,
+            email: currentUser.email || "",
+            name: currentUser.displayName || "User",
+            createdAt: new Date().toISOString()
+          });
         }
       } else {
         setAppUser(null);

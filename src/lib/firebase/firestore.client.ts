@@ -116,19 +116,9 @@ export async function deletePolicy(_id: string, _tenantId?: string) {
 
 /**
  * CLIENT-SIDE: Check tenant subscription expiry
- * Subject to Firestore security rules
+ * DEPRECATED - This function now calls the server-side API endpoint
+ * Direct Firestore access is blocked by security rules (tenants collection is server-only)
  */
 export async function checkTenantExpiry(tenantId: string): Promise<{ expired: boolean; endDate?: string }> {
-  try {
-    const snap = await getDoc(doc(db, TENANTS_COLLECTION, tenantId));
-    if (!snap.exists()) return { expired: false }; // No record = old/admin user, allow access
-    const data = snap.data();
-    if (!data?.endDate) return { expired: false };
-    const endDate = new Date(data.endDate);
-    const now = new Date();
-    return { expired: now > endDate, endDate: data.endDate };
-  } catch (error) {
-    console.error(`[SECURITY] [FAIL-CLOSED] Tenant expiry verification failed. Access denied for tenantId=${tenantId}. Error: ${(error as Error).message}`);
-    return { expired: true }; // Fail closed — block access on error
-  }
+  throw new Error("checkTenantExpiry: Client-side access blocked. Use /api/auth/check-expiry endpoint instead.");
 }
