@@ -18,6 +18,45 @@ interface Tenant {
   durationDays?: number;
   notes?: string;
   isActive?: boolean;
+  policyCount?: number;
+  userCount?: number;
+  lastLogin?: string;
+}
+
+interface AuditLogEntry {
+  userId: string;
+  tenantId: string;
+  action: string;
+  resource: string;
+  details?: Record<string, unknown>;
+  timestamp: string;
+}
+
+interface AIStats {
+  totalCalls: number;
+  totalCostUSD: number;
+  averageLatencyMs: number;
+  providerBreakdown: {
+    provider: string;
+    calls: number;
+    costUSD: number;
+    avgLatency: number;
+  }[];
+}
+
+interface TenantStat {
+  tenantId: string;
+  companyName: string;
+  email: string;
+  packageType: string;
+  policyCount: number;
+  userCount: number;
+  lastLogin?: string;
+}
+
+interface AdminStats {
+  tenantStats: TenantStat[];
+  recentActivity: AuditLogEntry[];
 }
 
 const PACKAGE_LABELS: Record<string, string> = {
@@ -30,6 +69,13 @@ const PACKAGE_DAYS: Record<string, number> = {
   demo: 7,
   monthly: 30,
   yearly: 365,
+};
+
+const PACKAGE_PRICES: Record<string, { price: number; label: string }> = {
+  demo: { price: 0, label: "Ücretsiz" },
+  monthly: { price: 999, label: "999 TL/ay" },
+  yearly: { price: 9990, label: "9.990 TL/yıl" },
+  custom: { price: 0, label: "Özel" },
 };
 
 function daysLeft(endDate: string) {
@@ -60,6 +106,14 @@ export default function EmreAdminPage() {
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantsLoading, setTenantsLoading] = useState(false);
+
+  // Admin stats
+  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+
+  // AI stats
+  const [aiStats, setAIStats] = useState<AIStats | null>(null);
+  const [aiStatsLoading, setAIStatsLoading] = useState(false);
 
   // New tenant form
   const [form, setForm] = useState({
@@ -93,10 +147,62 @@ export default function EmreAdminPage() {
     }
   }, []);
 
+  // ── API: Admin stats (policy count, user count, audit logs)
+  const loadAdminStats = useCallback(async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch("/api/admin/stats", {
+        headers: adminHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAdminStats(data.data);
+        // Merge stats into tenants
+        const statsMap = new Map<string, TenantStat>(
+          data.data.tenantStats.map((s: TenantStat) => [s.tenantId, s])
+        );
+        setTenants(prev => prev.map(t => {
+          const stat = statsMap.get(t.id);
+          if (stat) {
+            return { ...t, policyCount: stat.policyCount, userCount: stat.userCount, lastLogin: stat.lastLogin };
+          }
+          return t;
+        }));
+      }
+    } catch (err) {
+      console.error("loadAdminStats:", err);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, []);
+
+  // ── API: AI stats
+  const loadAIStats = useCallback(async () => {
+    setAIStatsLoading(true);
+    try {
+      const res = await fetch("/api/admin/ai-stats", {
+        headers: adminHeaders(),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAIStats(data.data);
+      }
+    } catch (err) {
+      console.error("loadAIStats:", err);
+    } finally {
+      setAIStatsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const stored = sessionStorage.getItem("emre_admin_token");
-    if (stored) { setAuthed(true); loadTenants(); }
-  }, [loadTenants]);
+    if (stored) {
+      setAuthed(true);
+      loadTenants();
+      loadAdminStats();
+      loadAIStats();
+    }
+  }, [loadTenants, loadAdminStats, loadAIStats]);
 
   // ── LOGIN (Sorun 4: Cookie + sessionStorage)
   async function handleLogin(e: React.FormEvent) {
@@ -115,6 +221,8 @@ export default function EmreAdminPage() {
         document.cookie = `admin_token=${data.token}; path=/; max-age=14400; SameSite=Strict`;
         setAuthed(true);
         loadTenants();
+        loadAdminStats();
+        loadAIStats();
       } else {
         setLoginError(data.error || "Hatalı giriş.");
       }
@@ -258,21 +366,89 @@ export default function EmreAdminPage() {
         </button>
       </header>
 
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "2rem" }}>
+      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "2rem" }}>
 
-        {/* Stats Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "2rem" }}>
+        {/* Stats Row - 7 cards in 2 rows */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "2rem" }}>
+          {/* Row 1: Basic metrics */}
           {[
-            { label: "Toplam Şirket", value: tenants.length, color: "#3b82f6" },
-            { label: "Aktif", value: tenants.filter(t => daysLeft(t.endDate) > 0).length, color: "#22c55e" },
-            { label: "Süresi Dolmuş", value: tenants.filter(t => daysLeft(t.endDate) <= 0).length, color: "#ef4444" },
+            { label: "Toplam Şirket", value: tenants.length, color: "#3b82f6", icon: "🏢" },
+            { label: "Aktif", value: tenants.filter(t => daysLeft(t.endDate) > 0).length, color: "#22c55e", icon: "✅" },
+            { label: "Süresi Dolmuş", value: tenants.filter(t => daysLeft(t.endDate) <= 0).length, color: "#ef4444", icon: "⏰" },
+            { label: "Demo Hesaplar", value: tenants.filter(t => t.packageType === "demo").length, color: "#f59e0b", icon: "🎁" },
           ].map(s => (
             <div key={s.label} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 12, padding: "1.25rem" }}>
-              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>{s.label}</div>
+              <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+                <span style={{ marginRight: 6 }}>{s.icon}</span>
+                {s.label}
+              </div>
               <div style={{ fontSize: "2rem", fontWeight: 900, color: s.color }}>{s.value}</div>
             </div>
           ))}
         </div>
+
+        {/* Row 2: Revenue metrics */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "2rem" }}>
+          {(() => {
+            const monthlyRevenue = tenants.filter(t => t.packageType === "monthly").length * PACKAGE_PRICES.monthly.price;
+            const yearlyRevenue = tenants.filter(t => t.packageType === "yearly").length * PACKAGE_PRICES.yearly.price;
+            const totalUsers = adminStats?.tenantStats.reduce((sum, t) => sum + t.userCount, 0) || 0;
+
+            return [
+              { label: "Aylık Gelir", value: `${monthlyRevenue.toLocaleString("tr-TR")} TL`, color: "#22c55e", icon: "💰", subtext: `${tenants.filter(t => t.packageType === "monthly").length} aylık paket` },
+              { label: "Yıllık Gelir", value: `${yearlyRevenue.toLocaleString("tr-TR")} TL`, color: "#10b981", icon: "💎", subtext: `${tenants.filter(t => t.packageType === "yearly").length} yıllık paket` },
+              { label: "Toplam Kullanıcı", value: totalUsers, color: "#8b5cf6", icon: "👥", subtext: "Tüm tenant'lar" },
+            ].map(s => (
+              <div key={s.label} style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 12, padding: "1.25rem" }}>
+                <div style={{ fontSize: "0.75rem", color: "#64748b", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+                  <span style={{ marginRight: 6 }}>{s.icon}</span>
+                  {s.label}
+                </div>
+                <div style={{ fontSize: "1.75rem", fontWeight: 900, color: s.color }}>{s.value}</div>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", marginTop: 4 }}>{s.subtext}</div>
+              </div>
+            ));
+          })()}
+        </div>
+
+        {/* AI Stats Section */}
+        {aiStatsLoading ? (
+          <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 16, padding: "2rem", textAlign: "center", color: "#64748b", marginBottom: "2rem" }}>
+            AI İstatistikleri Yükleniyor...
+          </div>
+        ) : aiStats ? (
+          <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 16, padding: "1.5rem", marginBottom: "2rem" }}>
+            <h2 style={{ margin: "0 0 1.25rem", fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🤖</span>
+              AI Kullanım İstatistikleri (Son 30 Gün)
+            </h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
+              <div style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: "1rem" }}>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 600, marginBottom: 6 }}>TOPLAM ÇAĞRI</div>
+                <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "#3b82f6" }}>{aiStats.totalCalls}</div>
+              </div>
+              <div style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: "1rem" }}>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 600, marginBottom: 6 }}>TOPLAM MALİYET</div>
+                <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "#22c55e" }}>${aiStats.totalCostUSD.toFixed(2)}</div>
+              </div>
+              <div style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: "1rem" }}>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 600, marginBottom: 6 }}>ORT. YANIT SÜRESİ</div>
+                <div style={{ fontSize: "1.75rem", fontWeight: 900, color: "#f59e0b" }}>{Math.round(aiStats.averageLatencyMs)}ms</div>
+              </div>
+              <div style={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 10, padding: "1rem" }}>
+                <div style={{ fontSize: "0.7rem", color: "#64748b", fontWeight: 600, marginBottom: 6 }}>PROVIDER</div>
+                <div style={{ fontSize: "0.8rem", marginTop: 8 }}>
+                  {aiStats.providerBreakdown.map(p => (
+                    <div key={p.provider} style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ color: "#94a3b8" }}>{p.provider}:</span>
+                      <span style={{ color: "white", fontWeight: 700 }}>{p.calls}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "2rem", alignItems: "start" }}>
 
@@ -280,52 +456,62 @@ export default function EmreAdminPage() {
           <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 16, overflow: "hidden" }}>
             <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>Kayıtlı Şirketler</h2>
-              <button onClick={loadTenants} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 6, padding: "0.375rem 0.75rem", cursor: "pointer", fontSize: "0.8rem" }}>
+              <button onClick={() => { loadTenants(); loadAdminStats(); }} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 6, padding: "0.375rem 0.75rem", cursor: "pointer", fontSize: "0.8rem" }}>
                 🔄 Yenile
               </button>
             </div>
 
-            {tenantsLoading ? (
+            {tenantsLoading || statsLoading ? (
               <div style={{ padding: "3rem", textAlign: "center", color: "#64748b" }}>Yükleniyor...</div>
             ) : tenants.length === 0 ? (
               <div style={{ padding: "3rem", textAlign: "center", color: "#64748b" }}>Henüz kayıtlı şirket yok.</div>
             ) : (
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ background: "#0f172a" }}>
-                    {["Şirket", "E-posta", "Paket", "Bitiş", "Durum", ""].map(h => (
-                      <th key={h} style={{ padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 900 }}>
+                  <thead>
+                    <tr style={{ background: "#0f172a" }}>
+                      {["Şirket", "E-posta", "Paket", "Poliçe", "Kullanıcı", "Son Giriş", "Bitiş", "Durum", ""].map(h => (
+                        <th key={h} style={{ padding: "0.75rem 0.75rem", textAlign: "left", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
                   {tenants.map((t: Tenant) => {
                     const left = daysLeft(t.endDate);
                     const expired = left <= 0;
                     const urgent = left > 0 && left <= 7;
                     return (
                       <tr key={t.id} style={{ borderTop: "1px solid #334155" }}>
-                        <td style={{ padding: "0.875rem 1rem", fontWeight: 600, fontSize: "0.875rem" }}>{t.companyName}</td>
-                        <td style={{ padding: "0.875rem 1rem", color: "#94a3b8", fontSize: "0.8rem" }}>{t.email}</td>
-                        <td style={{ padding: "0.875rem 1rem" }}>
-                          <span style={{ background: "#334155", borderRadius: 99, padding: "2px 8px", fontSize: "0.75rem", fontWeight: 600 }}>
+                        <td style={{ padding: "0.875rem 0.75rem", fontWeight: 600, fontSize: "0.875rem", whiteSpace: "nowrap" }}>{t.companyName}</td>
+                        <td style={{ padding: "0.875rem 0.75rem", color: "#94a3b8", fontSize: "0.8rem" }}>{t.email}</td>
+                        <td style={{ padding: "0.875rem 0.75rem" }}>
+                          <span style={{ background: "#334155", borderRadius: 99, padding: "2px 8px", fontSize: "0.75rem", fontWeight: 600, whiteSpace: "nowrap" }}>
                             {PACKAGE_LABELS[t.packageType] || t.packageType}
                           </span>
                         </td>
-                        <td style={{ padding: "0.875rem 1rem", fontSize: "0.8rem", color: "#94a3b8" }}>
-                          {t.endDate ? new Date(t.endDate).toLocaleDateString("tr-TR") : "—"}
+                        <td style={{ padding: "0.875rem 0.75rem", fontSize: "0.875rem", color: "#3b82f6", fontWeight: 700, textAlign: "center" }}>
+                          {t.policyCount ?? "—"}
                         </td>
-                        <td style={{ padding: "0.875rem 1rem" }}>
+                        <td style={{ padding: "0.875rem 0.75rem", fontSize: "0.875rem", color: "#8b5cf6", fontWeight: 700, textAlign: "center" }}>
+                          {t.userCount ?? "—"}
+                        </td>
+                        <td style={{ padding: "0.875rem 0.75rem", fontSize: "0.75rem", color: "#94a3b8", whiteSpace: "nowrap" }}>
+                          {t.lastLogin ? new Date(t.lastLogin).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}
+                        </td>
+                        <td style={{ padding: "0.875rem 0.75rem", fontSize: "0.75rem", color: "#94a3b8", whiteSpace: "nowrap" }}>
+                          {t.endDate ? new Date(t.endDate).toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"}
+                        </td>
+                        <td style={{ padding: "0.875rem 0.75rem" }}>
                           {expired ? (
-                            <span style={{ background: "#450a0a", color: "#fca5a5", borderRadius: 99, padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700 }}>Süresi Doldu</span>
+                            <span style={{ background: "#450a0a", color: "#fca5a5", borderRadius: 99, padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700, whiteSpace: "nowrap" }}>Süresi Doldu</span>
                           ) : urgent ? (
-                            <span style={{ background: "#451a03", color: "#fdba74", borderRadius: 99, padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700 }}>{left} gün</span>
+                            <span style={{ background: "#451a03", color: "#fdba74", borderRadius: 99, padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700, whiteSpace: "nowrap" }}>{left} gün</span>
                           ) : (
-                            <span style={{ background: "#052e16", color: "#86efac", borderRadius: 99, padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700 }}>{left} gün</span>
+                            <span style={{ background: "#052e16", color: "#86efac", borderRadius: 99, padding: "2px 10px", fontSize: "0.75rem", fontWeight: 700, whiteSpace: "nowrap" }}>{left} gün</span>
                           )}
                         </td>
-                        <td style={{ padding: "0.875rem 1rem" }}>
-                          <div style={{ display: "flex", gap: 6 }}>
+                        <td style={{ padding: "0.875rem 0.75rem" }}>
+                          <div style={{ display: "flex", gap: 6, whiteSpace: "nowrap" }}>
                             <button onClick={() => { setEditTenant(t); setEditDays("30"); }}
                               style={{ background: "#1d4ed8", color: "white", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem" }}>
                               ✏️ Uzat
@@ -341,6 +527,7 @@ export default function EmreAdminPage() {
                   })}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 
@@ -401,6 +588,65 @@ export default function EmreAdminPage() {
             </form>
           </div>
         </div>
+
+        {/* Audit Log Section */}
+        {adminStats && adminStats.recentActivity.length > 0 && (
+          <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 16, overflow: "hidden", marginTop: "2rem" }}>
+            <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #334155" }}>
+              <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 20 }}>📋</span>
+                Son Aktiviteler (Audit Log)
+              </h2>
+            </div>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "#0f172a" }}>
+                    {["Tarih/Saat", "Kullanıcı", "Aksiyon", "Kaynak", "Detay"].map(h => (
+                      <th key={h} style={{ padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em" }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {adminStats.recentActivity.map((log, idx) => (
+                    <tr key={idx} style={{ borderTop: "1px solid #334155" }}>
+                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.75rem", color: "#94a3b8", whiteSpace: "nowrap" }}>
+                        {new Date(log.timestamp).toLocaleString("tr-TR", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          year: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </td>
+                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.8rem", color: "#e2e8f0", fontFamily: "monospace" }}>
+                        {log.userId.slice(0, 8)}...
+                      </td>
+                      <td style={{ padding: "0.75rem 1rem" }}>
+                        <span style={{
+                          background: log.action.includes("delete") ? "#450a0a" : log.action.includes("create") ? "#052e16" : "#1e3a8a",
+                          color: log.action.includes("delete") ? "#fca5a5" : log.action.includes("create") ? "#86efac" : "#93c5fd",
+                          borderRadius: 6,
+                          padding: "3px 8px",
+                          fontSize: "0.75rem",
+                          fontWeight: 600
+                        }}>
+                          {log.action}
+                        </span>
+                      </td>
+                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.8rem", color: "#94a3b8" }}>
+                        {log.resource}
+                      </td>
+                      <td style={{ padding: "0.75rem 1rem", fontSize: "0.75rem", color: "#64748b", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {log.details ? JSON.stringify(log.details) : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Edit Modal */}
