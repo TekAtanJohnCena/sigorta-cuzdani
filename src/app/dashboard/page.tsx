@@ -83,6 +83,53 @@ export default function DashboardPage() {
     };
   }, [policies]);
 
+  const urgentAlerts = useMemo(() => {
+    const alerts = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Vadesi 7 gün içinde biten poliçeler
+    const expiringSoon = policies.filter((p) => {
+      if (p.status === "cancelled") return false;
+      const days = daysUntil(p.endDate);
+      return days >= 0 && days <= 7;
+    });
+
+    if (expiringSoon.length > 0) {
+      alerts.push({
+        type: "expiring",
+        severity: "danger",
+        icon: "⚠️",
+        title: `${expiringSoon.length} poliçenin vadesi 7 gün içinde doluyor!`,
+        description: expiringSoon.map(p => `${p.insuranceCompany} ${POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS] || p.policyType} (${daysUntil(p.endDate)} gün kaldı)`).join(", "),
+        link: "/dashboard/renewals",
+        linkText: "Yenilemelere Git"
+      });
+    }
+
+    // Vadesi geçmiş poliçeler
+    const expired = policies.filter((p) => {
+      if (p.status === "cancelled") return false;
+      const endDate = new Date(p.endDate);
+      endDate.setHours(0, 0, 0, 0);
+      return endDate < today;
+    });
+
+    if (expired.length > 0) {
+      alerts.push({
+        type: "expired",
+        severity: "warning",
+        icon: "🔴",
+        title: `${expired.length} poliçenizin vadesi doldu!`,
+        description: expired.map(p => `${p.insuranceCompany} ${POLICY_TYPE_LABELS[p.policyType as keyof typeof POLICY_TYPE_LABELS] || p.policyType}`).join(", "),
+        link: "/dashboard/policies?status=expired",
+        linkText: "Poliçeleri Görüntüle"
+      });
+    }
+
+    return alerts;
+  }, [policies]);
+
   if (authLoading || loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "50vh" }}>
@@ -94,19 +141,36 @@ export default function DashboardPage() {
 
   if (!isDemoMode && dbPolicies.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: "var(--space-16) var(--space-4)" }}>
-        <div style={{ fontSize: "4rem", marginBottom: "var(--space-4)" }}>📊</div>
-        <h2 style={{ fontSize: "var(--text-xl)", fontWeight: 800, marginBottom: "var(--space-2)" }}>AI Destekli Kurumsal Cüzdanınıza Hoş Geldiniz</h2>
-        <p style={{ color: "var(--text-secondary)", maxWidth: 550, margin: "0 auto var(--space-8)", lineHeight: 1.6 }}>
-          Sigorta Cüzdanı sadece tarihlerinizi hatırlatmaz; karmaşık PDF sözleşmelerini okur, portföyünüzdeki <b>risk açıklarını</b> ve <b>boşa ödenen primleri</b> saniyeler içinde analiz eder.
+      <div className="card" style={{ padding: "var(--space-8)", textAlign: "center", maxWidth: 600, margin: "var(--space-8) auto" }}>
+        <div style={{ fontSize: "3rem", marginBottom: "var(--space-4)" }}>🎯</div>
+        <h2 style={{ fontSize: "var(--text-2xl)", fontWeight: 700, marginBottom: "var(--space-3)" }}>
+          Sigorta Portföyünüzü Yönetmeye Başlayın
+        </h2>
+        <p style={{ color: "var(--text-secondary)", marginBottom: "var(--space-6)", lineHeight: 1.6 }}>
+          Poliçe belgelerinizi yükleyin, yapay zeka ile analiz ettirin.
+          Vade takibi, risk analizi ve maliyet optimizasyonu otomatik başlasın.
         </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
-          <button onClick={() => { setIsDemoMode(true); }} className="btn btn-secondary btn-lg" style={{ background: "white" }}>
-            👁️ Demo Verilerle İncele
-          </button>
-          <Link href="/dashboard/upload" className="btn btn-primary btn-lg">
-            🚀 Kendi Belgemi Yükle
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)", alignItems: "center" }}>
+          <Link href="/dashboard/upload" className="btn btn-primary" style={{ width: "100%", maxWidth: 300, padding: "var(--space-3)", textDecoration: "none" }}>
+            📄 Poliçe PDF'lerini Yükle
           </Link>
+          <Link href="/dashboard/policies" className="btn btn-secondary" style={{ width: "100%", maxWidth: 300, padding: "var(--space-3)", textDecoration: "none" }}>
+            ✏️ Manuel Poliçe Ekle
+          </Link>
+        </div>
+
+        <div style={{ marginTop: "var(--space-8)", padding: "var(--space-4)", background: "var(--bg-secondary, #f9fafb)", borderRadius: 8 }}>
+          <p style={{ fontSize: "var(--text-sm)", color: "var(--text-tertiary)", margin: 0 }}>
+            💡 PDF yüklediğinizde yapay zeka poliçe bilgilerini otomatik çıkarır:
+            sigorta şirketi, prim tutarı, vade tarihleri, teminat detayları.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "var(--space-6)", paddingTop: "var(--space-6)", borderTop: "1px solid var(--neutral-200)" }}>
+          <button onClick={() => { setIsDemoMode(true); }} className="btn btn-ghost btn-sm">
+            👁️ Önce demo verilerle sistemi incele
+          </button>
         </div>
       </div>
     );
@@ -170,6 +234,37 @@ export default function DashboardPage() {
           <button onClick={() => { setIsDemoMode(false); }} className="btn btn-ghost btn-sm" style={{ color: "var(--warning-800)" }}>
             Kapat ve Sisteme Dön ✖
           </button>
+        </div>
+      )}
+
+      {/* Acil Uyarılar */}
+      {urgentAlerts.length > 0 && (
+        <div style={{ marginBottom: "var(--space-6)" }}>
+          {urgentAlerts.map((alert, idx) => (
+            <div
+              key={idx}
+              className="card"
+              style={{
+                padding: "var(--space-4)",
+                borderLeft: `4px solid ${alert.severity === "danger" ? "var(--danger-500)" : "var(--warning-500)"}`,
+                background: alert.severity === "danger" ? "var(--danger-50, #fef2f2)" : "var(--warning-50, #fffbeb)",
+                marginBottom: urgentAlerts.length > 1 && idx < urgentAlerts.length - 1 ? "var(--space-3)" : 0
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                <span style={{ fontSize: "1.5rem" }}>{alert.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ fontSize: "var(--text-base)", color: "var(--text-primary)" }}>{alert.title}</strong>
+                  <p style={{ margin: "4px 0 0 0", fontSize: "var(--text-sm)", color: "var(--text-secondary)", lineHeight: 1.5 }}>
+                    {alert.description}
+                  </p>
+                </div>
+                <Link href={alert.link} className="btn btn-sm" style={{ marginLeft: "auto", whiteSpace: "nowrap" }}>
+                  {alert.linkText}
+                </Link>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
