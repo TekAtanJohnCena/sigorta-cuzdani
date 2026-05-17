@@ -1,80 +1,141 @@
 {
-  "version": "1.0",
+  "version": "2.0",
+  "philosophy": "Müdür (Opus) az token harcar, iş dağıtır. Alt ajanlar gerçek işi yapar.",
   "agents": [
     {
       "id": "manager",
-      "name": "Müdür (Manager)",
+      "name": "Müdür",
       "emoji": "👔",
       "color": "#8B5CF6",
-      "role": "Raporlama & Yönetim",
-      "model": "Sonnet 4.5",
-      "description": "Proje ilerlemesini takip eder, raporlar hazırlar",
+      "role": "Orkestrasyon & Koordinasyon",
+      "model": "opus",
+      "tokenBudget": "minimal",
+      "description": "Ana conversation. İş dağıtır, sonuçları birleştirir, kullanıcıyla iletişim kurar. Kod YAZMAZ.",
+      "spawnMethod": "main-conversation",
       "active": true
     },
     {
       "id": "architect",
-      "name": "Mimar (Architect)",
+      "name": "Mimar",
       "emoji": "🏗️",
       "color": "#3B82F6",
-      "role": "Mimari Tasarım",
-      "model": "Sonnet 4.6",
-      "description": "Sistem mimarisini planlar, teknik kararlar alır",
+      "role": "Mimari Tasarım & Planlama",
+      "model": "sonnet",
+      "tokenBudget": "medium",
+      "description": "Sistem tasarımı, dosya yapısı, veri akışı planlar. Kod yazmaz, plan çıkarır.",
+      "spawnMethod": "Agent tool → subagent_type: Plan",
+      "triggers": ["yeni feature", "refactor", "sistem değişikliği"],
       "active": true
     },
     {
       "id": "developer",
-      "name": "Yazılımcı (Developer)",
+      "name": "Yazılımcı",
       "emoji": "💻",
       "color": "#10B981",
-      "role": "Kod Geliştirme",
-      "model": "Sonnet 4.6",
-      "description": "Kod yazar, feature'ları implement eder",
+      "role": "Kod Geliştirme & Implementasyon",
+      "model": "sonnet",
+      "tokenBudget": "high",
+      "description": "Kod yazar, feature implement eder, bug fix yapar. Asıl iş gücü.",
+      "spawnMethod": "Agent tool → subagent_type: general-purpose",
+      "triggers": ["implement", "fix", "build", "code"],
+      "active": true
+    },
+    {
+      "id": "explorer",
+      "name": "Keşifçi",
+      "emoji": "🔍",
+      "color": "#F97316",
+      "role": "Kod Araştırma & Analiz",
+      "model": "sonnet",
+      "tokenBudget": "low",
+      "description": "Codebase'de arama yapar, pattern bulur, bağımlılık analizi. Read-only.",
+      "spawnMethod": "Agent tool → subagent_type: Explore",
+      "triggers": ["nerede", "bul", "ara", "hangi dosya"],
       "active": true
     },
     {
       "id": "security-auditor",
-      "name": "Güvenlik Uzmanı 1",
+      "name": "Güvenlik Uzmanı",
       "emoji": "🔒",
       "color": "#EF4444",
-      "role": "Güvenlik İncelemesi",
-      "model": "Haiku 4.5",
-      "description": "Güvenlik açıklarını tespit eder, audit yapar",
-      "active": true
-    },
-    {
-      "id": "security-auditor-2",
-      "name": "Güvenlik Uzmanı 2",
-      "emoji": "🛡️",
-      "color": "#F59E0B",
-      "role": "Penetrasyon Testi",
-      "model": "Haiku 4.5",
-      "description": "İkinci göz, çapraz güvenlik kontrolü",
+      "role": "Güvenlik Audit & İnceleme",
+      "model": "haiku",
+      "tokenBudget": "low",
+      "description": "Değişiklikleri güvenlik açısından tarar. OWASP Top 10, SQL injection, XSS, secret leak.",
+      "spawnMethod": "Agent tool → model: haiku",
+      "triggers": ["commit öncesi", "PR", "security check"],
       "active": true
     },
     {
       "id": "tester",
-      "name": "Test Uzmanı (QA)",
+      "name": "Test Uzmanı",
       "emoji": "🧪",
       "color": "#EC4899",
-      "role": "Kalite Kontrolü",
-      "model": "Haiku 4.5",
-      "description": "Test senaryoları yazar, bug bulur",
+      "role": "Test & Kalite Kontrol",
+      "model": "haiku",
+      "tokenBudget": "low",
+      "description": "Test senaryoları yazar, edge case bulur, coverage analizi yapar.",
+      "spawnMethod": "Agent tool → model: haiku",
+      "triggers": ["test yaz", "QA", "kontrol et"],
       "active": true
     },
     {
-      "id": "documentation",
-      "name": "Dokümantasyon Uzmanı",
-      "emoji": "📝",
-      "color": "#06B6D4",
-      "role": "Dokümantasyon",
-      "model": "Haiku 4.5",
-      "description": "Kod dokümantasyonu, kullanım kılavuzları yazar",
+      "id": "reviewer",
+      "name": "Code Reviewer",
+      "emoji": "👁️",
+      "color": "#6366F1",
+      "role": "Kod İnceleme & Best Practice",
+      "model": "haiku",
+      "tokenBudget": "low",
+      "description": "Yazılan kodu inceler: clean code, performance, maintainability.",
+      "spawnMethod": "Agent tool → model: haiku",
+      "triggers": ["review", "incele", "kontrol"],
+      "active": true
+    },
+    {
+      "id": "intern",
+      "name": "Stajyer",
+      "emoji": "🧑‍💻",
+      "color": "#A3E635",
+      "role": "Sohbet & Öğrenme & Not Alma",
+      "model": "haiku",
+      "tokenBudget": "minimal",
+      "description": "Kullanıcı ile sohbet eder, basit sorular sorar/cevaplar, not alır. Öğrenme modunda.",
+      "spawnMethod": "Agent tool → model: haiku",
+      "triggers": ["stajyer", "sohbet", "açıkla", "ne yaptık"],
       "active": true
     }
   ],
+  "workflows": {
+    "feature": {
+      "name": "Yeni Feature",
+      "steps": ["architect → plan", "developer → implement", "security-auditor → audit", "reviewer → review"],
+      "approvalRequired": true
+    },
+    "bugfix": {
+      "name": "Bug Fix",
+      "steps": ["explorer → locate", "developer → fix", "tester → verify"],
+      "approvalRequired": false
+    },
+    "refactor": {
+      "name": "Refactoring",
+      "steps": ["explorer → analyze", "architect → plan", "developer → implement", "reviewer → review"],
+      "approvalRequired": true
+    }
+  },
+  "costStrategy": {
+    "principle": "Haiku for analysis, Sonnet for creation, Opus only coordinates",
+    "budgetRules": [
+      "Müdür: Sadece 1-2 cümle ile delegate et, özet al",
+      "Explorer: Read-only, grep/glob kullan, dosya düzenleme yok",
+      "Security/Test/Review: Haiku model, kısa ve net output",
+      "Developer: En çok token burada harcanır, sorun yok",
+      "Architect: Plan mode kullan, kod yazma"
+    ]
+  },
   "logFile": ".claude/cost-tracking.log",
   "settings": {
-    "refreshInterval": 5000,
+    "refreshInterval": 10000,
     "showInactiveAgents": true,
     "notifyOnActivity": true
   }

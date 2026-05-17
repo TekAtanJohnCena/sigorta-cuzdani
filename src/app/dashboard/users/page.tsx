@@ -8,7 +8,7 @@ import { initializeApp, getApps } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 
 export default function UsersPage() {
-  const { appUser } = useAuth();
+  const { appUser, user } = useAuth();
   const [users, setUsers] = useState<AppUser[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -43,10 +43,10 @@ export default function UsersPage() {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!appUser || appUser.role !== "admin") return;
-    
+
     setIsSubmitting(true);
     setMessage({ text: "", type: "" });
-    
+
     try {
       // 1. Initialize secondary Firebase app to prevent logging out
       const primaryApp = getApps()[0];
@@ -54,16 +54,16 @@ export default function UsersPage() {
       if (!secondaryApp) {
         secondaryApp = initializeApp(primaryApp.options, "Secondary");
       }
-      
+
       const secondaryAuth = getAuth(secondaryApp);
-      
+
       // 2. Create the user in Auth
       const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
       const newUid = userCredential.user.uid;
-      
+
       // 3. Immediately sign out the secondary instance to be safe
       await signOut(secondaryAuth);
-      
+
       // 4. Create Firestore user document using primary app
       const db = getFirestore();
       const newUserDoc: AppUser = {
@@ -75,15 +75,53 @@ export default function UsersPage() {
         createdAt: new Date().toISOString(),
         emailNotifications: true // Default to true
       };
-      
+
       await setDoc(doc(db, "users", newUid), newUserDoc);
-      
+
       setUsers([...users, newUserDoc]);
       setName(""); setEmail(""); setPassword(""); setRole("user");
       setMessage({ text: "Kullanıcı başarıyla oluşturuldu.", type: "success" });
     } catch (err: unknown) {
-      console.error(err);
-      setMessage({ text: (err as Error).message || "Bir hata oluştu", type: "error" });
+      if (err && typeof err === 'object' && 'code' in err && err.code === 'auth/email-already-in-use') {
+        const alreadyInTenant = users.some(u => u.email === email);
+        if (alreadyInTenant) {
+          setMessage({ text: "Bu kullanıcı zaten organizasyonunuza eklenmiş.", type: "error" });
+        } else {
+          try {
+            const idToken = await user?.getIdToken();
+            const res = await fetch("/api/users/lookup", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email, idToken, name, role, tenantId: appUser.tenantId }),
+            });
+            if (res.ok) {
+              const { uid } = await res.json();
+              const newUserDoc: AppUser = {
+                uid,
+                email,
+                name,
+                role,
+                tenantId: appUser.tenantId,
+                createdAt: new Date().toISOString(),
+                emailNotifications: true,
+              };
+              setUsers([...users, newUserDoc]);
+              setName(""); setEmail(""); setPassword(""); setRole("user");
+              setMessage({ text: "Mevcut kullanıcı organizasyonunuza eklendi.", type: "success" });
+            } else {
+              const errData = await res.json().catch(() => null);
+              console.error("[users/lookup] API error:", res.status, errData);
+              setMessage({ text: "Bu e-posta adresi zaten kayıtlı ama eklenemedi. Destek ile iletişime geçin.", type: "error" });
+            }
+          } catch (lookupErr) {
+            console.error("[users/lookup] Client error:", lookupErr);
+            setMessage({ text: "Kullanıcı eklenirken bir hata oluştu.", type: "error" });
+          }
+        }
+      } else {
+        console.error(err);
+        setMessage({ text: (err as Error).message || "Bir hata oluştu", type: "error" });
+      }
     } finally {
       setIsSubmitting(false);
     }

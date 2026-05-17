@@ -46,9 +46,24 @@ service cloud.firestore {
       allow read, write: if isAuthenticated() && request.auth.uid == userId;
       // Veya aynı tenant altındaki diğer kullanıcıları okuyabilir (Admin paneli listelemesi için)
       allow read: if isTenantMatch(resource.data.tenantId);
+      allow create: if isAuthenticated()
+                    && request.resource.data.tenantId is string
+                    && request.resource.data.tenantId.size() > 0
+                    && isTenantMatch(request.resource.data.tenantId);
     }
 
-    // 4. AI Metrikleri (AI Metrics) Koleksiyonu Kuralları
+    // 4. Çalışanlar (Employees) Koleksiyonu Kuralları
+    match /employees/{employeeId} {
+      allow read: if isTenantMatch(resource.data.tenantId);
+      allow create: if request.resource.data.tenantId is string
+                    && request.resource.data.tenantId.size() > 0
+                    && isTenantMatch(request.resource.data.tenantId);
+      allow update: if isTenantMatch(resource.data.tenantId)
+                    && request.resource.data.tenantId == resource.data.tenantId;
+      allow delete: if isTenantMatch(resource.data.tenantId);
+    }
+
+    // 5. AI Metrikleri (AI Metrics) Koleksiyonu Kuralları
     // Client-side'dan sadece yazma (log kaydetme) izni var
     // Okuma işlemleri sadece server-side Admin API üzerinden yapılır
     match /aiMetrics/{metricId} {
@@ -63,13 +78,13 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
-    // 5. Admin Yönetim Koleksiyonu (Tenants)
+    // 6. Admin Yönetim Koleksiyonu (Tenants)
     match /tenants/{tenantId} {
       // Client-side'dan erişime kapatıldı. Bu koleksiyon sadece Server-side (Admin SDK) ile yönetilmelidir.
       allow read, write: if false;
     }
 
-    // 6. Varsayılan Güvenlik Duvarı (Fail-Closed)
+    // 7. Varsayılan Güvenlik Duvarı (Fail-Closed)
     // Yukarıda tanımlanmayan hiçbir koleksiyona erişim izni verme
     match /{document=**} {
       allow read, write: if false;
