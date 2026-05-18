@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 import { useState, useCallback } from "react";
-import { formatCurrency } from "@/lib/utils/currency";
-import { formatDateShort } from "@/lib/utils/date";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { uploadPolicyPDF } from "@/lib/firebase/storage";
 import { auth } from "@/lib/firebase/config";
@@ -396,7 +394,7 @@ export default function UploadPage() {
                 <div>
                   <div style={{ fontWeight: 700, fontSize: "var(--text-base)" }}>AI Analizi Tamamlandı</div>
                   <div style={{ fontSize: "var(--text-sm)", color: "var(--text-secondary)" }}>
-                    {uploadedFile?.name}  Sonuçları inceleyin ve onaylayın
+                    {uploadedFile?.name}  Verileri kontrol edin ve düzenleyin
                   </div>
                 </div>
               </div>
@@ -421,73 +419,149 @@ export default function UploadPage() {
                 <div className="review-section-title"> Temel Bilgiler</div>
                 <div className="review-grid">
                   <div className="review-field">
-                    <div className="review-field-label">Poliçe Tipi</div>
-                    <div className="review-field-value">{POLICY_TYPE_LABELS[extracted.policeTipi] ?? extracted.policeTipi}</div>
+                    <label className="review-field-label" htmlFor="policeTipi">Poliçe Tipi</label>
+                    <select
+                      id="policeTipi"
+                      className="input"
+                      value={extracted.policeTipi}
+                      onChange={(e) => setExtracted({ ...extracted, policeTipi: e.target.value })}
+                      style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                    >
+                      {Object.entries(POLICY_TYPE_LABELS).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">
+                    <label className="review-field-label" htmlFor="policeNumarasi">
                       Poliçe Numarası
-                      {!extracted.policeNumarasi && (
-                        <span style={{ color: "var(--danger-500)", marginLeft: 4 }}>*</span>
-                      )}
-                    </div>
-                    <div
-                      className="review-field-value"
+                      <span style={{ color: "var(--danger-500)", marginLeft: 4 }}>*</span>
+                    </label>
+                    <input
+                      id="policeNumarasi"
+                      type="text"
+                      className="input"
+                      value={extracted.policeNumarasi ?? ""}
+                      onChange={(e) => setExtracted({ ...extracted, policeNumarasi: e.target.value })}
+                      placeholder="Poliçe numarasını giriniz"
                       style={{
+                        width: "100%",
+                        padding: "var(--space-2) var(--space-3)",
+                        fontSize: "var(--text-sm)",
                         fontFamily: "var(--font-mono)",
-                        color: !extracted.policeNumarasi ? "var(--danger-500)" : "inherit",
-                        fontStyle: !extracted.policeNumarasi ? "italic" : "normal",
+                        borderColor: !extracted.policeNumarasi ? "var(--danger-500)" : undefined
                       }}
-                    >
-                      {extracted.policeNumarasi ?? "❌ Okunamadı - Manuel giriş gerekli"}
-                    </div>
+                    />
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">
+                    <label className="review-field-label" htmlFor="sigortaSirketi">
                       Sigorta Şirketi
-                      {!extracted.sigortaSirketi && (
-                        <span style={{ color: "var(--danger-500)", marginLeft: 4 }}>*</span>
-                      )}
-                    </div>
-                    <div
-                      className="review-field-value"
+                      <span style={{ color: "var(--danger-500)", marginLeft: 4 }}>*</span>
+                    </label>
+                    <input
+                      id="sigortaSirketi"
+                      type="text"
+                      className="input"
+                      value={extracted.sigortaSirketi ?? ""}
+                      onChange={(e) => setExtracted({ ...extracted, sigortaSirketi: e.target.value })}
+                      placeholder="Sigorta şirketini giriniz"
                       style={{
-                        color: !extracted.sigortaSirketi ? "var(--danger-500)" : "inherit",
-                        fontStyle: !extracted.sigortaSirketi ? "italic" : "normal",
+                        width: "100%",
+                        padding: "var(--space-2) var(--space-3)",
+                        fontSize: "var(--text-sm)",
+                        borderColor: !extracted.sigortaSirketi ? "var(--danger-500)" : undefined
                       }}
-                    >
-                      {extracted.sigortaSirketi ?? "❌ Okunamadı - Manuel giriş gerekli"}
-                    </div>
+                    />
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">Acente</div>
-                    <div className="review-field-value">{extracted.acenteAdi ?? ""}</div>
+                    <label className="review-field-label" htmlFor="acenteAdi">Acente</label>
+                    <input
+                      id="acenteAdi"
+                      type="text"
+                      className="input"
+                      value={extracted.acenteAdi ?? ""}
+                      onChange={(e) => setExtracted({ ...extracted, acenteAdi: e.target.value })}
+                      placeholder="Acente adı (opsiyonel)"
+                      style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                    />
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">Başlangıç</div>
-                    <div className="review-field-value">{extracted.baslangicTarihi ? formatDateShort(extracted.baslangicTarihi) : ""}</div>
+                    <label className="review-field-label" htmlFor="baslangicTarihi">Başlangıç</label>
+                    <input
+                      id="baslangicTarihi"
+                      type="date"
+                      className="input"
+                      value={extracted.baslangicTarihi ?? ""}
+                      onChange={(e) => setExtracted({ ...extracted, baslangicTarihi: e.target.value })}
+                      style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                    />
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">Bitiş</div>
-                    <div className="review-field-value">{extracted.bitisTarihi ? formatDateShort(extracted.bitisTarihi) : ""}</div>
+                    <label className="review-field-label" htmlFor="bitisTarihi">Bitiş</label>
+                    <input
+                      id="bitisTarihi"
+                      type="date"
+                      className="input"
+                      value={extracted.bitisTarihi ?? ""}
+                      onChange={(e) => setExtracted({ ...extracted, bitisTarihi: e.target.value })}
+                      style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                    />
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">Sigorta Ettiren</div>
-                    <div className="review-field-value">{extracted.sigortaEttiren?.unvan ?? ""}</div>
+                    <label className="review-field-label" htmlFor="sigortaEttirenUnvan">Sigorta Ettiren</label>
+                    <input
+                      id="sigortaEttirenUnvan"
+                      type="text"
+                      className="input"
+                      value={extracted.sigortaEttiren?.unvan ?? ""}
+                      onChange={(e) => setExtracted({
+                        ...extracted,
+                        sigortaEttiren: { ...extracted.sigortaEttiren, unvan: e.target.value }
+                      })}
+                      placeholder="Unvan"
+                      style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                    />
                   </div>
                   <div className="review-field">
-                    <div className="review-field-label">Vergi No</div>
-                    <div className="review-field-value" style={{ fontFamily: "var(--font-mono)" }}>
-                      {extracted.sigortaEttiren?.vergiNo ?? ""}
-                    </div>
+                    <label className="review-field-label" htmlFor="sigortaEttirenVergiNo">Vergi No</label>
+                    <input
+                      id="sigortaEttirenVergiNo"
+                      type="text"
+                      className="input"
+                      value={extracted.sigortaEttiren?.vergiNo ?? ""}
+                      onChange={(e) => setExtracted({
+                        ...extracted,
+                        sigortaEttiren: { ...extracted.sigortaEttiren, vergiNo: e.target.value }
+                      })}
+                      placeholder="Vergi numarası"
+                      style={{
+                        width: "100%",
+                        padding: "var(--space-2) var(--space-3)",
+                        fontSize: "var(--text-sm)",
+                        fontFamily: "var(--font-mono)"
+                      }}
+                    />
                   </div>
                 </div>
               </div>
 
               {/* Teminatlar */}
-              {extracted.teminatlar?.length > 0 && (
-                <div className="review-section">
+              <div className="review-section">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div className="review-section-title"> Teminatlar</div>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setExtracted({
+                      ...extracted,
+                      teminatlar: [...(extracted.teminatlar || []), { teminatAdi: "", teminatTutari: 0, paraBirimi: "TRY", muafiyet: null, muafiyetTipi: null }]
+                    })}
+                    style={{ fontSize: "var(--text-sm)", padding: "4px 12px" }}
+                  >
+                    + Teminat Ekle
+                  </button>
+                </div>
+                {extracted.teminatlar?.length > 0 ? (
                   <div className="table-wrapper">
                     <table className="table">
                       <thead>
@@ -496,59 +570,202 @@ export default function UploadPage() {
                           <th>Tutar</th>
                           <th>Para Birimi</th>
                           <th>Muafiyet</th>
+                          <th style={{ width: 40 }}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {extracted.teminatlar.map((t, i) => (
                           <tr key={i}>
-                            <td style={{ fontWeight: 500 }}>{t.teminatAdi}</td>
-                            <td style={{ fontWeight: 700 }}>{formatCurrency(t.teminatTutari, (t.paraBirimi as "TRY" | "USD" | "EUR") ?? "TRY")}</td>
-                            <td><span className="badge badge-gray">{t.paraBirimi}</span></td>
-                            <td style={{ color: "var(--text-secondary)" }}>
-                              {t.muafiyet ? `${t.muafiyet}${t.muafiyetTipi === "yuzde" ? "%" : " ₺"}` : ""}
+                            <td>
+                              <input
+                                type="text"
+                                className="input"
+                                value={t.teminatAdi}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], teminatAdi: e.target.value };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                placeholder="Teminat adı"
+                                style={{ width: "100%", padding: "4px 8px", fontSize: "var(--text-sm)", fontWeight: 500 }}
+                              />
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                className="input"
+                                value={t.teminatTutari || ""}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], teminatTutari: e.target.value ? parseFloat(e.target.value) : 0 };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                placeholder="0"
+                                step="0.01"
+                                style={{ width: "100%", padding: "4px 8px", fontSize: "var(--text-sm)", fontWeight: 700 }}
+                              />
+                            </td>
+                            <td>
+                              <select
+                                className="input"
+                                value={t.paraBirimi}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], paraBirimi: e.target.value };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                style={{ padding: "4px 8px", fontSize: "var(--text-sm)" }}
+                              >
+                                <option value="TRY">TRY</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                type="number"
+                                className="input"
+                                value={t.muafiyet ?? ""}
+                                onChange={(e) => {
+                                  const updated = [...extracted.teminatlar];
+                                  updated[i] = { ...updated[i], muafiyet: e.target.value ? parseFloat(e.target.value) : null };
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                placeholder="—"
+                                style={{ width: 80, padding: "4px 8px", fontSize: "var(--text-sm)" }}
+                              />
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = extracted.teminatlar.filter((_, idx) => idx !== i);
+                                  setExtracted({ ...extracted, teminatlar: updated });
+                                }}
+                                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--danger-500)", fontSize: 16, padding: 4 }}
+                                title="Teminatı Kaldır"
+                              >
+                                ✕
+                              </button>
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
+                ) : (
+                  <div style={{ padding: "var(--space-4)", textAlign: "center", color: "var(--text-tertiary)", fontSize: "var(--text-sm)" }}>
+                    Teminat bulunamadı. Yukarıdaki butona tıklayarak ekleyin.
+                  </div>
+                )}
+              </div>
 
               {/* Prim Bilgileri */}
               {extracted.primBilgileri && (
                 <div className="review-section">
                   <div className="review-section-title"> Prim Bilgileri</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "var(--space-3)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "var(--space-3)" }}>
                     {[
-                      { label: "Net Prim", value: extracted.primBilgileri.netPrim, highlight: false },
-                      { label: "BSMV (%5)", value: extracted.primBilgileri.bsmv, highlight: false },
-                      { label: "THGF", value: extracted.primBilgileri.thgf, highlight: false },
-                      { label: "Toplam Prim", value: extracted.primBilgileri.toplamPrim, highlight: true },
+                      { label: "Net Prim", field: "netPrim", value: extracted.primBilgileri.netPrim, highlight: false },
+                      { label: "BSMV (%5)", field: "bsmv", value: extracted.primBilgileri.bsmv, highlight: false },
+                      { label: "THGF", field: "thgf", value: extracted.primBilgileri.thgf, highlight: false },
+                      { label: "Toplam Prim", field: "toplamPrim", value: extracted.primBilgileri.toplamPrim, highlight: true },
                     ].map((item) => (
                       <div key={item.label} style={{
                         padding: "var(--space-3) var(--space-4)",
                         background: item.highlight ? "var(--primary-50)" : "var(--neutral-50)",
                         borderRadius: "var(--radius-md)",
                         border: item.highlight ? "2px solid var(--primary-200)" : "1px solid var(--border-light)",
-                        textAlign: "center",
                       }}>
-                        <div style={{ fontSize: "var(--text-xs)", color: item.highlight ? "var(--primary-600)" : "var(--text-tertiary)", fontWeight: 600 }}>
+                        <label style={{ fontSize: "var(--text-xs)", color: item.highlight ? "var(--primary-600)" : "var(--text-tertiary)", fontWeight: 600, display: "block", marginBottom: 4 }}>
                           {item.label}
-                        </div>
-                        <div style={{ fontSize: item.highlight ? "var(--text-xl)" : "var(--text-base)", fontWeight: 800, color: item.highlight ? "var(--primary-700)" : "var(--text-primary)", marginTop: 4 }}>
-                          {item.value != null ? formatCurrency(item.value) : ""}
-                        </div>
+                        </label>
+                        <input
+                          type="number"
+                          className="input"
+                          value={item.value ?? ""}
+                          onChange={(e) => setExtracted({
+                            ...extracted,
+                            primBilgileri: {
+                              ...extracted.primBilgileri,
+                              [item.field]: e.target.value ? parseFloat(e.target.value) : null
+                            }
+                          })}
+                          placeholder="0.00"
+                          step="0.01"
+                          style={{
+                            width: "100%",
+                            padding: "var(--space-2)",
+                            fontSize: item.highlight ? "var(--text-lg)" : "var(--text-base)",
+                            fontWeight: item.highlight ? 700 : 600,
+                            color: item.highlight ? "var(--primary-700)" : "var(--text-primary)",
+                            textAlign: "center",
+                            border: item.highlight ? "1px solid var(--primary-300)" : undefined
+                          }}
+                        />
                       </div>
                     ))}
                   </div>
-                  <div style={{ marginTop: "var(--space-3)", display: "flex", gap: "var(--space-4)", flexWrap: "wrap" }}>
-                    {extracted.primBilgileri.odemeSekli && (
-                      <span className="badge badge-blue">
-                        {extracted.primBilgileri.odemeSekli === "taksitli" ? " Taksitli" : " Peşin"}
-                        {extracted.primBilgileri.taksitSayisi ? ` (${extracted.primBilgileri.taksitSayisi} taksit)` : ""}
-                      </span>
+                  <div style={{ marginTop: "var(--space-4)", display: "flex", gap: "var(--space-4)", flexWrap: "wrap", alignItems: "flex-end" }}>
+                    <div style={{ flex: "1 1 200px" }}>
+                      <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>
+                        Ödeme Şekli
+                      </label>
+                      <select
+                        className="input"
+                        value={extracted.primBilgileri.odemeSekli ?? ""}
+                        onChange={(e) => setExtracted({
+                          ...extracted,
+                          primBilgileri: { ...extracted.primBilgileri, odemeSekli: e.target.value }
+                        })}
+                        style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                      >
+                        <option value="">Seçiniz</option>
+                        <option value="pesin">Peşin</option>
+                        <option value="taksitli">Taksitli</option>
+                      </select>
+                    </div>
+                    {extracted.primBilgileri.odemeSekli === "taksitli" && (
+                      <div style={{ flex: "1 1 150px" }}>
+                        <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>
+                          Taksit Sayısı
+                        </label>
+                        <input
+                          type="number"
+                          className="input"
+                          value={extracted.primBilgileri.taksitSayisi ?? ""}
+                          onChange={(e) => setExtracted({
+                            ...extracted,
+                            primBilgileri: {
+                              ...extracted.primBilgileri,
+                              taksitSayisi: e.target.value ? parseInt(e.target.value) : null
+                            }
+                          })}
+                          placeholder="Taksit sayısı"
+                          min="2"
+                          max="12"
+                          style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                        />
+                      </div>
                     )}
+                    <div style={{ flex: "1 1 150px" }}>
+                      <label style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>
+                        Para Birimi
+                      </label>
+                      <select
+                        className="input"
+                        value={extracted.primBilgileri.paraBirimi ?? "TRY"}
+                        onChange={(e) => setExtracted({
+                          ...extracted,
+                          primBilgileri: { ...extracted.primBilgileri, paraBirimi: e.target.value }
+                        })}
+                        style={{ width: "100%", padding: "var(--space-2) var(--space-3)", fontSize: "var(--text-sm)" }}
+                      >
+                        <option value="TRY">TRY</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -569,7 +786,7 @@ export default function UploadPage() {
             </div>
 
             <div style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", textAlign: "center", marginTop: "var(--space-6)", marginBottom: "var(--space-4)" }}>
-              * Yapay zeka poliçe analizi sırasında bazı verileri eksik veya hatalı okumuş olabilir. Lütfen onaylamadan önce verileri hızlıca kontrol ediniz.
+              Yapay zeka poliçe analizi sırasında bazı verileri eksik veya hatalı okumuş olabilir. Lütfen verileri kontrol edin ve gerekirse düzeltin.
             </div>
 
             <div className="review-actions">

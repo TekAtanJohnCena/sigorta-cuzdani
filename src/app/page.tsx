@@ -6,6 +6,7 @@ import HeroSection from "@/components/landing/HeroSection";
 import ProblemSection from "@/components/landing/ProblemSection";
 import BentoFeatures from "@/components/landing/BentoFeatures";
 import HowItWorks from "@/components/landing/HowItWorks";
+import Testimonials from "@/components/landing/Testimonials";
 import SecurityBanner from "@/components/landing/SecurityBanner";
 import PricingSection from "@/components/landing/PricingSection";
 import CtaSection from "@/components/landing/CtaSection";
@@ -22,6 +23,7 @@ export default function LandingPage() {
         <ProblemSection />
         <BentoFeatures />
         <HowItWorks />
+        <Testimonials />
         <SecurityBanner />
         <PricingSection />
         <CtaSection />

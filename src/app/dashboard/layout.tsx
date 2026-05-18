@@ -87,7 +87,7 @@ function DashboardLayoutInner({
   useEffect(() => {
     async function fetchAlerts() {
       if (isDemoMode) {
-        setCriticalAlertCount(3); // Mock data for demo
+        setCriticalAlertCount(0); // Mock data for demo
         return;
       }
       if (!appUser) return;
@@ -153,7 +153,7 @@ function DashboardLayoutInner({
                     >
                       <span className="sidebar-link-icon">{item.icon}</span>
                       <span>{item.label}</span>
-                      {displayBadge && displayBadge > 0 && (
+                      {displayBadge !== undefined && displayBadge > 0 && (
                         <span className="sidebar-link-badge">{displayBadge}</span>
                       )}
                     </Link>
