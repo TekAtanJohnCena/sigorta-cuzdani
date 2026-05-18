@@ -2,40 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-
-interface Tenant {
-  id: string;
-  companyName: string;
-  email: string;
-  packageType: string;
-  endDate: string;
-  startDate: string;
-  isActive?: boolean;
-  notes?: string;
-  durationDays?: number;
-}
-
-interface TenantStats {
-  policyCount: number;
-  userCount: number;
-  lastLogin?: string;
-}
+import { Tenant, TenantStats } from "@/types/admin";
+import { getToken, adminHeaders } from "@/hooks/useAdminAuth";
+import ExtendSubscriptionModal from "../components/ExtendSubscriptionModal";
 
 function daysLeft(endDate: string) {
   const diff = new Date(endDate).getTime() - Date.now();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
-
-function getToken(): string {
-  if (typeof window === "undefined") return "";
-  return sessionStorage.getItem("emre_admin_token") || "";
-}
-
-function adminHeaders(): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-    "x-admin-token": getToken(),
-  };
 }
 
 export default function EfsunTenantDetailPage() {
@@ -47,6 +20,7 @@ export default function EfsunTenantDetailPage() {
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [stats, setStats] = useState<TenantStats | null>(null);
   const [error, setError] = useState("");
+  const [showExtendModal, setShowExtendModal] = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem("emre_admin_token");
@@ -134,6 +108,11 @@ export default function EfsunTenantDetailPage() {
   const expired = left <= 0;
   const urgent = left > 0 && left <= 7;
 
+  async function handleExtendSuccess() {
+    setShowExtendModal(false);
+    await loadTenantData();
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: "#0f172a", color: "white", fontFamily: "Inter, system-ui, sans-serif" }}>
       {/* Header */}
@@ -147,9 +126,14 @@ export default function EfsunTenantDetailPage() {
             <div style={{ fontSize: "0.75rem", color: "#64748b" }}>Şirket Detayları</div>
           </div>
         </div>
-        <button onClick={() => router.push("/efsun")} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 8, padding: "0.5rem 1rem", cursor: "pointer", fontSize: "0.875rem" }}>
-          Panele Dön
-        </button>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button onClick={() => setShowExtendModal(true)} style={{ background: "linear-gradient(135deg, #0891b2, #0e7490)", color: "white", border: "none", borderRadius: 8, padding: "0.5rem 1rem", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600 }}>
+            Süre Uzat
+          </button>
+          <button onClick={() => router.push("/efsun")} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 8, padding: "0.5rem 1rem", cursor: "pointer", fontSize: "0.875rem" }}>
+            Panele Dön
+          </button>
+        </div>
       </header>
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "2rem" }}>
@@ -255,6 +239,9 @@ export default function EfsunTenantDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Extend Modal */}
+      <ExtendSubscriptionModal isOpen={showExtendModal} companyName={tenant.companyName} tenantId={tenant.id} currentEndDate={tenant.endDate} onClose={() => setShowExtendModal(false)} onSuccess={handleExtendSuccess} />
     </div>
   );
 }

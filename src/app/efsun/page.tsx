@@ -2,33 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
-interface Tenant {
-  id: string;
-  companyName: string;
-  email: string;
-  packageType: string;
-  endDate: string;
-  isActive?: boolean;
-  policyCount?: number;
-  userCount?: number;
-}
+import { Tenant } from "@/types/admin";
+import { getToken, adminHeaders } from "@/hooks/useAdminAuth";
+import AddCompanyModal from "./components/AddCompanyModal";
+import DeleteConfirmDialog from "./components/DeleteConfirmDialog";
+import ExtendSubscriptionModal from "./components/ExtendSubscriptionModal";
 
 function daysLeft(endDate: string) {
   const diff = new Date(endDate).getTime() - Date.now();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
-
-function getToken(): string {
-  if (typeof window === "undefined") return "";
-  return sessionStorage.getItem("emre_admin_token") || "";
-}
-
-function adminHeaders(): HeadersInit {
-  return {
-    "Content-Type": "application/json",
-    "x-admin-token": getToken(),
-  };
 }
 
 export default function EfsunAdminPage() {
@@ -41,6 +23,12 @@ export default function EfsunAdminPage() {
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Modal states
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showExtendModal, setShowExtendModal] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState<Tenant | null>(null);
 
   useEffect(() => {
     const stored = sessionStorage.getItem("emre_admin_token");
@@ -123,6 +111,27 @@ export default function EfsunAdminPage() {
     sessionStorage.removeItem("emre_admin_token");
     document.cookie = "admin_token=; path=/; max-age=0";
     setAuthed(false);
+  }
+
+  function handleOpenDeleteDialog(tenant: Tenant) {
+    setSelectedTenant(tenant);
+    setShowDeleteDialog(true);
+  }
+
+  function handleOpenExtendModal(tenant: Tenant) {
+    setSelectedTenant(tenant);
+    setShowExtendModal(true);
+  }
+
+  function handleModalClose() {
+    setShowAddModal(false);
+    setShowDeleteDialog(false);
+    setShowExtendModal(false);
+    setSelectedTenant(null);
+  }
+
+  async function handleModalSuccess() {
+    await loadData();
   }
 
   // LOGIN SCREEN
@@ -212,9 +221,14 @@ export default function EfsunAdminPage() {
         <div style={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 16, overflow: "hidden" }}>
           <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid #334155", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 700 }}>Kayıtlı Şirketler</h2>
-            <button onClick={loadData} disabled={loading} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 6, padding: "0.375rem 0.75rem", cursor: "pointer", fontSize: "0.8rem" }}>
-              {loading ? "Yükleniyor..." : "🔄 Yenile"}
-            </button>
+            <div style={{ display: "flex", gap: "0.75rem" }}>
+              <button onClick={loadData} disabled={loading} style={{ background: "#334155", color: "#94a3b8", border: "none", borderRadius: 6, padding: "0.375rem 0.75rem", cursor: "pointer", fontSize: "0.8rem" }}>
+                {loading ? "Yükleniyor..." : "🔄 Yenile"}
+              </button>
+              <button onClick={() => setShowAddModal(true)} style={{ background: "linear-gradient(135deg, #3b55e6, #7c3aed)", color: "white", border: "none", borderRadius: 6, padding: "0.5rem 1rem", cursor: "pointer", fontSize: "0.875rem", fontWeight: 600 }}>
+                + Yeni Şirket Ekle
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -232,7 +246,7 @@ export default function EfsunAdminPage() {
                     <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Poliçe</th>
                     <th style={{ padding: "0.75rem 1rem", textAlign: "center", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Kullanıcı</th>
                     <th style={{ padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>Durum</th>
-                    <th style={{ padding: "0.75rem 1rem", textAlign: "left", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}></th>
+                    <th style={{ padding: "0.75rem 1rem", textAlign: "right", fontSize: "0.7rem", fontWeight: 700, color: "#64748b", textTransform: "uppercase" }}>İşlemler</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -261,9 +275,17 @@ export default function EfsunAdminPage() {
                           )}
                         </td>
                         <td style={{ padding: "0.875rem 1rem" }}>
-                          <button onClick={() => router.push(`/efsun/${t.id}`)} style={{ background: "#1d4ed8", color: "white", border: "none", borderRadius: 6, padding: "4px 12px", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}>
-                            Detay →
-                          </button>
+                          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                            <button onClick={() => handleOpenExtendModal(t)} style={{ background: "#0891b2", color: "white", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}>
+                              Uzat
+                            </button>
+                            <button onClick={() => router.push(`/efsun/${t.id}`)} style={{ background: "#1d4ed8", color: "white", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}>
+                              Detay
+                            </button>
+                            <button onClick={() => handleOpenDeleteDialog(t)} style={{ background: "#dc2626", color: "white", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontSize: "0.75rem", fontWeight: 600 }}>
+                              Sil
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -274,6 +296,15 @@ export default function EfsunAdminPage() {
           )}
         </div>
       </div>
+
+      {/* Modals */}
+      <AddCompanyModal isOpen={showAddModal} onClose={handleModalClose} onSuccess={handleModalSuccess} />
+      {selectedTenant && (
+        <>
+          <DeleteConfirmDialog isOpen={showDeleteDialog} companyName={selectedTenant.companyName} tenantId={selectedTenant.id} onClose={handleModalClose} onSuccess={handleModalSuccess} />
+          <ExtendSubscriptionModal isOpen={showExtendModal} companyName={selectedTenant.companyName} tenantId={selectedTenant.id} currentEndDate={selectedTenant.endDate} onClose={handleModalClose} onSuccess={handleModalSuccess} />
+        </>
+      )}
     </div>
   );
 }
