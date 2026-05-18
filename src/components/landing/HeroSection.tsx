@@ -11,7 +11,8 @@ export default function HeroSection() {
   return (
     <section className="lp-hero">
       <div className="lp-hero__bg" aria-hidden="true">
-        <div className="lp-hero__grid-pattern" />
+        <div className="lp-hero__orb--1" />
+        <div className="lp-hero__orb--2" />
       </div>
 
       <div className="lp__container">
@@ -32,7 +33,7 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             >
-              Sigorta Süreçlerinizi{" "}
+              Kurumsal Sigorta Süreçlerinizi{" "}
               <span>Tek Panelde Toplayın</span>
             </motion.h1>
 
@@ -70,7 +71,7 @@ export default function HeroSection() {
               transition={{ duration: 0.6, delay: 0.55 }}
             >
               <span><Shield size={14} strokeWidth={1.5} /> KVKK Uyumlu</span>
-              <span><FileCheck size={14} strokeWidth={1.5} /> PDF &amp; Tarama Analizi</span>
+              <span><FileCheck size={14} strokeWidth={1.5} /> PDF & Tarama Analizi</span>
               <span><Headphones size={14} strokeWidth={1.5} /> 7/24 Destek</span>
             </motion.div>
           </div>
@@ -86,7 +87,9 @@ export default function HeroSection() {
                 <div className="lp-mockup__dots">
                   <span /><span /><span />
                 </div>
-                <div className="lp-mockup__url">sigortacuzdani.net/dashboard</div>
+                <div style={{ marginLeft: 16, background: "var(--neutral-100)", padding: "4px 12px", borderRadius: 6, fontSize: "0.75rem", color: "var(--text-tertiary)", flex: 1, textAlign: "center" }}>
+                  sigortacuzdani.net/dashboard
+                </div>
               </div>
               <div className="lp-mockup__body">
                 <div className="lp-mockup__sidebar">
@@ -97,41 +100,35 @@ export default function HeroSection() {
                 </div>
                 <div className="lp-mockup__content">
                   <div className="lp-mockup__stats">
-                    <div className="lp-mockup__stat-box">
-                      <span className="lp-mockup__stat-label">Aktif Poliçe</span>
-                      <span className="lp-mockup__stat-value">24</span>
+                    <div className="lp-mockup__stat-box" style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "12px 16px" }}>
+                      <span style={{ fontSize: "0.625rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 700 }}>Aktif Poliçe</span>
+                      <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--primary-900)" }}>24</span>
                     </div>
-                    <div className="lp-mockup__stat-box lp-mockup__stat-box--danger">
-                      <span className="lp-mockup__stat-label">Vadesi Yaklaşan</span>
-                      <span className="lp-mockup__stat-value lp-mockup__stat-value--danger">3</span>
+                    <div className="lp-mockup__stat-box" style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "12px 16px", background: "var(--danger-50)", borderColor: "var(--danger-100)" }}>
+                      <span style={{ fontSize: "0.625rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 700 }}>Vadesi Yaklaşan</span>
+                      <span style={{ fontSize: "1.5rem", fontWeight: 800, color: "var(--danger-600)" }}>3</span>
                     </div>
-                    <div className="lp-mockup__stat-box">
-                      <span className="lp-mockup__stat-label">Toplam Prim</span>
-                      <span className="lp-mockup__stat-value">₺142.5K</span>
+                    <div className="lp-mockup__stat-box" style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "12px 16px" }}>
+                      <span style={{ fontSize: "0.625rem", color: "var(--text-tertiary)", textTransform: "uppercase", fontWeight: 700 }}>Toplam Prim</span>
+                      <span style={{ fontSize: "1.25rem", fontWeight: 800, color: "var(--primary-900)" }}>₺142.5K</span>
                     </div>
                   </div>
                   <div className="lp-mockup__table">
-                    <div className="lp-mockup__table-header">
+                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", padding: "8px 12px", borderBottom: "1px solid var(--border-light)", fontSize: "0.5625rem", textTransform: "uppercase", fontWeight: 700, color: "var(--text-tertiary)", background: "var(--neutral-50)" }}>
                       <span>Poliçe Tipi</span><span>Şirket</span><span>Bitiş</span><span>Durum</span>
                     </div>
-                    <div className="lp-mockup__table-row">
-                      <span className="lp-mockup__table-cell--primary">Kasko</span>
-                      <span>Allianz</span>
-                      <span>12.05.2026</span>
-                      <span className="lp-mockup__status lp-mockup__status--warning">Ödeme Bekliyor</span>
-                    </div>
-                    <div className="lp-mockup__table-row">
-                      <span className="lp-mockup__table-cell--primary">Sağlık</span>
-                      <span>Anadolu</span>
-                      <span>24.08.2026</span>
-                      <span className="lp-mockup__status lp-mockup__status--success">Aktif</span>
-                    </div>
-                    <div className="lp-mockup__table-row">
-                      <span className="lp-mockup__table-cell--primary">İşyeri</span>
-                      <span>AXA</span>
-                      <span>01.11.2026</span>
-                      <span className="lp-mockup__status lp-mockup__status--success">Aktif</span>
-                    </div>
+                    {[
+                      { type: "Kasko", firm: "Allianz", date: "12.05.2026", status: "Ödeme Bekliyor", color: "var(--warning-600)", bg: "var(--warning-50)" },
+                      { type: "Sağlık", firm: "Anadolu", date: "24.08.2026", status: "Aktif", color: "var(--success-700)", bg: "var(--success-50)" },
+                      { type: "İşyeri", firm: "AXA", date: "01.11.2026", status: "Aktif", color: "var(--success-700)", bg: "var(--success-50)" },
+                    ].map((row) => (
+                      <div key={row.type} style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1fr 1fr", padding: "10px 12px", borderBottom: "1px solid var(--border-light)", fontSize: "0.6875rem", alignItems: "center" }}>
+                        <span style={{ fontWeight: 600, color: "var(--primary-900)" }}>{row.type}</span>
+                        <span style={{ color: "var(--text-secondary)" }}>{row.firm}</span>
+                        <span style={{ color: "var(--text-secondary)" }}>{row.date}</span>
+                        <span style={{ padding: "2px 6px", borderRadius: 4, fontSize: "0.5625rem", fontWeight: 700, background: row.bg, color: row.color, width: "fit-content" }}>{row.status}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

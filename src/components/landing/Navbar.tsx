@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/firebase/AuthContext";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Shield } from "lucide-react";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -38,11 +38,9 @@ export default function Navbar() {
       >
         <div className="lp__container lp-navbar__content">
           <Link href="/" className="lp-navbar__logo">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="8" fill="var(--primary-900)" />
-              <path d="M16 7L9 10V17C9 20.87 12.13 24.5 16 25C19.87 24.5 23 20.87 23 17V10L16 7Z" fill="white" fillOpacity="0.9" />
-              <path d="M13 16.5L15 18.5L19 14.5" stroke="var(--primary-900)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: "var(--primary-900)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Shield size={18} strokeWidth={1.5} color="white" />
+            </div>
             Sigorta Cüzdanı
           </Link>
 
@@ -50,7 +48,6 @@ export default function Navbar() {
             <a href="#ozellikler" className="lp-navbar__nav-link">Özellikler</a>
             <a href="#nasil-calisir" className="lp-navbar__nav-link">Nasıl Çalışır?</a>
             <a href="#guvenlik" className="lp-navbar__nav-link">Güvenlik</a>
-            <a href="#fiyatlandirma" className="lp-navbar__nav-link">Fiyatlandırma</a>
           </nav>
 
           <div className="lp-navbar__actions">
@@ -107,7 +104,6 @@ export default function Navbar() {
               <a href="#ozellikler" className="lp-navbar__mobile-link" onClick={closeMobileMenu}>Özellikler</a>
               <a href="#nasil-calisir" className="lp-navbar__mobile-link" onClick={closeMobileMenu}>Nasıl Çalışır?</a>
               <a href="#guvenlik" className="lp-navbar__mobile-link" onClick={closeMobileMenu}>Güvenlik</a>
-              <a href="#fiyatlandirma" className="lp-navbar__mobile-link" onClick={closeMobileMenu}>Fiyatlandırma</a>
 
               <div style={{ marginTop: "auto", display: "flex", flexDirection: "column", gap: "12px" }}>
                 {user ? (

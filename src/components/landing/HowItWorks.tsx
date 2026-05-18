@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useScrollReveal } from "./useScrollReveal";
+import { motion } from "framer-motion";
+import { FileText } from "lucide-react";
 
 const STEPS = [
   {
@@ -28,7 +29,7 @@ const STEPS = [
     desc: "Mevcut poliçe PDF veya CSV dosyalarınızı sisteme sürükleyip bırakın. Yapay zeka motorumuz verileri saniyeler içinde analiz eder.",
     visual: (
       <div className="lp-hiw__visual" style={{ border: "2px dashed var(--primary-300)", background: "var(--primary-50)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "12px" }}>
-        <div style={{ fontSize: "2rem" }}>📄</div>
+        <FileText size={40} strokeWidth={1.5} color="var(--primary-400)" />
         <div style={{ fontSize: "0.9375rem", fontWeight: 600, color: "var(--primary-700)" }}>PDF Dosyanızı Buraya Sürükleyin</div>
         <div style={{ fontSize: "0.875rem", color: "var(--text-tertiary)" }}>veya dosya seçin</div>
       </div>
@@ -56,30 +57,40 @@ const STEPS = [
 ];
 
 export default function HowItWorks() {
-  const { ref: headerRef, isVisible: headerVisible } = useScrollReveal();
-
   return (
     <section id="nasil-calisir" className="lp-hiw">
       <div className="lp__container">
-        <div className={`lp-section-header lp-reveal ${headerVisible ? "lp-reveal--visible" : ""}`} ref={headerRef}>
+        <motion.div
+          className="lp-section-header"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        >
           <h2 className="lp-section-title">Dakikalar İçinde Kurulum</h2>
           <p className="lp-section-subtitle">
             Mevcut düzeninizi bozmadan platforma geçiş yapın. Özel entegrasyon veya uzun eğitimlere ihtiyacınız yok.
           </p>
-        </div>
+        </motion.div>
 
         <div className="lp-hiw__grid">
-          {/* Left: sticky step indicators */}
           <div className="lp-hiw__left">
             <div className="steps-list" style={{ display: "flex", flexDirection: "column", gap: "32px", marginBottom: "40px" }}>
-              {STEPS.map((step) => (
-                <div key={step.num} className="lp-step">
+              {STEPS.map((step, i) => (
+                <motion.div
+                  key={step.num}
+                  className="lp-step"
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, margin: "-40px" }}
+                  transition={{ duration: 0.5, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <div className="lp-step__num">{step.num}</div>
                   <div className="lp-step__content">
                     <h3>{step.title}</h3>
                     <p>{step.desc}</p>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
             <Link href="/demo/request" className="btn btn-primary btn-lg">
@@ -87,27 +98,21 @@ export default function HowItWorks() {
             </Link>
           </div>
 
-          {/* Right: visuals */}
           <div className="lp-hiw__right">
             {STEPS.map((step, i) => (
-              <StepVisual key={i} visual={step.visual} delay={i * 100} />
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {step.visual}
+              </motion.div>
             ))}
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function StepVisual({ visual, delay }: { visual: React.ReactNode; delay: number }) {
-  const { ref, isVisible } = useScrollReveal(0.1);
-  return (
-    <div
-      ref={ref}
-      className={`lp-reveal ${isVisible ? "lp-reveal--visible" : ""}`}
-      style={{ transitionDelay: `${delay}ms` }}
-    >
-      {visual}
-    </div>
   );
 }

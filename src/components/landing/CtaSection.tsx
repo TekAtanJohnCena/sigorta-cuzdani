@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useScrollReveal } from "./useScrollReveal";
+import { motion } from "framer-motion";
 
 export default function CtaSection() {
-  const { ref, isVisible } = useScrollReveal();
-
   return (
     <section className="lp-cta">
       <div className="lp__container">
-        <div
-          ref={ref}
-          className={`lp-cta__box lp-reveal ${isVisible ? "lp-reveal--visible" : ""}`}
+        <motion.div
+          className="lp-cta__box"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="lp-cta__title">
             İşletmenizin Risklerini Şansa Bırakmayın
@@ -25,7 +26,7 @@ export default function CtaSection() {
               Demo Toplantısı Planlayın
             </Link>
           </div>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
