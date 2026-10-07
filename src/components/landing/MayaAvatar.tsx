@@ -45,6 +45,7 @@ export const MayaAvatar: React.FC<MayaAvatarProps> = ({
                   src={imageSrc}
                   alt="Maya — Acente Akıllı Asistanı"
                   className="w-full h-full object-contain [image-rendering:pixelated]"
+                  style={{ maxWidth: '160px', maxHeight: '160px', width: 'auto', height: 'auto' }}
                 />
               </div>
 
@@ -83,11 +84,12 @@ export const MayaAvatar: React.FC<MayaAvatarProps> = ({
       )}
       <div className={`relative ${currentSize.wrapper} rounded-full bg-gradient-to-tr from-amber-400 via-violet-500 to-blue-500 ${currentSize.ring} shadow-xs`}>
         <div className="h-full w-full rounded-full bg-white flex items-center justify-center overflow-hidden border border-white/60 p-0.5">
-          <img
-            src={imageSrc}
-            alt="Maya"
-            className="w-full h-full object-contain [image-rendering:pixelated]"
-          />
+            <img
+              src={imageSrc}
+              alt="Maya"
+              className="w-full h-full object-contain [image-rendering:pixelated]"
+              style={{ width: '100%', height: '100%' }}
+            />
         </div>
       </div>
       {showStatus && (
