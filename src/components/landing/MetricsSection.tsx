@@ -13,7 +13,7 @@ export const MetricsSection: React.FC = () => {
       prefix: '%',
       suffix: '',
       title: 'Yenileme Artışı',
-      subtitle: "Maya'nın WhatsApp otomasyonu ile",
+      subtitle: "Maya&apos;nın WhatsApp otomasyonu ile",
       icon: TrendingUp,
       iconColor: 'text-emerald-600',
       iconBg: 'bg-emerald-100',
@@ -111,7 +111,7 @@ export const MetricsSection: React.FC = () => {
                 Örnek Acente Senaryosu: 100 Müşterili Portföy
               </h4>
               <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                100 müşterisi olan ortalama bir bağımsız acente; vadeleri Excel'de tek tek aramak yerine Maya'nın WhatsApp onay akışını kullanarak <b>haftada 12 saat</b> operasyonel iş gücünden tasarruf eder ve kaçak poliçelerini kurtararak <b>yıllık ortalama %35 ek prim üretimi</b> sağlar.
+                100 müşterisi olan ortalama bir bağımsız acente; vadeleri Excel'de tek tek aramak yerine Maya&apos;nın WhatsApp onay akışını kullanarak <b>haftada 12 saat</b> operasyonel iş gücünden tasarruf eder ve kaçak poliçelerini kurtararak <b>yıllık ortalama %35 ek prim üretimi</b> sağlar.
               </p>
             </div>
           </div>
