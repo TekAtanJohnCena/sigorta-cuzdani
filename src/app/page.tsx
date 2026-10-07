@@ -11,7 +11,6 @@ import PricingSection from '@/components/landing/PricingSection';
 import Footer from '@/components/landing/Footer';
 import TrialModal from '@/components/landing/TrialModal';
 import SmoothScroll from '@/components/landing/SmoothScroll';
-import './landing.css';
 
 export default function LandingPage() {
   const [trialModalOpen, setTrialModalOpen] = useState(false);
