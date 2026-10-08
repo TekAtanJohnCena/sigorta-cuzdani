@@ -69,7 +69,7 @@ export const TrialModal: React.FC<TrialModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-500 mt-2">
-              Kredi kartı gerekmez. Maya 60 saniye içinde WhatsApp hattınıza bağlanır ve portföyünüzü korumaya başlar.
+              14 gün ücretsiz deneme. Maya 60 saniye içinde WhatsApp hattınıza bağlanır ve portföyünüzü korumaya başlar.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
@@ -158,7 +158,7 @@ export const TrialModal: React.FC<TrialModalProps> = ({ isOpen, onClose }) => {
 
               <div className="text-[11px] text-slate-500 text-center flex items-center justify-center gap-1.5 pt-1">
                 <Shield className="w-3.5 h-3.5 text-blue-600" />
-                <span>KVKK uyumlu altyapı • Taahhüt ve kredi kartı gerekmez</span>
+                <span>KVKK uyumlu altyapı • 14 gün ücretsiz deneme</span>
               </div>
             </form>
           </div>
@@ -184,12 +184,12 @@ export const TrialModal: React.FC<TrialModalProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
 
-            <a
-              href="/login"
-              className="block w-full py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition text-center"
+            <button
+              onClick={onClose}
+              className="w-full py-3 rounded-xl bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition cursor-pointer"
             >
-              Panele Giriş Yap
-            </a>
+              Tamam, Panele Git
+            </button>
           </div>
         )}
       </div>

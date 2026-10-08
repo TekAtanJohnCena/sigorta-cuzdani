@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 import withBundleAnalyzer from "@next/bundle-analyzer";
 
 const bundleAnalyzer = withBundleAnalyzer({
@@ -6,22 +6,22 @@ const bundleAnalyzer = withBundleAnalyzer({
 });
 
 const securityHeaders = [
-  // Clickjacking koruması
+  // Clickjacking korumasÄ±
   {
     key: "X-Frame-Options",
     value: "DENY",
   },
-  // MIME type sniffing koruması
+  // MIME type sniffing korumasÄ±
   {
     key: "X-Content-Type-Options",
     value: "nosniff",
   },
-  // XSS koruması (modern tarayıcılarda CSP daha etkili)
+  // XSS korumasÄ± (modern tarayÄ±cÄ±larda CSP daha etkili)
   {
     key: "X-XSS-Protection",
     value: "1; mode=block",
   },
-  // Referrer bilgisi sızıntısını azalt
+  // Referrer bilgisi sÄ±zÄ±ntÄ±sÄ±nÄ± azalt
   {
     key: "Referrer-Policy",
     value: "strict-origin-when-cross-origin",
@@ -31,7 +31,7 @@ const securityHeaders = [
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains; preload",
   },
-  // İzin politikası — gereksiz API erişimlerini kısıtla
+  // Ä°zin politikasÄ± â€” gereksiz API eriÅŸimlerini kÄ±sÄ±tla
   {
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=(), payment=()",
@@ -61,16 +61,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: process.cwd(),
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
-  // Security Headers — tüm route'lara uygulanır
+// Security Headers â€” tÃ¼m route'lara uygulanÄ±r
   async headers() {
     return [
       {
@@ -80,23 +71,24 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // API route'larına özel ek kısıtlamalar
+  // API route'larÄ±na Ã¶zel ek kÄ±sÄ±tlamalar
   async rewrites() {
     return [];
   },
 
-  // Log seviyesi (prod'da debug logları gizle)
+  // Log seviyesi (prod'da debug loglarÄ± gizle)
   logging: {
     fetches: {
       fullUrl: process.env.NODE_ENV === "development",
     },
   },
 
-  // B2B Performans Optimizasyonları (G-18)
+  // B2B Performans OptimizasyonlarÄ± (G-18)
   compiler: {
-    // Production'da console.log vs. kaldır (error ve warn hariç)
+    // Production'da console.log vs. kaldÄ±r (error ve warn hariÃ§)
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
 };
 
 export default bundleAnalyzer(nextConfig);
+

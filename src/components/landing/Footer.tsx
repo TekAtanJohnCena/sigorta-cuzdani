@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import { ArrowUp, MapPin, Phone, Mail } from 'lucide-react';
 
 export const Footer: React.FC = () => {

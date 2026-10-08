@@ -1,23 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, ArrowRight, Shield, Lock, Server, Sparkles, Building2 } from 'lucide-react';
 import { MayaAvatar } from './MayaAvatar';
 
 interface PricingSectionProps {
-  onOpenTrial?: () => void;
+  onOpenTrial: () => void;
 }
 
 export const PricingSection: React.FC<PricingSectionProps> = ({ onOpenTrial }) => {
+  const [billingCycle, setBillingCycle] = useState<'aylik' | 'yillik'>('aylik');
+
   return (
     <section id="fiyatlandirma" className="py-24 sm:py-32 relative bg-slate-50/70 border-t border-slate-200/80 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* Bölüm Başlığı */}
-        <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 text-xs font-semibold text-violet-800 shadow-sm mb-4">
-            <Sparkles className="w-4 h-4 text-violet-600" />
+        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+          <div className="inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-100/70 px-4 py-1.5 text-xs font-semibold text-amber-900 shadow-xs mb-4">
+            <Sparkles className="w-4 h-4 text-amber-600" />
             <span className="font-mono text-[11px] uppercase tracking-wider">ŞEFFAF VE BASİT MODEL</span>
           </div>
 
@@ -28,14 +30,46 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOpenTrial }) =
           <p className="mt-4 text-base sm:text-lg text-slate-600 leading-relaxed">
             Hiçbir gizli ücret veya karmaşık modül yok. Maya ile acentenizi hemen dijitalleştirin.
           </p>
+
+          {/* Aylık / Yıllık Aç-Kapa Anahtarı (Billing Toggle) */}
+          <div className="mt-8 inline-flex items-center gap-3 p-1.5 rounded-full bg-slate-200/80 border border-slate-300/80 shadow-xs">
+            <button
+              onClick={() => setBillingCycle('aylik')}
+              className={`px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                billingCycle === 'aylik'
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Aylık Ödeme
+            </button>
+
+            <button
+              onClick={() => setBillingCycle('yillik')}
+              className={`px-5 py-2 rounded-full text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                billingCycle === 'yillik'
+                  ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-500/25'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span>Yıllık Ödeme</span>
+              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full font-extrabold ${
+                billingCycle === 'yillik'
+                  ? 'bg-white/25 text-white'
+                  : 'bg-amber-100 text-amber-800 border border-amber-200'
+              }`}>
+                %20 İndirim ✨
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* 2 Fiyat Tablosu */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch">
           
-          {/* Plan 1: Profesyonel (₺2.000/ay) */}
+          {/* Plan 1: Profesyonel (Aylık ₺2.000 / Yıllık ₺1.600) */}
           <motion.div
-            className="relative rounded-3xl bg-white border-2 border-blue-600 shadow-xl shadow-blue-600/10 p-8 sm:p-9 flex flex-col justify-between"
+            className="relative rounded-3xl bg-white border-2 border-amber-500 shadow-xl shadow-amber-500/10 p-8 sm:p-9 flex flex-col justify-between"
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -43,7 +77,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOpenTrial }) =
           >
             {/* Popüler Rozeti */}
             <div className="absolute -top-3.5 left-8">
-              <span className="px-3.5 py-1 rounded-full bg-blue-600 text-white font-mono text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+              <span className="px-3.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-white font-mono text-[11px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5">
                 <Sparkles className="w-3 h-3" />
                 EN ÇOK TERCİH EDİLEN
               </span>
@@ -59,15 +93,24 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOpenTrial }) =
                 Bağımsız sigorta acenteleri için tam teşekküllü Maya yapay zekâ asistanı ve otomasyon.
               </p>
 
-              {/* Fiyat */}
+              {/* Dinamik Fiyat Gösterimi (Aylık / Yıllık) */}
               <div className="mt-6 flex items-baseline gap-1.5">
                 <span className="text-4xl sm:text-5xl font-black text-slate-900 font-display">
-                  ₺2.000
+                  {billingCycle === 'aylik' ? '₺2.000' : '₺1.600'}
                 </span>
                 <span className="text-slate-500 text-sm font-semibold">/ ay</span>
+                
+                {billingCycle === 'yillik' && (
+                  <span className="ml-2 text-xs font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    ₺4.800 Tasarruf
+                  </span>
+                )}
               </div>
-              <p className="text-[11px] text-blue-600 font-semibold mt-1">
-                Kredi kartsız 14 gün ücretsiz deneme dahildir
+
+              <p className="text-[11px] text-amber-700 font-semibold mt-1">
+                {billingCycle === 'aylik'
+                  ? 'Aylık faturalandırma • 14 gün ücretsiz deneme'
+                  : 'Yıllık peşin faturalandırılır (₺19.200/yıl) • 14 gün ücretsiz deneme'}
               </p>
 
               {/* Özellikler */}
@@ -75,16 +118,17 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOpenTrial }) =
                 {[
                   'MAYA Yapay Zekâ Asistanı (WhatsApp Entegre)',
                   'Otomatik WhatsApp Vade Hatırlatma & Teklifler',
-                  'Davranışsal Çapraz Satış (Cross-Sell) Motoru',
+                  'Personel ve Danışman Performans Takibi',
+                  'Poliçe Türleri Dağılımı & Akıllı Çapraz Satış',
+                  'Kesilen Sigorta Şirketleri Finansal & Bakiye Takibi',
                   'Kayıpsız Yenileme & Churn Analizi Kalkanı',
                   'Sınırsız Poliçe ve Müşteri Portföyü',
                   'Otomatik Günlük / Haftalık Büyüme Raporları',
                   'Modern Web Acente Dashboard ve Canlı Metrikler',
-                  'Excel ve PDF Dosyalarından Otomatik Veri Aktarımı',
                   '7/24 Öncelikli Destek Hattı',
                 ].map((feat, idx) => (
                   <div key={idx} className="flex items-start gap-2.5 text-xs sm:text-sm text-slate-700">
-                    <Check className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <Check className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                     <span>{feat}</span>
                   </div>
                 ))}
@@ -94,7 +138,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOpenTrial }) =
             <div className="mt-8 pt-4">
               <button
                 onClick={onOpenTrial}
-                className="w-full py-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-lg shadow-blue-600/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+                className="w-full py-4 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-sm shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
               >
                 <span>14 Gün Ücretsiz Başla</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -172,12 +216,12 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onOpenTrial }) =
 
         </div>
 
-        {/* Güven Logoları ve Rozetler */}
+        {/* Güven Logoları ve Rozetleri */}
         <div className="mt-16 pt-10 border-t border-slate-200/90 max-w-4xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
             
             <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-col items-center">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center mb-3">
                 <Shield className="w-5 h-5" />
               </div>
               <div className="font-bold text-slate-900 text-sm">KVKK Uyumlu Altyapı</div>

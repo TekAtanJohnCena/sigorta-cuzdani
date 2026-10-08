@@ -13,7 +13,7 @@ export const MetricsSection: React.FC = () => {
       prefix: '%',
       suffix: '',
       title: 'Yenileme Artışı',
-      subtitle: "Maya&apos;nın WhatsApp otomasyonu ile",
+      subtitle: "Maya'nın WhatsApp otomasyonu ile",
       icon: TrendingUp,
       iconColor: 'text-emerald-600',
       iconBg: 'bg-emerald-100',
@@ -62,7 +62,7 @@ export const MetricsSection: React.FC = () => {
           </p>
         </div>
 
-        {/* 3 Büyük Sayı Kartı */}
+        {/* 3 Büyük Sayı Kartı (AnimatedCounter) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {metrics.map((m, idx) => {
             const Icon = m.icon;
@@ -79,6 +79,7 @@ export const MetricsSection: React.FC = () => {
                   <Icon className="w-7 h-7" />
                 </div>
 
+                {/* Büyük Sayı */}
                 <div className="text-5xl sm:text-6xl font-black text-slate-900 font-display tracking-tight">
                   <AnimatedCounter
                     value={m.value}
@@ -111,7 +112,7 @@ export const MetricsSection: React.FC = () => {
                 Örnek Acente Senaryosu: 100 Müşterili Portföy
               </h4>
               <p className="mt-1.5 text-xs sm:text-sm text-slate-600 leading-relaxed">
-                100 müşterisi olan ortalama bir bağımsız acente; vadeleri Excel'de tek tek aramak yerine Maya&apos;nın WhatsApp onay akışını kullanarak <b>haftada 12 saat</b> operasyonel iş gücünden tasarruf eder ve kaçak poliçelerini kurtararak <b>yıllık ortalama %35 ek prim üretimi</b> sağlar.
+                100 müşterisi olan ortalama bir bağımsız acente; vadeleri Excel'de tek tek aramak yerine Maya'nın WhatsApp onay akışını kullanarak <b>haftada 12 saat</b> operasyonel iş gücünden tasarruf eder ve kaçak poliçelerini kurtararak <b>yıllık ortalama %35 ek prim üretimi</b> sağlar.
               </p>
             </div>
           </div>
