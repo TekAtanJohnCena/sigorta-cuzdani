@@ -214,33 +214,48 @@ export const WhatsAppSection: React.FC = () => {
                     <div className="max-w-[90%] bg-white rounded-2xl rounded-tl-sm p-3.5 shadow-xs border border-slate-100 text-slate-800 leading-relaxed">
                       <div className="font-bold text-emerald-700 text-[11px] mb-1 flex items-center gap-1">
                         <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
-                        Çapraz Satış Yanıtı (DASK)
+                        Akıllı Çapraz Satış (TSS Fırsatı)
                       </div>
                       <p>
-                        "Ayşe Yılmaz gönderdiğim çapraz satış (DASK) mesajına cevap verdi. Teklif dosyasını iletiyorum, onaylarsanız poliçeleşme sürecini başlatacağım."
+                        "Ayşe Yılmaz'ın kaskosu var ancak sağlık poliçesi yok. Portföy analizine göre <b>%70 ihtimalle Tamamlayıcı Sağlık (TSS)</b> alabilir. Kendisine özel mesaj hazırladım, <b>göndereyim mi?</b>"
                       </p>
                       
-                      <div className="mt-2 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1.5 rounded-lg bg-rose-100 text-rose-600">
-                            <FileText className="w-4 h-4" />
+                      {/* Fırsat & Aksiyon Kutusu */}
+                      <div className="mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                              %70 Potansiyel
+                            </span>
+                            <span className="text-[10px] text-slate-600 font-medium">Tamamlayıcı Sağlık</span>
                           </div>
-                          <div>
-                            <div className="font-bold text-slate-900 text-[10px]">DASK_Teklif_AyseYilmaz.pdf</div>
-                            <div className="text-[9px] text-slate-500">Prim: ₺890 • Anadolu Sigorta</div>
-                          </div>
+
+                          <button
+                            onClick={() => setApprovedPolicy(!approvedPolicy)}
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
+                              approvedPolicy
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-[#005c4b] text-white hover:bg-[#004a3c]'
+                            }`}
+                          >
+                            {approvedPolicy ? '✓ İletildi' : 'Mesajı Gönder'}
+                          </button>
                         </div>
 
-                        <button
-                          onClick={() => setApprovedPolicy(true)}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer ${
-                            approvedPolicy
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-blue-600 text-white hover:bg-blue-700'
-                          }`}
-                        >
-                          {approvedPolicy ? '✓ Onaylandı' : 'Poliçeleştir'}
-                        </button>
+                        {/* Müşteri Yanıtı Simülasyonu */}
+                        {approvedPolicy && (
+                          <div className="mt-2 pt-2 border-t border-slate-200/80 text-[10px] space-y-1 animate-fadeIn">
+                            <div className="text-emerald-700 font-bold flex items-center gap-1">
+                              <span>🔔 Müşteri İlgilendi!</span>
+                            </div>
+                            <p className="text-slate-600 italic bg-white p-1.5 rounded-lg border border-slate-200">
+                              "Merhaba, çocuklarım için de geçerli mi? Teklif çalışır mısınız?"
+                            </p>
+                            <div className="text-[10px] text-blue-700 font-semibold pt-0.5">
+                              👉 Maya: "Teklif hazırlamanız için bilgileri panelinize düşürdüm."
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-end gap-1 mt-1 text-[10px] text-slate-400">
@@ -294,7 +309,7 @@ export const WhatsAppSection: React.FC = () => {
               </p>
             </motion.div>
 
-            {/* Kart 2: 🤖 Siz Onaylayın, Maya Satışı Kapatsın */}
+            {/* Kart 2: 🎯 Fırsatı Maya Yakalar, Teklifi Siz Sunarsınız */}
             <motion.div 
               className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-xs hover:border-amber-300 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300 group cursor-pointer"
               initial={{ opacity: 0, x: 25 }}
@@ -305,18 +320,17 @@ export const WhatsAppSection: React.FC = () => {
             >
               <div className="flex items-start justify-between">
                 <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl font-bold mb-4 shadow-xs transition-transform duration-300 group-hover:scale-115 group-hover:rotate-6">
-                  🤖
+                  🎯
                 </div>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 opacity-80 group-hover:opacity-100 transition">
-                  OTONOM SATIŞ
+                  ÇAPRAZ SATIŞ & UPSELL
                 </span>
               </div>
               <h3 className="text-xl font-bold text-slate-900 group-hover:text-amber-950 transition">
-                Siz Onaylayın, Maya Satışı Kapatsın
+                Fırsatı Maya Yakalar, Teklifi Siz Sunarsınız
               </h3>
               <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                Müşterilerinize gidecek mesajlar acentenizin kurumsal kimliğiyle, teklif karşılaştırma linkleriyle hazırlanır. 
-                Gelen olumlu yanıtlar anında önünüze poliçeleşme onayı olarak düşer.
+                Maya portföyünüzü tarar; örneğin profili uygun bir müşteri için <b>"%70 ihtimalle Tamamlayıcı Sağlık alabilir"</b> diyerek özel tanıtım mesajını hazırlar. Siz onay verince mesaj gider; müşteri ilgilenip yanıt verdiğinde Maya sizi uyarır: <b>"Müşteri ilgilendi, teklif hazırlayabilirsiniz!"</b> Sıcak talep önünüze düşer, teklifi siz hazırlar, satışı siz kapatırsınız.
               </p>
             </motion.div>
 
