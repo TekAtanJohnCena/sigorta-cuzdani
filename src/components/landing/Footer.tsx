@@ -63,10 +63,10 @@ export const Footer: React.FC = () => {
               Kurumsal & Yasal
             </h4>
             <ul className="space-y-2 text-slate-500">
-              <li><a href="https://sigortacuzdani.net/iletisim" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">İletişim</a></li>
-              <li><a href="https://sigortacuzdani.net/mesafeli-satis-sozlesmesi" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">Mesafeli Satış Sözleşmesi</a></li>
-              <li><a href="https://sigortacuzdani.net/iptal-ve-iade-kosullari" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">İptal ve İade Koşulları</a></li>
-              <li><a href="https://sigortacuzdani.net/gizlilik-politikasi-kvkk" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">Gizlilik Politikası (KVKK)</a></li>
+              <li><a href="/iletisim" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">İletişim</a></li>
+              <li><a href="/mesafeli-satis-sozlesmesi" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">Mesafeli Satış Sözleşmesi</a></li>
+              <li><a href="/iptal-ve-iade-kosullari" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">İptal ve İade Koşulları</a></li>
+              <li><a href="/gizlilik-politikasi-kvkk" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition">Gizlilik Politikası (KVKK)</a></li>
             </ul>
           </div>
 

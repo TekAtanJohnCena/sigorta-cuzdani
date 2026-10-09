@@ -30,8 +30,8 @@ export const metadata: Metadata = {
     "işletme sigorta yönetimi",
   ],
   authors: [{ name: "Sigorta Cüzdanı" }],
-  creator: "Sigorta Cüzdanı A.Ş.",
-  publisher: "Sigorta Cüzdanı A.Ş.",
+  creator: "EMRE ERCAN",
+  publisher: "EMRE ERCAN",
   robots: {
     index: true,
     follow: true,
