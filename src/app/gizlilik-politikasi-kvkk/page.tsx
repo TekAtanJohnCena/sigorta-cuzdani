@@ -55,7 +55,7 @@ export default function GizlilikPolitikasiKVKKPage() {
                 <b>Ünvan:</b> EMRE ERCAN (Şahıs Şirketi)<br />
                 <b>Vergi Dairesi:</b> Büyükçekmece V.D.<br />
                 <b>VKN / TCKN:</b> 3400371057<br />
-                <b>E-Posta:</b> kvkk@sigortacuzdani.net
+                <b>E-Posta:</b> support@sigortacuzdani.net / info@sigortacuzdani.net
               </div>
             </div>
 
@@ -175,7 +175,7 @@ export default function GizlilikPolitikasiKVKKPage() {
               Haklarınıza ilişkin taleplerinizi kimliğinizi teyit eden belgelerle birlikte;
             </p>
             <ul className="text-xs text-slate-700 space-y-1 pl-1">
-              <li>• <b>E-Posta:</b> <a href="mailto:kvkk@sigortacuzdani.net" className="text-amber-700 font-semibold underline">kvkk@sigortacuzdani.net</a> (Kayıtlı e-postanız üzerinden)</li>
+              <li>• <b>E-Posta:</b> <a href="mailto:support@sigortacuzdani.net" className="text-amber-700 font-semibold underline">support@sigortacuzdani.net</a> veya <a href="mailto:info@sigortacuzdani.net" className="text-amber-700 font-semibold underline">info@sigortacuzdani.net</a> (Kayıtlı e-postanız üzerinden)</li>
               <li>• <b>Posta / Şahsen:</b> Adnan Kahveci Mah. Ayfer Sok. No:15 Daire:8 Beylikdüzü / İstanbul adresine yazılı dilekçe ile iletebilirsiniz.</li>
             </ul>
             <p className="text-[11px] text-slate-500 pt-1">
