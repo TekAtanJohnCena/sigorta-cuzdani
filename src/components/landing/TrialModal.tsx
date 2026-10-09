@@ -69,7 +69,7 @@ export const TrialModal: React.FC<TrialModalProps> = ({ isOpen, onClose }) => {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-500 mt-2">
-              14 gün ücretsiz deneme. Maya 60 saniye içinde WhatsApp hattınıza bağlanır ve portföyünüzü korumaya başlar.
+              14 gün boyunca tüm özellikleri ücretsiz deneyin. Maya portföyünüzü analiz eder, yenilemeleri ve çapraz satış fırsatlarını onayınıza sunar.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-5 space-y-3.5">
@@ -103,7 +103,7 @@ export const TrialModal: React.FC<TrialModalProps> = ({ isOpen, onClose }) => {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    WhatsApp Telefonu
+                    Telefon Numarası
                   </label>
                   <input
                     type="tel"
@@ -168,9 +168,9 @@ export const TrialModal: React.FC<TrialModalProps> = ({ isOpen, onClose }) => {
               <CheckCircle className="w-8 h-8" />
             </div>
 
-            <h3 className="text-2xl font-bold text-slate-900">Harika, Maya Hazır!</h3>
+            <h3 className="text-2xl font-bold text-slate-900">Harika, Başvurunuz Alındı!</h3>
             <p className="text-sm text-slate-600 max-w-sm mx-auto leading-relaxed">
-              <b>{formData.agencyName || 'Acenteniz'}</b> için 14 günlük tam erişimli hesap oluşturuldu. Maya, ilk portföy analizi ve WhatsApp bağlantı rehberini telefonunuza iletti.
+              <b>{formData.agencyName || 'Acenteniz'}</b> için 14 günlük tam erişimli deneme hesabı oluşturuluyor. Acentenize özel Maya hattı tanımlaması ve ilk portföy kurulumu için ekibimiz sizinle iletişime geçecektir.
             </p>
 
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-left space-y-2">
